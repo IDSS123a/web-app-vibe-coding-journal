@@ -100,3 +100,73 @@ export async function getNonDuplicateArticles(): Promise<Article[]> {
 
   return data as Article[];
 }
+
+/**
+ * Update article confidence score (Quality Engine output)
+ */
+export async function updateArticleConfidence(
+  articleId: string,
+  confidenceScore: number,
+): Promise<void> {
+  if (!supabaseAdmin) {
+    throw new Error("Admin client not available");
+  }
+
+  const { error } = await supabaseAdmin
+    .from("articles")
+    .update({
+      confidence_score: confidenceScore,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", articleId);
+
+  if (error) {
+    throw new Error(`Failed to update confidence: ${error.message}`);
+  }
+}
+
+/**
+ * Update article category (Classifier output)
+ */
+export async function updateArticleCategory(
+  articleId: string,
+  category: string | null,
+): Promise<void> {
+  if (!supabaseAdmin) {
+    throw new Error("Admin client not available");
+  }
+
+  const { error } = await supabaseAdmin
+    .from("articles")
+    .update({
+      category,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", articleId);
+
+  if (error) {
+    throw new Error(`Failed to update category: ${error.message}`);
+  }
+}
+
+/**
+ * Get articles ready for Daily Report (not duplicates, have confidence score, below/above threshold)
+ */
+export async function getArticlesForDailyReport(): Promise<Article[]> {
+  if (!supabaseAdmin) {
+    throw new Error("Admin client not available");
+  }
+
+  const { data, error } = await supabaseAdmin
+    .from("articles")
+    .select("*")
+    .is("duplicate_of", null)
+    .not("confidence_score", "is", null) // Only scored articles
+    .order("published_at", { ascending: false });
+
+  if (error) {
+    throw new Error(`Failed to fetch articles for daily report: ${error.message}`);
+  }
+
+  return data as Article[];
+}
