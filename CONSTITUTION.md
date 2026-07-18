@@ -105,6 +105,11 @@ periodically (P-11), and nothing more, until this document is updated.
 
 ## P-3. Editorial Voice — Non-Negotiable Rules `[ACTIVE]` 🔴 CRITICAL
 
+**Daily Report content language: English.** The `HYPE_WORDS` list and every
+P-3 editorial-voice example in this section are in English by design, not
+oversight (PDL-007). A hype term in another language will not be caught by
+the filter unless and until that language is explicitly added here.
+
 Every generated summary (single article or Daily Report) must obey:
 
 - **No hype words.** Banned by default, unless directly quoting a

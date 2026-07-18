@@ -165,4 +165,24 @@ Director go-ahead and `GEMINI_API_KEY`).
 
 ---
 
+## PDL-007 — Daily Report Content Language: English (by design)
+
+**Date:** 2026-07-18
+**Decision:** Daily Report content — summaries, `why_it_matters`, and all
+editorial-voice output — is **English**. `HYPE_WORDS` (P-3) and every P-3
+example are English by design, not an oversight.
+
+**Rationale:** Surfaced by a hype-hold test that used a mixed
+Bosnian/English sentence — the filter caught the English term
+("revolutionary") and would have missed a Bosnian-only equivalent
+("revolucionarno"). Rather than silently expand `HYPE_WORDS` with guessed
+Bosnian terms (M-4: no invented business logic), the Director confirmed
+English as the deliberate output language for this MVP.
+
+**Consequence:** If Bosnian (or any other language) Daily Report output is
+ever needed, `HYPE_WORDS` and CONSTITUTION P-3 must be updated explicitly,
+in the same change, before that language ships — not inferred by an ACA.
+
+---
+
 *Vibe-Coding Journal — Project Decision Log — updated as decisions are made.*
