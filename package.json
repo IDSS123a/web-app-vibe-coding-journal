@@ -20,6 +20,7 @@
     "react-dom": "^19.0.0",
     "react-hook-form": "^7.48.0",
     "resend": "^3.0.0",
+    "rss-parser": "^3.13.0",
     "zod": "^3.22.0"
   },
   "devDependencies": {

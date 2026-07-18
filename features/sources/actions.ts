@@ -7,9 +7,19 @@
  */
 
 import { createHash } from "crypto";
+import Parser from "rss-parser";
 import { getEnabledSources, updateSource } from "./repository";
 import { shouldAutoDisableSource, SOURCE_HEALTH_CONFIG } from "./domain";
 import { supabaseAdmin } from "@/lib/db/client";
+
+// Sprint 06 (PDL logged in DECISION_LOG.md, M-12 pattern): rss-parser
+// replaces the hand-rolled regex parser. Uses a real XML parser under the
+// hood (CDATA-wrapped titles/descriptions unwrap correctly — the regex
+// version silently dropped every hnrss.org item because of this) and
+// normalizes both RSS 2.0 (<item>, <link>text</link>) and Atom
+// (<entry>, <link href="...">) to the same shape, so no separate
+// hand-written Atom code path is needed.
+const rssParser = new Parser();
 
 interface ParsedArticle {
   title: string;
@@ -133,9 +143,14 @@ export async function collectArticlesFromAllSources(): Promise<{
           enabled: !shouldDisable,
         });
 
+        // P-7: errorMsg is already self-describing (e.g. "Feed fetch error:
+        // ..." for a transient reachability-adjacent failure vs "Feed parse
+        // error: ..." for a genuine parse failure, or "Failed to store
+        // article: ..." for a storage issue) — no blanket "Parse error:"
+        // prefix here, that used to conflate all three into one category.
         errors.push({
           sourceId: source.id,
-          error: `Parse error: ${errorMsg}`,
+          error: errorMsg,
         });
       }
     }
@@ -179,62 +194,65 @@ async function checkSourceReachability(url: string): Promise<boolean> {
 }
 
 /**
- * Parse RSS or API feed and extract articles
- * Stub implementation — real parsing depends on feed format
+ * Parse RSS/Atom or API feed and extract articles
+ * P-7: fetch-level failures and parse-level failures are thrown with
+ * distinct message prefixes so downstream error text/monitoring never
+ * conflates a transient issue (retry-worthy) with a permanent one
+ * (stays broken until code is fixed) — see Sprint 06 scope doc.
  */
 async function parseFeed(
   url: string,
   type: "rss" | "api",
 ): Promise<ParsedArticle[]> {
+  let response: Response;
   try {
-    const response = await fetch(url);
-
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
-    }
-
-    if (type === "rss") {
-      return await parseRSSFeed(response);
-    } else {
-      return await parseAPIFeed(response);
-    }
+    response = await fetch(url);
   } catch (err) {
     const errorMsg = err instanceof Error ? err.message : String(err);
-    throw new Error(`Failed to fetch feed: ${errorMsg}`);
+    throw new Error(`Feed fetch error: ${errorMsg}`);
+  }
+
+  if (!response.ok) {
+    throw new Error(`Feed fetch error: HTTP ${response.status}`);
+  }
+
+  if (type === "rss") {
+    return await parseRSSFeed(response);
+  } else {
+    return await parseAPIFeed(response);
   }
 }
 
 /**
- * Parse RSS/Atom feed
- * Simplified: extracts title, link, description, pubDate
+ * Parse RSS 2.0 or Atom feed via rss-parser (Sprint 06).
+ * rss-parser uses a real XML parser (handles CDATA-wrapped title/description
+ * correctly, unlike the previous regex) and normalizes both RSS 2.0
+ * (<item>, <link>text</link>) and Atom (<entry>, <link href="...">) to the
+ * same item shape — no separate Atom code path needed.
  */
 async function parseRSSFeed(response: Response): Promise<ParsedArticle[]> {
   const text = await response.text();
-  const articles: ParsedArticle[] = [];
 
-  // Simple regex-based extraction (production would use xml parser)
-  const itemRegex = /<item>([\s\S]*?)<\/item>/g;
-  let match;
-
-  while ((match = itemRegex.exec(text)) !== null) {
-    const item = match[1]!;
-
-    const titleMatch = /<title>([^<]+)<\/title>/.exec(item);
-    const linkMatch = /<link>([^<]+)<\/link>/.exec(item);
-    const descMatch = /<description>([^<]+)<\/description>/.exec(item);
-    const pubDateMatch = /<pubDate>([^<]+)<\/pubDate>/.exec(item);
-
-    if (titleMatch?.[1] && linkMatch?.[1]) {
-      articles.push({
-        title: titleMatch[1].trim(),
-        url: linkMatch[1].trim(),
-        summary: descMatch?.[1]?.trim() ?? "",
-        published_at: pubDateMatch?.[1] ? new Date(pubDateMatch[1]).toISOString() : new Date().toISOString(),
-      });
-    }
+  let feed: Parser.Output<Record<string, unknown>>;
+  try {
+    feed = await rssParser.parseString(text);
+  } catch (err) {
+    const errorMsg = err instanceof Error ? err.message : String(err);
+    throw new Error(`Feed parse error: ${errorMsg}`);
   }
 
-  return articles;
+  return (feed.items ?? [])
+    .filter((item) => item.title && item.link)
+    .map((item) => ({
+      title: item.title!.trim(),
+      url: item.link!.trim(),
+      summary: (item.contentSnippet ?? item.content ?? "").trim(),
+      published_at: item.isoDate
+        ? item.isoDate
+        : item.pubDate
+          ? new Date(item.pubDate).toISOString()
+          : new Date().toISOString(),
+    }));
 }
 
 /**
