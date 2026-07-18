@@ -42,6 +42,12 @@
 - **Resolution:** Removed unused type imports from schemas.ts and cleaned up unused function parameters in permissions.ts. Adjusted date field type annotation in dashboard to satisfy string type requirement.
 - **Commander relevance:** E-1 (TypeScript strictness) — enforcing zero `any` types, unused variables, proper type annotations
 
+### [2026-07-18 15:20] — ✅ SECURITY AUDIT: Credential exposure prevention
+- **What happened:** Created test-registration.js with hardcoded SUPABASE_SERVICE_ROLE_KEY for end-to-end test execution. Before committing, ran security check: `git log --all --full-history -- test-registration.js` to verify fajl was never committed.
+- **Resolution:** Verified — test script was created → used → deleted BEFORE commit. Never entered git history. Only credentials in repo are in .env.local (protected by .gitignore).
+- **Prevention:** Added `test-*.js` pattern to .gitignore; documented rule: all future test scripts must read from .env.local, never hardcode secrets, and be created in /tmp (not repo root).
+- **Commander relevance:** E-4 (Security standards — secret management); M-15 (confidentiality propagation — check for leaks proactively, don't assume)
+
 ### [2026-07-18 15:45] — 🔄 COURSE CORRECTION: Handoff note prematurely declared "tested" before verification
 - **What happened:** HANDOFF_SPRINT_01.md contained contradiction: marked "Registration tested end-to-end" as complete (✅), but simultaneously listed "Supabase setup" and "next build" as open blockers (⏳). This violated truthfulness principle — cannot claim end-to-end testing when prerequisite (working database + deployed build) was untested.
 - **Resolution:** 
