@@ -164,7 +164,7 @@ async function deduplicateArticles(): Promise<{
 
     for (const article of newArticles) {
       try {
-        const existingByHash = await getArticleByHash(article.hash);
+        const existingByHash = await getArticleByHash(article.hash, article.id);
         if (existingByHash) {
           await markArticleAsDuplicate(article.id, existingByHash.id);
           duplicatesFound++;

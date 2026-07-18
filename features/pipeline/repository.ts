@@ -5,16 +5,24 @@ import type { Article } from "@/lib/validation/schemas";
  * Get article by hash (fast lookup for exact duplicate detection)
  * O(1) via database index on articles.hash
  */
-export async function getArticleByHash(hash: string): Promise<Article | null> {
+export async function getArticleByHash(
+  hash: string,
+  excludeId?: string,
+): Promise<Article | null> {
   if (!supabaseAdmin) {
     throw new Error("Admin client not available");
   }
 
-  const { data, error } = await supabaseAdmin
-    .from("articles")
-    .select("*")
-    .eq("hash", hash)
-    .single();
+  // Ingestion upserts on `hash`, so a hash is unique in the table. Without
+  // excluding the caller's own id, this would always find the article itself
+  // and every article would be marked a duplicate of itself. excludeId makes
+  // this return only a *different* article sharing the hash (a true duplicate).
+  let query = supabaseAdmin.from("articles").select("*").eq("hash", hash);
+  if (excludeId) {
+    query = query.neq("id", excludeId);
+  }
+
+  const { data, error } = await query.maybeSingle();
 
   if (error && error.code !== "PGRST116") {
     // PGRST116 = not found

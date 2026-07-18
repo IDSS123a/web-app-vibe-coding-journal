@@ -4,10 +4,17 @@ import { createSourceSchema, type CreateSourceInput } from "./domain";
 
 /**
  * Get all enabled sources for polling
- * Used by Source Collector during cron job
+ * Used by Source Collector during cron job.
+ * Uses the admin (service-role) client because the sources table has RLS
+ * that blocks anon reads; the cron runs server-side with no user session,
+ * so it must bypass RLS to see the source list.
  */
 export async function getEnabledSources(): Promise<Source[]> {
-  const { data, error } = await supabase
+  if (!supabaseAdmin) {
+    throw new Error("Admin client not available");
+  }
+
+  const { data, error } = await supabaseAdmin
     .from("sources")
     .select("*")
     .eq("enabled", true)
