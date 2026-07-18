@@ -1,6 +1,6 @@
 # SPRINT_05 — Gemini Provider + AI Summary (P-3 editorial voice)
 # Vibe-Coding Journal
-# Status: APPROVED 2026-07-18 — implementation in progress
+# Status: COMPLETE 2026-07-18 — all DoD items verified live
 
 ---
 
@@ -130,49 +130,58 @@
 
 Full Commander DONE_CHECKLIST.md applies, plus Sprint 05 specifics:
 
-- [ ] `GeminiProvider implements AIProvider` — `tsc --noEmit` zero errors
-- [ ] Key rotation implemented exactly per Scope IN §5: fallback-on-error
+- [x] `GeminiProvider implements AIProvider` — `tsc --noEmit` zero errors
+- [x] Key rotation implemented exactly per Scope IN §5: fallback-on-error
       (not round-robin), advances only on rate-limit/quota errors, all-8-fail
       → `held_for_review` with a clear reason, never a crash or silent empty
-      report
-- [ ] **Secret hygiene audit (grep):** confirm no `GEMINI_API_KEY_*` value is
-      hardcoded anywhere in the repo outside `.env.local` / `.env.example`
-      (e.g. `grep -rn "AIzaSy" --include="*.ts" --include="*.tsx" --include="*.md"
-      .` excluding node_modules, or an equivalent check) — must return zero
-      hardcoded matches
-- [ ] **Log hygiene confirmed:** any key-rotation log line prints only the key
-      index, never the key value; spot-check by deliberately forcing a
-      simulated rate-limit response and inspecting the actual log output
-      character-by-character for the key string
-- [ ] `summarize()` wired into the pipeline; populates `summary`,
-      `why_it_matters`, `who_it_affects`, `worth_trying`
-- [ ] `classify()` integration approach confirmed with Director at kickoff
-      and implemented per that confirmation (not pre-decided here)
-- [ ] **Housekeeping before the P-3 DoD test:** confirm `sources` row
-      "Test RSS Feed" has `enabled = false` in Supabase before running the
-      real-article test below — verify with a direct query, don't assume.
-- [ ] Articles re-collected from GitHub Blog (real source, not synthetic)
-      before P-3 testing
-- [ ] **P-3 test shows a concrete, real example — hard requirement:**
-      - One real GitHub Blog article's raw content (title + raw_summary)
-      - The actual `summarize()` output generated from it (real Gemini
-        call, real response, shown verbatim — not paraphrased)
-      - That output run through `evaluateReportHold` — show the actual
-        `holdReasons` result (empty if clean, or hype-word reason if the
-        real generation happened to produce banned language)
-      - This must be a genuinely generated summary, not a synthetic string
-        typed by the ACA (the hype-filter wiring fix already proved the
-        filter mechanism works on synthetic text — this sprint's job is to
-        prove the *generation* respects P-3, which synthetic text cannot
-        test)
-- [ ] Depth-preference behavior spot-checked (at least one summary generated
-      at "simple" and one at "deep_technical" preference, output visibly
-      different in technical density)
-- [ ] `next build` successful
-- [ ] No pipeline or route code imports a Gemini SDK directly — only via
-      `getAIProvider()`
-- [ ] corrections/SPRINT_05_LESSONS.md created with learnings
-- [ ] HANDOFF_SPRINT_05.md created, scoped to this sprint only
+      report. **Proven organically, not staged:** a real cron run exhausted
+      all 8 keys mid-execution (free-tier daily quota); the pipeline held the
+      report with reason `"AI summary unavailable — all Gemini API keys
+      rate-limited (7 article(s))"`, did not crash, did not publish empty.
+- [x] **Secret hygiene audit (grep):** `grep -rn "AIzaSy"` across the repo
+      (excluding node_modules) returns zero hardcoded key values — the only
+      match is the grep command itself documented as an example in this file.
+      `grep -rln "GEMINI_API_KEY_[0-9]=AIza"` matches only `.env.local`
+      (gitignored, untracked).
+- [x] **Log hygiene confirmed:** full session server log grepped for `AIzaSy`
+      → 0 matches. Rotation lines are exactly `"key N rate-limited, trying
+      key N+1"` / `"key N rate-limited, no more keys configured"` — index
+      only, verified character-by-character via grep, not spot-read.
+- [x] `summarize()` wired into the pipeline (Phase 3); populates `summary`,
+      `why_it_matters`, `who_it_affects`, `worth_trying` on real articles.
+- [x] `classify()` integration confirmed with Director at kickoff: heuristic
+      `classifyArticle()` runs first; AI `classify()` called only when it
+      returns null. Proven live — article "The cost of saying yes has
+      changed" got `null` from the heuristic and `"Opinion"` from the AI
+      fallback.
+- [x] **Housekeeping before the P-3 DoD test:** confirmed via direct Supabase
+      query that "Test RSS Feed" had `enabled = false` before running the
+      real-article test.
+- [x] Articles re-collected from GitHub Blog (real source): 10 real articles,
+      0 duplicates.
+- [x] **P-3 test shows a concrete, real example:** article "GitHub for
+      Beginners: Your roadmap to mastering the GitHub essentials" — real
+      Gemini `summarize()` output: *"This content provides a structured
+      introduction to GitHub's core functionalities... Understanding GitHub
+      is a prerequisite for most modern software development roles..."*
+      `worth_trying: "yes"`. Real `evaluateReportHold`, invoked in the real
+      Phase 4 over all 10 articles (including this one and two other
+      genuinely AI-summarized ones), returned `holdReasons` with **no**
+      hype-word entry — confirms the filter examined real generated text and
+      found it clean, not a synthetic string.
+- [x] Depth-preference spot-checked via a real `GeminiProvider.summarize()`
+      call (temporary route, deleted immediately after capturing output —
+      never committed) with `tone: "casual"` vs `tone: "technical"` on the
+      identical real article text. Simple: 2 plain sentences. Deep: longer,
+      denser vocabulary ("isolating work", "atomic changes to the project
+      history", "distributed version control"). Visibly different.
+- [x] `next build` successful (cache cleared and rebuilt clean after the
+      temporary test route was removed, to rule out stale-route artifacts).
+- [x] No pipeline or route code imports a Gemini SDK directly — `GeminiProvider`
+      talks to the REST API via `fetch`, only `getAIProvider()` is used
+      elsewhere.
+- [x] corrections/SPRINT_05_LESSONS.md created with learnings.
+- [x] HANDOFF_SPRINT_05.md created, scoped to this sprint only.
 
 ---
 
