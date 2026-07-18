@@ -20,7 +20,7 @@ import { upsertDailyReport } from "@/features/daily-report/repository";
 import {
   scoreArticleConfidence,
   classifyArticle,
-  CONFIDENCE_THRESHOLD,
+  evaluateReportHold,
 } from "@/features/pipeline/quality-engine";
 import { sendReviewQueueAlert } from "@/lib/email/resend";
 
@@ -266,21 +266,12 @@ async function generateDailyReport(): Promise<{
     const articles = await getArticlesForDailyReport();
     console.log(`[REPORT] Generating report for ${date} (${articles.length} articles)`);
 
-    // Check review conditions
-    let belowThreshold = 0;
-    for (const article of articles) {
-      if (
-        article.confidence_score !== null &&
-        article.confidence_score < CONFIDENCE_THRESHOLD
-      ) {
-        belowThreshold++;
-      }
-    }
-
-    if (belowThreshold > 0) {
-      holdReasons.push(
-        `${belowThreshold} article(s) below confidence threshold (${(CONFIDENCE_THRESHOLD * 100).toFixed(0)}%)`,
-      );
+    // P-6 publish gate: confidence threshold AND hype-word filter (P-3).
+    // A hype word in any article's text blocks auto-publish.
+    const holdDecision = evaluateReportHold(articles);
+    holdReasons.push(...holdDecision.reasons);
+    if (holdDecision.hypeCount > 0) {
+      console.log(`[REPORT]   ⚠ P-3 hype filter: ${holdDecision.hypeCount} article(s) with hype words → hold`);
     }
 
     // Generate markdown (simple aggregation for MVP)

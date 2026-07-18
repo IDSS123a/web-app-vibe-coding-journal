@@ -132,6 +132,61 @@ export function shouldHoldForReview(article: Article & { confidence_score?: numb
 }
 
 /**
+ * Report-level hold decision (P-6 publish gate).
+ * Pure function so it is unit-testable without a DB or server.
+ *
+ * A Daily Report is held for review if ANY of its articles:
+ *  - scores below the confidence threshold (PDL-004), or
+ *  - contains a hype word (P-3 editorial voice) in title / editorial summary
+ *    / raw summary. This enforces P-3 in the unattended pipeline: hype text
+ *    blocks auto-publish, it does not silently ship.
+ */
+export interface ReportHoldDecision {
+  hold: boolean;
+  reasons: string[];
+  belowThreshold: number;
+  hypeCount: number;
+}
+
+export function evaluateReportHold(
+  articles: Array<
+    Pick<Article, "title" | "summary" | "raw_summary"> & {
+      confidence_score?: number | null;
+    }
+  >,
+): ReportHoldDecision {
+  const reasons: string[] = [];
+  let belowThreshold = 0;
+  let hypeCount = 0;
+
+  for (const article of articles) {
+    if (
+      article.confidence_score !== undefined &&
+      article.confidence_score !== null &&
+      article.confidence_score < CONFIDENCE_THRESHOLD
+    ) {
+      belowThreshold++;
+    }
+
+    const text = `${article.title ?? ""} ${article.summary ?? ""} ${article.raw_summary ?? ""}`;
+    if (containsHypeWords(text)) {
+      hypeCount++;
+    }
+  }
+
+  if (belowThreshold > 0) {
+    reasons.push(
+      `${belowThreshold} article(s) below confidence threshold (${(CONFIDENCE_THRESHOLD * 100).toFixed(0)}%)`,
+    );
+  }
+  if (hypeCount > 0) {
+    reasons.push(`${hypeCount} article(s) contain hype words (P-3 editorial voice)`);
+  }
+
+  return { hold: reasons.length > 0, reasons, belowThreshold, hypeCount };
+}
+
+/**
  * Categories for article classification
  * Per project brief §5 (not invented, from spec)
  */
