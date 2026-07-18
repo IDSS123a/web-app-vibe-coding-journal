@@ -130,6 +130,34 @@ improve summary quality, independent of the AI provider.
 
 ---
 
+## Addendum (2026-07-18, Sprint 06 follow-up) — Multi-account key rotation is a known, accepted risk
+
+Finding #7 above documented the *shared-quota* risk of the 8-key rotation
+strategy and proposed dev/prod separation as the fix (delivered in
+Sprint 06). What finding #7 did **not** originally name explicitly: the
+underlying strategy — 8 separate Google accounts, each contributing one
+free-tier API key, specifically to multiply the per-account daily quota —
+is itself a **Google Terms of Service risk**, not just an operational
+quota-management concern. Google's API/Cloud terms generally prohibit
+creating multiple accounts to circumvent usage limits, and Google has a
+documented history of detecting and acting on this pattern (the Director
+cited a known precedent: a multi-account quota-evasion case on the YouTube
+API resulting in account action — cited by the Director, not independently
+verified against a primary source by this assistant, and recorded as such).
+
+**This is now a deliberate, Director-accepted risk, not an oversight** —
+see CONSTITUTION P-18 and DECISION_LOG PDL-012 for the full record,
+including the explicit rationale. This lessons file is updated to make
+clear that finding #7's "shared quota" framing was incomplete on its own;
+the real exposure is account-level (possible suspension of some or all of
+the 8 accounts), which is why Sprint 06's follow-up work
+(`GeminiKeysExhaustedError.reason`, the differentiated P-6 hold message,
+and the `[URGENT]` email subject tag) exists — so a suspension event reads
+unmistakably differently from routine daily quota exhaustion the moment
+the Director sees the alert.
+
+---
+
 ## DONE_CHECKLIST
 
 See `sprints/SPRINT_05.md` Definition of Done — every item is checked with

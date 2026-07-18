@@ -318,4 +318,82 @@ Recorded here for accuracy, not to hide the ordering mistake.
 
 ---
 
+## PDL-012 — AI Provider Quota Strategy: Multi-Account Key Rotation — Known ToS Risk, Consciously Accepted
+
+**Date:** 2026-07-18 (Sprint 06 follow-up)
+**Decision:** The Director consciously decided to continue using the
+existing 8-key Gemini rotation strategy (`GEMINI_API_KEY_DEV_1..8`,
+`lib/ai/gemini-provider.ts`) — 8 separate Google accounts, each
+contributing one free-tier API key, specifically to multiply the
+per-account daily quota — despite an identified Google Terms of Service
+risk. This is a **known, deliberate risk acceptance, not an oversight**.
+
+**The risk:** Google's API/Cloud terms of service (see
+`developers.google.com/terms` and `cloud.google.com/terms`) generally
+prohibit creating or using multiple accounts to circumvent usage limits,
+rate limits, or quotas. This is not a theoretical reading — Google has a
+documented history of detecting and acting on this pattern. The Director
+cited a known precedent: a multi-account quota-evasion case involving the
+YouTube API that resulted in account-level action by Google. **This
+specific incident is cited by the Director from their own knowledge; it
+has not been independently verified against a primary source by this
+assistant**, and is recorded here as the Director's stated basis, not as
+an independently-confirmed fact — consistent with M-4 (don't assert
+something as verified that wasn't).
+
+**Director's explicit rationale (asked for directly, not inferred):**
+this is **testing/development use only, not a permanent production
+architecture**. The 8-account set exists to validate the pipeline
+(Sprint 05/06) without paying for a Gemini tier before the product has
+any paying users. It is not intended as the long-term AI provider
+strategy once the product launches with real subscribers (P-13).
+
+**Current key architecture (confirmed by Director 2026-07-18, resolves the
+open question from the Sprint 06 dev/prod-separation work):** there is
+currently **one** 8-account set, living under the `GEMINI_API_KEY_DEV_*`
+env var names. `GEMINI_API_KEY_1..8` (the "prod" names) are intentionally
+NOT populated in `.env.local` — this was a deliberate consolidation, not
+an accidental loss of the original key values (an earlier factual concern
+raised by this assistant, now resolved by this record). `loadApiKeys()`
+in `lib/ai/gemini-provider.ts` was updated to fall back symmetrically in
+both directions (prod→dev if no prod set exists, dev→prod if no dev set
+exists) specifically so this single-set arrangement works correctly under
+`VERCEL_ENV === "production"` too — without that fix, an actual production
+deploy would have found zero keys and failed every AI call immediately.
+
+**Mitigation implemented (Sprint 06 follow-up, this session):** because
+account suspension is now a real, anticipated failure mode (not
+hypothetical) rather than only ordinary quota exhaustion, the pipeline
+distinguishes the two:
+- `GeminiKeysExhaustedError.reason: "quota"` — ordinary daily rate-limit
+  exhaustion across all 8 keys. P-6 hold message: *"...quota exhausted for
+  today... No action needed; retry next scheduled run."*
+- `GeminiKeysExhaustedError.reason: "suspected_suspension"` — at least one
+  key in the rotation returned an auth/permission-denied signal (HTTP
+  401/403, `PERMISSION_DENIED`/`UNAUTHENTICATED`, or Google's
+  `API_KEY_INVALID` reason code — the last one verified live against the
+  real API with a deliberately invalid key, returning HTTP 400 /
+  `INVALID_ARGUMENT` with that specific reason; 401/403 are kept as
+  defensive coverage for a genuinely suspended account, which could not be
+  verified live for obvious reasons). P-6 hold message and email subject
+  both escalate distinctly: *"All AI providers unavailable — possible
+  account suspension..."* / `[URGENT — ACTION NEEDED]`.
+- Verified end-to-end with a live test run (all 8 dev keys deliberately
+  set invalid, restored byte-for-byte after): `aiSuspectedSuspension: true`
+  propagated correctly through Quality Engine → Daily Report → email alert.
+
+**Consequence — binding constraint on future work (CONSTITUTION P-18):**
+payment/subscription implementation (P-13, P-16) must not proceed past
+governance-only status until this risk is explicitly addressed in the
+Sprint 08 (PayPal) scope document, either as a resolved prerequisite (a
+paid Gemini tier, or a single legitimate account) or as a knowingly-accepted
+launch limitation stated in that document — not silently carried forward
+into a product with paying subscribers.
+
+**No ACA may unilaterally "fix" this** by redesigning the key strategy,
+changing the account count, or routing around it without a new PDL
+proposal to the Director first.
+
+---
+
 *Vibe-Coding Journal — Project Decision Log — updated as decisions are made.*

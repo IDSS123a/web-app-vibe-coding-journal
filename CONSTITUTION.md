@@ -511,5 +511,45 @@ this project is not done until:
 
 ---
 
+## P-18. AI Provider Quota Strategy — Known, Accepted Risk `[ACTIVE]` 🔴 CRITICAL
+
+- **The Gemini key-rotation strategy (8 keys, `GeminiProvider`,
+  `lib/ai/gemini-provider.ts`) uses 8 separate Google accounts, each
+  contributing one free-tier API key, specifically to multiply the
+  per-account daily quota.** This is a **Google Terms of Service risk**,
+  not merely an operational one — Google's API/Cloud terms generally
+  prohibit creating multiple accounts to circumvent usage limits, and
+  Google has a documented history of detecting and acting on this
+  pattern. Full rationale and the Director's explicit risk acceptance
+  are recorded in DECISION_LOG.md PDL-012 — this section states the
+  policy consequence, PDL-012 carries the reasoning.
+- **This is deliberate, not an oversight.** The Director reviewed the
+  risk and chose to proceed. No ACA may "fix" this by unilaterally
+  redesigning the key strategy, reducing the key count, or silently
+  routing around it — any change to this approach is its own PDL
+  proposal to the Director first (M-4/M-13: don't invent the
+  resolution, don't quietly narrow scope either).
+- **The failure mode this risk implies must never read like ordinary
+  quota exhaustion.** If some or all of the 8 accounts are suspended,
+  the resulting P-6 hold alert must say so explicitly and distinctly
+  from "quota exhausted for today, try again tomorrow" — a suspension
+  needs the Director's attention immediately; a quota exhaustion does
+  not. (Implemented Sprint 06 follow-up:
+  `GeminiKeysExhaustedError.reason`, the differentiated hold-reason
+  text, and the `[URGENT]` email subject tag — see
+  `corrections/SPRINT_05_LESSONS.md` addendum.)
+- **Payment/subscription work (P-13, P-16) must not proceed past
+  governance-only status until this risk is explicitly addressed in
+  the Sprint 08 (PayPal) scope document** — either as a resolved
+  prerequisite (e.g., a paid Gemini tier, or a single-account
+  arrangement) or as a knowingly-accepted launch limitation, stated in
+  that scope document, not silently carried forward. A paying
+  subscriber depending on a Daily Report that could go dark because of
+  a ToS-risk infrastructure choice is a materially different risk
+  posture than an MVP with no paying users yet — this must be an
+  explicit decision point at that sprint's kickoff, not an assumption.
+
+---
+
 *Vibe-Coding Journal — Project Constitution v0.1 — draft, pending
 Director review before first sprint.*
