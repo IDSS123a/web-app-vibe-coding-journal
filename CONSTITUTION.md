@@ -171,17 +171,39 @@ sections               (Najvažnije, Trendovi, Novi alati, Research,
                         GitHub, Šta testirati danas — order fixed
                         unless changed via sprint doc)
 review_status          enum: auto_published | held_for_review |
-                        manually_approved
+                        manually_approved | rejected
+approved_by            nullable — email of admin who approved a held
+                        report (audit trail, Sprint 04)
+approved_at            nullable timestamp — when approval happened
+rejected_by            nullable — email of admin who rejected a held
+                        report (audit trail, Sprint 04)
+rejected_at            nullable timestamp — when rejection happened
 ```
+
+*Sprint 04 additions (why):* the Review Queue (P-6) needs a human
+approve/reject action with an accountable trail — who acted and when.
+`rejected` was added to the `review_status` enum because a held report
+that an admin declines is a distinct terminal state from
+`manually_approved`; without it the reject action would have no valid
+status to write. The four `approved_*`/`rejected_*` fields record the
+acting admin (taken from their verified JWT, not client input) so the
+audit cannot be spoofed.
 
 **UserProfile** (extends Commander's generic user model; do not
 invent auth fields beyond what an approved sprint specifies):
 ```
+role                   enum: user | admin — default 'user' (Sprint 04)
 tools_used             (multi-select, P-2)
 depth_preference        (single-select, P-2)
 other_tools_freetext    (P-2a, internal only)
 saved_articles          (bookmarks, many-to-many with Article)
 ```
+
+*Sprint 04 addition (why):* `role` was added to gate the admin Review
+Queue (P-6). Authorization is read from this DB column at request time,
+not from a token claim (M-7: the database is the single source of truth
+on who is an admin, so access can be revoked immediately). Default is
+`user`; only an explicit promotion grants `admin`.
 
 No other tables/fields exist until a sprint document adds them.
 
