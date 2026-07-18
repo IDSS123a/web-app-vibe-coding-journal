@@ -14,7 +14,7 @@
 
 ---
 
-## PDL-001 — AI Provider: Deferred, Provider Interface Mandatory
+## PDL-001 — AI Provider: Deferred, Provider Interface Mandatory `[RESOLVED 2026-07-18 → see PDL-006]`
 
 **Date:** 2026-07-18
 **Decision:** Do NOT default to Gemini (Commander DL-005) without
@@ -130,6 +130,38 @@ CONSTITUTION.md P-9, not a stack deviation.
 - Cron calls `/api/cron/daily-digest` with Bearer token auth (CRON_SECRET)
 
 **Current status:** Pending implementation in Sprint 04
+
+---
+
+## PDL-006 — AI Provider Resolved: Gemini (Commander default, no deviation)
+
+**Date:** 2026-07-18 (resolves PDL-001)
+**Decision:** Adopt **Google Gemini** as the concrete AI provider behind the
+`lib/ai/ai-provider.ts` interface. This aligns with the Commander default
+(DL-005); no M-16 stack deviation is invoked.
+
+**Rationale:**
+- PDL-001 deferred the choice to protect P-3 editorial voice quality. On review,
+  the Director elected to take the Commander default rather than deviate — Gemini
+  has a usable free tier and is the proven default, and the swappable
+  `AIProvider` interface (built in Sprint 01) keeps the cost of switching low if
+  steerability proves insufficient later.
+- The provider abstraction stays mandatory: no pipeline stage may import a vendor
+  SDK directly; all calls go through `getAIProvider()`.
+
+**Implementation notes (for the sprint that wires AI Summary — NOT yet done):**
+- Concrete `GeminiProvider implements AIProvider` replacing `NoOpProvider`.
+- Config via env: `AI_PROVIDER=gemini`, `GEMINI_API_KEY=...`, and a
+  `GEMINI_MODEL` (exact model string to be confirmed against Google's current
+  lineup at implementation time — do not hardcode a guessed version).
+- The summarize stage must enforce P-3: strip/refuse hype words, produce
+  `summary` + `why_it_matters` + `who_it_affects` + `worth_trying`, and respect
+  the user's `depth_preference`. Output still passes through the existing
+  hype-word filter before publish (and that filter must first be wired into the
+  cron hold decision — see SPRINT_04_LESSONS finding #14).
+
+**Status:** Decision made; implementation deferred to Sprint 05 (awaiting
+Director go-ahead and `GEMINI_API_KEY`).
 
 ---
 
