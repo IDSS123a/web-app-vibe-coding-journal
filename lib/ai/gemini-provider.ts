@@ -78,27 +78,33 @@ function loadKeySet(prefix: "GEMINI_API_KEY" | "GEMINI_API_KEY_DEV"): string[] {
 }
 
 /**
- * Sprint 06 (SPRINT_05_LESSONS finding #7 / DECISION_LOG PDL): dev/prod key
- * separation so local/preview testing never consumes production quota.
+ * Sprint 06 (SPRINT_05_LESSONS finding #7 / DECISION_LOG PDL-012): dev/prod
+ * key separation so local/preview testing never consumes production quota
+ * — WHEN two genuinely separate sets exist. As of PDL-012, the Director has
+ * confirmed a single 8-account set is used for both dev and (for now) prod,
+ * pending a separate, non-ToS-risk production AI strategy decision — so the
+ * fallback below is symmetric in both directions, not prod-only-strict:
  *
- * VERCEL_ENV === "production" → GEMINI_API_KEY_1..8 (prod set).
+ * VERCEL_ENV === "production" → GEMINI_API_KEY_1..8 (prod set) first, falls
+ * back to GEMINI_API_KEY_DEV_1..8 if no prod set is configured (today's
+ * actual state — prod block intentionally not populated).
  * Anything else (local `next dev` where VERCEL_ENV is undefined, or a
- * Vercel preview deployment) → GEMINI_API_KEY_DEV_1..8 first; only falls
- * back to the prod set if no dev keys are configured at all, so an
- * unconfigured local .env.local doesn't silently break — a developer who
- * *has* set up dev keys never touches production quota.
+ * Vercel preview deployment) → GEMINI_API_KEY_DEV_1..8 first, falls back to
+ * GEMINI_API_KEY_1..8 if no dev set is configured.
+ * The moment a Director decision gives production a genuinely separate key
+ * source, only the fallback direction stops mattering — the two-set
+ * preference order itself stays, so re-introducing a real prod-only set
+ * later requires no code change here.
  */
 function loadApiKeys(): string[] {
-  if (process.env.VERCEL_ENV === "production") {
-    return loadKeySet("GEMINI_API_KEY");
-  }
-
+  const prodKeys = loadKeySet("GEMINI_API_KEY");
   const devKeys = loadKeySet("GEMINI_API_KEY_DEV");
-  if (devKeys.length > 0) {
-    return devKeys;
+
+  if (process.env.VERCEL_ENV === "production") {
+    return prodKeys.length > 0 ? prodKeys : devKeys;
   }
 
-  return loadKeySet("GEMINI_API_KEY");
+  return devKeys.length > 0 ? devKeys : prodKeys;
 }
 
 interface GeminiErrorBody {
