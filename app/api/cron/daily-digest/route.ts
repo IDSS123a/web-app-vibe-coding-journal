@@ -14,6 +14,7 @@ import {
   getNonDuplicateArticles,
   updateArticleConfidence,
   updateArticleCategory,
+  updateArticleSummary,
   getArticlesForDailyReport,
 } from "@/features/pipeline/repository";
 import { upsertDailyReport } from "@/features/daily-report/repository";
@@ -21,8 +22,12 @@ import {
   scoreArticleConfidence,
   classifyArticle,
   evaluateReportHold,
+  ARTICLE_CATEGORIES,
 } from "@/features/pipeline/quality-engine";
 import { sendReviewQueueAlert } from "@/lib/email/resend";
+import { ensureAIProviderInitialized } from "@/lib/ai/init";
+import { getAIProvider } from "@/lib/ai/ai-provider";
+import { GeminiKeysExhaustedError } from "@/lib/ai/gemini-provider";
 
 const CRON_SECRET = process.env.CRON_SECRET || "dev-secret-change-in-production";
 
@@ -53,6 +58,7 @@ export async function POST(request: NextRequest) {
     }
 
     console.log("[CRON] Starting daily digest pipeline");
+    ensureAIProviderInitialized();
 
     // 2. AUTHORIZE (already authenticated)
 
@@ -72,16 +78,21 @@ export async function POST(request: NextRequest) {
     const dedupeResult = await deduplicateArticles();
     console.log(`[CRON]   ✓ Deduplicated: ${dedupeResult.duplicatesFound} duplicates marked`);
 
-    // Phase 3: Quality Engine + Classifier
+    // Phase 3: Quality Engine + Classifier + AI Summary
     console.log("[CRON] Phase 3: Quality Engine & Classifier");
     const qualityResult = await runQualityEngine();
     console.log(
-      `[CRON]   ✓ Quality scored: ${qualityResult.articlesScored}, Classified: ${qualityResult.articlesClassified}`,
+      `[CRON]   ✓ Quality scored: ${qualityResult.articlesScored}, Classified: ${qualityResult.articlesClassified}, AI-summarized: ${qualityResult.articlesSummarized}`,
     );
+    if (qualityResult.aiUnavailableCount > 0) {
+      console.warn(
+        `[CRON]   ⚠ AI summary unavailable for ${qualityResult.aiUnavailableCount} article(s) (all Gemini keys rate-limited)`,
+      );
+    }
 
     // Phase 4: Daily Report Generation
     console.log("[CRON] Phase 4: Daily Report Generation");
-    const reportResult = await generateDailyReport();
+    const reportResult = await generateDailyReport(qualityResult.aiUnavailableCount);
     console.log(
       `[CRON]   ✓ Report generated: ${reportResult.articleCount} articles, status: ${reportResult.reviewStatus}`,
     );
@@ -118,6 +129,8 @@ export async function POST(request: NextRequest) {
         qualityEngine: {
           articlesScored: qualityResult.articlesScored,
           articlesClassified: qualityResult.articlesClassified,
+          articlesSummarized: qualityResult.articlesSummarized,
+          aiUnavailableCount: qualityResult.aiUnavailableCount,
           errors: qualityResult.errors,
         },
         dailyReport: {
@@ -193,35 +206,85 @@ async function deduplicateArticles(): Promise<{
 }
 
 /**
- * Phase 3: Quality Engine & Classifier
- * Scores all articles and assigns categories
+ * Phase 3: Quality Engine & Classifier & AI Summary
+ * Scores all articles, assigns categories, and generates P-3-compliant
+ * summaries via the configured AIProvider (Sprint 05: GeminiProvider).
+ *
+ * classify() integration (confirmed with Director, sprints/SPRINT_05.md):
+ * the heuristic classifyArticle() runs first; AI classify() is called ONLY
+ * as a fallback when the heuristic returns null (M-4: don't guess when the
+ * cheap/free heuristic already couldn't).
  */
 async function runQualityEngine(): Promise<{
   success: boolean;
   articlesScored: number;
   articlesClassified: number;
+  articlesSummarized: number;
+  aiUnavailableCount: number;
   errors: string[];
 }> {
   const errors: string[] = [];
   let articlesScored = 0;
   let articlesClassified = 0;
+  let articlesSummarized = 0;
+  let aiUnavailableCount = 0;
 
   try {
     const articles = await getNonDuplicateArticles();
     console.log(`[QUALITY] Processing ${articles.length} articles`);
+    const aiProvider = getAIProvider();
 
     for (const article of articles) {
       try {
-        // Score confidence
+        // Score confidence (heuristic, unchanged)
         const confidence = scoreArticleConfidence(article);
         await updateArticleConfidence(article.id, confidence);
         articlesScored++;
 
-        // Classify category
-        const category = classifyArticle(article);
+        // Classify category: heuristic first, AI only as a fallback (M-4)
+        let category = classifyArticle(article);
+        if (!category) {
+          try {
+            const aiClassification = await aiProvider.classify({
+              text: `${article.title} ${article.raw_summary ?? ""}`,
+              categories: [...ARTICLE_CATEGORIES],
+            });
+            if (aiClassification.category) {
+              category = aiClassification.category as (typeof ARTICLE_CATEGORIES)[number];
+            }
+          } catch (classifyError) {
+            // Classification fallback failing is not fatal — leave category
+            // null (M-4) and continue; logged, not swallowed.
+            const msg = classifyError instanceof Error ? classifyError.message : String(classifyError);
+            console.warn(`[QUALITY]   AI classify fallback failed for ${article.id}: ${msg}`);
+          }
+        }
         if (category) {
           await updateArticleCategory(article.id, category);
           articlesClassified++;
+        }
+
+        // AI Summary (P-3 editorial voice) — required field population
+        try {
+          const summary = await aiProvider.summarize({
+            text: `${article.title}\n\n${article.raw_summary ?? ""}`,
+          });
+          await updateArticleSummary(article.id, {
+            summary: summary.summary,
+            why_it_matters: summary.why_it_matters,
+            who_it_affects: summary.who_it_affects,
+            worth_trying: summary.worth_trying,
+          });
+          articlesSummarized++;
+        } catch (summarizeError) {
+          if (summarizeError instanceof GeminiKeysExhaustedError) {
+            // P-1.1: fail loudly via the report-level hold, not a crash.
+            aiUnavailableCount++;
+            console.warn(`[QUALITY]   AI summary unavailable for ${article.id}: all keys exhausted`);
+          } else {
+            const msg = summarizeError instanceof Error ? summarizeError.message : String(summarizeError);
+            errors.push(`Article ${article.id} summarize: ${msg}`);
+          }
         }
       } catch (articleError) {
         const errorMsg = articleError instanceof Error ? articleError.message : String(articleError);
@@ -233,6 +296,8 @@ async function runQualityEngine(): Promise<{
       success: errors.length === 0,
       articlesScored,
       articlesClassified,
+      articlesSummarized,
+      aiUnavailableCount,
       errors,
     };
   } catch (err) {
@@ -241,6 +306,8 @@ async function runQualityEngine(): Promise<{
       success: false,
       articlesScored: 0,
       articlesClassified: 0,
+      articlesSummarized: 0,
+      aiUnavailableCount: 0,
       errors: [errorMsg],
     };
   }
@@ -250,7 +317,7 @@ async function runQualityEngine(): Promise<{
  * Phase 4: Daily Report Generation
  * Aggregates articles into markdown, checks review conditions
  */
-async function generateDailyReport(): Promise<{
+async function generateDailyReport(aiUnavailableCount: number): Promise<{
   success: boolean;
   date: string;
   articleCount: number;
@@ -272,6 +339,14 @@ async function generateDailyReport(): Promise<{
     holdReasons.push(...holdDecision.reasons);
     if (holdDecision.hypeCount > 0) {
       console.log(`[REPORT]   ⚠ P-3 hype filter: ${holdDecision.hypeCount} article(s) with hype words → hold`);
+    }
+
+    // Sprint 05 §5 / P-1.1: AI key exhaustion never silently publishes an
+    // incomplete report — hold with an explicit reason instead.
+    if (aiUnavailableCount > 0) {
+      holdReasons.push(
+        `AI summary unavailable — all Gemini API keys rate-limited (${aiUnavailableCount} article(s))`,
+      );
     }
 
     // Generate markdown (simple aggregation for MVP)

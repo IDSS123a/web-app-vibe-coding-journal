@@ -134,6 +134,37 @@ export async function updateArticleConfidence(
 }
 
 /**
+ * Update article with AI-generated summary fields (Sprint 05: GeminiProvider.summarize())
+ * P-3: why_it_matters / who_it_affects / worth_trying are the required
+ * actionable-judgment fields; summary is the editorial-voice text.
+ */
+export async function updateArticleSummary(
+  articleId: string,
+  fields: {
+    summary: string;
+    why_it_matters: string;
+    who_it_affects: string;
+    worth_trying: "yes" | "no" | "maybe";
+  },
+): Promise<void> {
+  if (!supabaseAdmin) {
+    throw new Error("Admin client not available");
+  }
+
+  const { error } = await supabaseAdmin
+    .from("articles")
+    .update({
+      ...fields,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", articleId);
+
+  if (error) {
+    throw new Error(`Failed to update article summary: ${error.message}`);
+  }
+}
+
+/**
  * Update article category (Classifier output)
  */
 export async function updateArticleCategory(

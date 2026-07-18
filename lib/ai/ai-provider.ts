@@ -21,8 +21,19 @@ export interface SummarizeInput {
   tone?: "neutral" | "casual" | "technical";
 }
 
+/**
+ * Sprint 05: extended with the P-3 required judgment fields
+ * (why_it_matters, who_it_affects, worth_trying) — SummarizeOutput
+ * originally only carried {summary, confidence}, which cannot satisfy
+ * CONSTITUTION.md P-3's "every item ends with an actionable judgment"
+ * requirement. Proposed and confirmed with the Director before merging
+ * (see sprints/SPRINT_05.md).
+ */
 export interface SummarizeOutput {
   summary: string;
+  why_it_matters: string;
+  who_it_affects: string;
+  worth_trying: "yes" | "no" | "maybe";
   confidence: number; // 0-1
 }
 
@@ -62,6 +73,9 @@ class NoOpProvider implements AIProvider {
   async summarize(): Promise<SummarizeOutput> {
     return {
       summary: "[AI provider not configured]",
+      why_it_matters: "",
+      who_it_affects: "",
+      worth_trying: "maybe",
       confidence: 0,
     };
   }
