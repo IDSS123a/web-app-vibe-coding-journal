@@ -29,8 +29,12 @@ export type ToolUsed =
   | "agent_based_coding"
   | "other";
 
-// Article, DailyReport, UserProfile full interfaces are implemented
-// in Sprint 01 against the Supabase-generated types, per Commander
-// DL-001 (Supabase native client, not a separate ORM). Placeholder
-// intentionally left out here to avoid drift between this file and
-// the generated schema types.
+// Re-export schemas for use in components and actions
+export type {
+  Article,
+  DailyReport,
+  UserProfile,
+  Bookmark,
+  RegisterInput,
+  LoginInput,
+} from "@/lib/validation/schemas";
