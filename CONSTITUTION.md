@@ -197,11 +197,15 @@ audit cannot be spoofed.
 **UserProfile** (extends Commander's generic user model; do not
 invent auth fields beyond what an approved sprint specifies):
 ```
-role                   enum: user | admin — default 'user' (Sprint 04)
-tools_used             (multi-select, P-2)
-depth_preference        (single-select, P-2)
-other_tools_freetext    (P-2a, internal only)
-saved_articles          (bookmarks, many-to-many with Article)
+role                     enum: user | admin — default 'user' (Sprint 04)
+tools_used               (multi-select, P-2)
+depth_preference         (single-select, P-2)
+other_tools_freetext     (P-2a, internal only)
+saved_articles           (bookmarks, many-to-many with Article)
+subscription_status      enum: trial | active | expired (P-13)
+trial_started_at         timestamp (P-13)
+trial_ends_at            timestamp (P-13)
+subscription_expires_at  timestamp, nullable until first payment (P-13)
 ```
 
 *Sprint 04 addition (why):* `role` was added to gate the admin Review
@@ -209,6 +213,14 @@ Queue (P-6). Authorization is read from this DB column at request time,
 not from a token claim (M-7: the database is the single source of truth
 on who is an admin, so access can be revoked immediately). Default is
 `user`; only an explicit promotion grants `admin`.
+
+*Governance addendum addition (why):* `subscription_status` and the three
+timestamp fields were added per P-13 (Business Model — Subscription &
+Trial) to support the trial/paywall flow. Not yet implemented in code —
+scheduled for a future sprint with its own scope document; documented here
+first per the P-12 rule that a schema field must exist in this Constitution
+in the same change that establishes the business rule, not be left to
+implementation time.
 
 No other tables/fields exist until a sprint document adds them.
 
@@ -376,6 +388,126 @@ this project is not done until:
 - [ ] Any new field on Article/DailyReport/UserProfile (P-4) was
       added to this Constitution in the same change, not left
       undocumented in code only.
+
+---
+
+## P-13. Business Model — Subscription & Trial `[ACTIVE]` 🔴 CRITICAL
+
+- **One tier only.** Flat annual subscription. No feature tiers, no
+  monthly option, no free-forever tier. Price and payment provider
+  are recorded in DECISION_LOG.md (PDL), not hardcoded in this
+  Constitution — see PDL entry for current published price.
+- **Trial:** 3 days from registration timestamp, full feature access,
+  no card required to start.
+- **On trial expiry without an active subscription: hard block.** No
+  access to Daily Report, Archive, or Bookmarks — redirect to a
+  paywall/subscribe screen. No degraded "read-only" mode. This is a
+  deliberate simplicity choice (Director's explicit decision) — do
+  not invent a softer fallback.
+- **Data model extension of P-4** (`UserProfile`):
+  ```
+  subscription_status    enum: trial | active | expired
+  trial_started_at
+  trial_ends_at
+  subscription_expires_at
+  ```
+  This must be reflected in the P-4 schema block itself in the same
+  change, per the existing P-12 Definition-of-Done rule — do not let
+  this addendum be the only place this schema exists.
+- **Admin accounts (P-14) are billing-exempt.** The exemption must be
+  an explicit, auditable check (e.g. a named function in
+  `lib/permissions.ts`), never an accidental side-effect of role
+  logic living somewhere else. Per P-1, an undocumented bypass is
+  exactly the kind of silent behavior this project exists to avoid.
+
+---
+
+## P-14. Roles & Access Control `[ACTIVE]` 🔴 CRITICAL
+
+- **Two roles only: `user` and `admin`.** No separate Superadmin
+  tier. The operational account behind the project
+  (`ai-hero-studio@outlook.com`) is simply the first `admin` account
+  — it uses the same `admin` role and the same admin capabilities as
+  any future admin account, nothing schema-special about it.
+- **"Advanced control" features** the Director has described (block/
+  grant/revoke user access, activation/reactivation, usage tracking,
+  statistics, swapping AI provider API keys) are all `admin`-role
+  features. They are built incrementally, one sprint at a time, per
+  Commander M-13 — never invented wholesale in a single sprint just
+  because they were all mentioned together.
+- **Centralize role checks** in `lib/permissions.ts` (Commander M-7).
+  No scattered `if (role === 'admin')` checks across features —
+  every permission check calls a named function from this single
+  source of truth.
+
+---
+
+## P-15. Branding & Public Identity `[ACTIVE]` 🟢 PREFERRED
+
+- **Public brand name:** "Prompt Hero Studio™" — used in footer,
+  About section, and any public credit line. The project's internal/
+  repository name ("Vibe-Coding Journal") is not necessarily the same
+  as the public-facing brand and does not need to be — no code
+  rename required.
+- **Logo/favicon:** `public/favicon.png` (already present on disk,
+  provided by the Director). Do not regenerate, replace, or modify
+  without explicit instruction.
+- **Single contact channel:** a Contact form on the site delivers to
+  `ai-hero-studio@outlook.com`. No public display of the admin email
+  address elsewhere, no separate support alias, unless a future PDL
+  changes this.
+
+---
+
+## P-16. Payment Integration — PayPal `[ACTIVE]` 🔴 CRITICAL
+
+- **Provider:** PayPal. The Client ID is client-safe by PayPal's own
+  design (it ships inside the frontend SDK script) and is not held
+  to the same secrecy standard as a server-side secret. If a Client
+  **Secret** is ever needed (e.g. for server-side payment
+  verification), it is treated with the exact same discipline as
+  `SUPABASE_SERVICE_ROLE_KEY` and `GEMINI_API_KEY_*`: server-only,
+  never logged, never pasted in chat with any ACA — see P-1 / E-4.
+- **Flow:** trial (P-13) → on expiry, hard paywall → PayPal Checkout
+  for the flat annual fee → on confirmed payment,
+  `subscription_status` → `active`, `subscription_expires_at` set to
+  +1 year from confirmation.
+- **Ambiguous payment states never resolve silently.** If a webhook
+  or confirmation step fails, times out, or returns an unexpected
+  shape, the system must NOT assume success or failure — it flags
+  the account for manual admin review (P-14). This is P-1's
+  "fail loudly, never degrade silently" principle applied to money
+  specifically, where the cost of a silent wrong guess is real
+  financial harm to the Director or the user.
+- **Sandbox before live, without exception.** All development and
+  Sprint testing uses PayPal's sandbox/test-mode environment and
+  sandbox credentials. Live-mode credentials are introduced only
+  immediately before public launch, as its own reviewed step — never
+  used for iterative development testing.
+- Given real money is involved, this feature carries the same DoD
+  rigor as the Gemini API key work (Sprint 05): secret-hygiene grep,
+  no live-mode testing during development, and a Sprint scope
+  document reviewed by the Director before implementation begins —
+  not folded into an unrelated sprint.
+
+---
+
+## P-17. Seed Content Policy `[ACTIVE]` 🟡 STANDARD
+
+- **No hand-authored or fabricated seed articles, ever — including
+  for demos.** Initial content comes exclusively from the existing,
+  already-verified pipeline (Source Collector → Duplicate Engine →
+  Quality Engine → Classifier → AI Summary → Daily Report) running
+  against real, configured sources for as many days as it takes to
+  accumulate a presentable archive before public launch.
+- This follows directly from P-3 (no hype, evidence-based judgment)
+  and Commander M-4 (Anti-Hallucination Protocol) — inventing
+  "example" articles to fill an empty state would violate both
+  principles, even when the stated purpose is harmless (a demo, a
+  screenshot, an investor preview).
+- The empty-state Daily Report page (built in Sprint 01, P-1.3
+  compliant) is the correct fallback for a launch day with sparse
+  content — not synthetic filler.
 
 ---
 

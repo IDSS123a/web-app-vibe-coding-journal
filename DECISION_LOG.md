@@ -185,4 +185,95 @@ in the same change, before that language ships — not inferred by an ACA.
 
 ---
 
+## PDL-008 — Payment Provider: PayPal
+
+**Date:** 2026-07-18
+**Decision:** PayPal is the payment provider for the flat annual
+subscription (CONSTITUTION P-16). No alternative provider (Stripe, etc.)
+evaluated or adopted.
+
+**Rationale:** Director's explicit choice. No stack-deviation justification
+needed (M-16 doesn't apply — this is a new integration, not a departure from
+an existing default).
+
+**Client ID / Client Secret handling:**
+- The PayPal **Client ID** is client-safe by PayPal's own design — it ships
+  inside the frontend SDK `<script>` tag and is not a server-side secret. It
+  does not require the grep-audit/never-log discipline that
+  `SUPABASE_SERVICE_ROLE_KEY` or `GEMINI_API_KEY_*` require.
+- If a **Client Secret** is ever needed (server-side payment verification),
+  it is held to the exact same standard as those keys: server-only env var,
+  never logged, never pasted into chat with any ACA, covered by the same
+  kind of secret-hygiene grep audit used in Sprint 05 (PDL-006 / SPRINT_05
+  DoD).
+
+**Sandbox-first rule (no exception):** all development and Sprint testing
+uses PayPal's sandbox/test-mode environment and sandbox credentials.
+Live-mode credentials are introduced only immediately before public launch,
+as their own reviewed step — never used for iterative development or Sprint
+DoD testing. This mirrors the Gemini dev/prod key separation principle
+(SPRINT_05_LESSONS #7 / SPRINT_06 PDL, once logged): don't let development
+activity touch production-consequence credentials.
+
+**Ambiguous payment states:** per CONSTITUTION P-16, a failed/timed-out/
+unexpected-shape webhook or confirmation never resolves as an assumed
+success or failure — it flags the account for manual admin review. P-1
+applied specifically to money: a silent wrong guess here is real financial
+harm, not just a data-quality issue.
+
+**Status:** Decision made; PayPal integration implementation is a future
+sprint (Director-proposed: Sprint 08), with its own scope document before
+any code — not folded into an unrelated sprint, per CONSTITUTION P-16's own
+stated DoD rigor requirement.
+
+---
+
+## PDL-009 — Subscription Price: $10/year flat, no tiers
+
+**Date:** 2026-07-18
+**Decision:** Single flat price: **$10 USD per year**. No monthly option,
+no feature tiers, no free-forever tier — one subscription, one price.
+
+**Rationale:** Director's explicit choice, consistent with CONSTITUTION
+P-13's "one tier only" rule. Simplicity over revenue optimization at this
+stage — matches the project's broader MVP-first posture (no personalization,
+no bulk admin actions, etc. — see prior sprint OUT-of-scope items) rather
+than a special exception for pricing.
+
+**Where this is used:** the PayPal Checkout flow (P-16) charges this exact
+amount; `subscription_expires_at` is set to +1 year from confirmed payment
+regardless of when in the trial or expired period the purchase happens (no
+prorating logic — not specified, not to be invented).
+
+**Consequence:** if the price ever changes, that is a new PDL entry (this
+one gets marked `[SUPERSEDED]`, never deleted), not a silent edit to this
+entry or to the PayPal integration code.
+
+---
+
+## PDL-010 — RBAC: Two Roles Only (user, admin) — No Superadmin Tier
+
+**Date:** 2026-07-18
+**Decision:** Exactly two roles: `user` and `admin` (already the `role`
+enum shipped in Sprint 04 — `user_profiles.role`, migration 003). No third
+"Superadmin" tier. The project's own operational admin account is simply
+the first `admin` row — nothing schema-special distinguishes it from any
+future admin account.
+
+**Rationale:** Director's explicit choice (CONSTITUTION P-14). Keeps
+authorization logic in `lib/permissions.ts` a single binary check
+(`role === 'admin'`) rather than a hierarchy — less surface area for a
+privilege-escalation bug, and nothing in the currently described feature
+set ("advanced control" admin features per P-14 — block/grant/revoke
+access, activation/reactivation, usage stats, AI provider key swapping)
+requires a role above `admin`.
+
+**Consequence:** all "advanced control" admin features build on the
+existing two-role model incrementally, one sprint at a time (Commander
+M-13) — a future sprint must not introduce a third role as a shortcut for
+scoping one of those features; if that ever seems necessary, it is its own
+PDL proposal to the Director first, not a code-level decision.
+
+---
+
 *Vibe-Coding Journal — Project Decision Log — updated as decisions are made.*
