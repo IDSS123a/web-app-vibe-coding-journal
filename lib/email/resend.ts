@@ -21,6 +21,11 @@ export async function sendReviewQueueAlert(payload: {
   date: string;
   articleCount: number;
   reasons: string[]; // e.g. ["Low confidence (45%)", "Hype word detected"]
+  // PDL-012: distinguishes "quota exhausted, wait until tomorrow" from
+  // "possible account suspension, act now" at the point the Director
+  // actually sees it first — the inbox subject line, before opening the
+  // email — not just in the body text.
+  urgent?: boolean;
 }): Promise<boolean> {
   if (!resend || !resendApiKey) {
     console.warn("[EMAIL] Resend not configured — skipping review queue alert");
@@ -29,9 +34,14 @@ export async function sendReviewQueueAlert(payload: {
 
   try {
     const reasonsList = payload.reasons.map((r) => `• ${r}`).join("\n");
+    const subjectTag = payload.urgent ? "[URGENT — ACTION NEEDED]" : "[REVIEW]";
+    const urgentBanner = payload.urgent
+      ? `<p style="background:#fee2e2;color:#991b1b;padding:12px;border-radius:6px;font-weight:bold;">⚠ Possible AI provider account suspension detected — not ordinary quota exhaustion. Verify account/key status now.</p>`
+      : "";
 
     const html = `
 <h2>Vibe-Coding Journal — Review Required</h2>
+${urgentBanner}
 <p><strong>Date:</strong> ${payload.date}</p>
 <p><strong>Articles:</strong> ${payload.articleCount}</p>
 <p><strong>Issues:</strong></p>
@@ -42,7 +52,7 @@ export async function sendReviewQueueAlert(payload: {
     const { error } = await resend.emails.send({
       from: fromAddress,
       to: reviewQueueEmail,
-      subject: `[REVIEW] Daily digest for ${payload.date} — ${payload.articleCount} articles`,
+      subject: `${subjectTag} Daily digest for ${payload.date} — ${payload.articleCount} articles`,
       html,
     });
 

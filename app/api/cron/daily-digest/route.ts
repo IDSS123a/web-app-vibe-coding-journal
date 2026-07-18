@@ -85,14 +85,20 @@ export async function POST(request: NextRequest) {
       `[CRON]   ✓ Quality scored: ${qualityResult.articlesScored}, Classified: ${qualityResult.articlesClassified}, AI-summarized: ${qualityResult.articlesSummarized}`,
     );
     if (qualityResult.aiUnavailableCount > 0) {
+      const label = qualityResult.aiSuspectedSuspension
+        ? "possible account suspension, not just quota"
+        : "rate-limited/quota";
       console.warn(
-        `[CRON]   ⚠ AI summary unavailable for ${qualityResult.aiUnavailableCount} article(s) (all Gemini keys rate-limited)`,
+        `[CRON]   ⚠ AI summary unavailable for ${qualityResult.aiUnavailableCount} article(s) (${label})`,
       );
     }
 
     // Phase 4: Daily Report Generation
     console.log("[CRON] Phase 4: Daily Report Generation");
-    const reportResult = await generateDailyReport(qualityResult.aiUnavailableCount);
+    const reportResult = await generateDailyReport(
+      qualityResult.aiUnavailableCount,
+      qualityResult.aiSuspectedSuspension,
+    );
     console.log(
       `[CRON]   ✓ Report generated: ${reportResult.articleCount} articles, status: ${reportResult.reviewStatus}`,
     );
@@ -103,6 +109,7 @@ export async function POST(request: NextRequest) {
         date: reportResult.date,
         articleCount: reportResult.articleCount,
         reasons: reportResult.holdReasons,
+        urgent: reportResult.urgent,
       });
     }
 
@@ -131,6 +138,7 @@ export async function POST(request: NextRequest) {
           articlesClassified: qualityResult.articlesClassified,
           articlesSummarized: qualityResult.articlesSummarized,
           aiUnavailableCount: qualityResult.aiUnavailableCount,
+          aiSuspectedSuspension: qualityResult.aiSuspectedSuspension,
           errors: qualityResult.errors,
         },
         dailyReport: {
@@ -221,6 +229,7 @@ async function runQualityEngine(): Promise<{
   articlesClassified: number;
   articlesSummarized: number;
   aiUnavailableCount: number;
+  aiSuspectedSuspension: boolean;
   errors: string[];
 }> {
   const errors: string[] = [];
@@ -228,6 +237,9 @@ async function runQualityEngine(): Promise<{
   let articlesClassified = 0;
   let articlesSummarized = 0;
   let aiUnavailableCount = 0;
+  // PDL-012: worse-case wins across the whole run — one suspected-suspension
+  // article is enough to escalate the report-level alert, not averaged away.
+  let aiSuspectedSuspension = false;
 
   try {
     const articles = await getNonDuplicateArticles();
@@ -280,7 +292,12 @@ async function runQualityEngine(): Promise<{
           if (summarizeError instanceof GeminiKeysExhaustedError) {
             // P-1.1: fail loudly via the report-level hold, not a crash.
             aiUnavailableCount++;
-            console.warn(`[QUALITY]   AI summary unavailable for ${article.id}: all keys exhausted`);
+            if (summarizeError.reason === "suspected_suspension") {
+              aiSuspectedSuspension = true;
+            }
+            console.warn(
+              `[QUALITY]   AI summary unavailable for ${article.id}: ${summarizeError.reason === "suspected_suspension" ? "possible account suspension" : "all keys rate-limited"}`,
+            );
           } else {
             const msg = summarizeError instanceof Error ? summarizeError.message : String(summarizeError);
             errors.push(`Article ${article.id} summarize: ${msg}`);
@@ -298,6 +315,7 @@ async function runQualityEngine(): Promise<{
       articlesClassified,
       articlesSummarized,
       aiUnavailableCount,
+      aiSuspectedSuspension,
       errors,
     };
   } catch (err) {
@@ -308,6 +326,7 @@ async function runQualityEngine(): Promise<{
       articlesClassified: 0,
       articlesSummarized: 0,
       aiUnavailableCount: 0,
+      aiSuspectedSuspension: false,
       errors: [errorMsg],
     };
   }
@@ -317,17 +336,22 @@ async function runQualityEngine(): Promise<{
  * Phase 4: Daily Report Generation
  * Aggregates articles into markdown, checks review conditions
  */
-async function generateDailyReport(aiUnavailableCount: number): Promise<{
+async function generateDailyReport(
+  aiUnavailableCount: number,
+  aiSuspectedSuspension: boolean,
+): Promise<{
   success: boolean;
   date: string;
   articleCount: number;
   reviewStatus: "auto_published" | "held_for_review";
   holdReasons: string[];
+  urgent: boolean;
   errors: string[];
 }> {
   const errors: string[] = [];
   const holdReasons: string[] = [];
   const date = new Date().toISOString().split("T")[0]!;
+  let urgent = false;
 
   try {
     const articles = await getArticlesForDailyReport();
@@ -343,10 +367,19 @@ async function generateDailyReport(aiUnavailableCount: number): Promise<{
 
     // Sprint 05 §5 / P-1.1: AI key exhaustion never silently publishes an
     // incomplete report — hold with an explicit reason instead.
+    // PDL-012: the two failure kinds must read unmistakably differently —
+    // "wait until tomorrow" vs. "act now" are not the same alert.
     if (aiUnavailableCount > 0) {
-      holdReasons.push(
-        `AI summary unavailable — all Gemini API keys rate-limited (${aiUnavailableCount} article(s))`,
-      );
+      if (aiSuspectedSuspension) {
+        urgent = true;
+        holdReasons.push(
+          `All AI providers unavailable — possible account suspension (not just quota exhaustion). ${aiUnavailableCount} article(s) affected. Verify Gemini account/key status immediately.`,
+        );
+      } else {
+        holdReasons.push(
+          `AI summary unavailable — all Gemini API keys rate-limited (quota exhausted for today, ${aiUnavailableCount} article(s)). No action needed; retry next scheduled run.`,
+        );
+      }
     }
 
     // Generate markdown (simple aggregation for MVP)
@@ -378,6 +411,7 @@ ${a.summary || a.raw_summary || ""}
       articleCount: articles.length,
       reviewStatus,
       holdReasons,
+      urgent,
       errors,
     };
   } catch (err) {
@@ -388,6 +422,7 @@ ${a.summary || a.raw_summary || ""}
       articleCount: 0,
       reviewStatus: "held_for_review",
       holdReasons: ["Error generating report"],
+      urgent: false,
       errors: [errorMsg],
     };
   }
