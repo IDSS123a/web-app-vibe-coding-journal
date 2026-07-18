@@ -41,13 +41,37 @@ export class GeminiKeysExhaustedError extends Error {
   }
 }
 
-function loadApiKeys(): string[] {
+function loadKeySet(prefix: "GEMINI_API_KEY" | "GEMINI_API_KEY_DEV"): string[] {
   const keys: string[] = [];
   for (let i = 1; i <= 8; i++) {
-    const key = process.env[`GEMINI_API_KEY_${i}`];
+    const key = process.env[`${prefix}_${i}`];
     if (key) keys.push(key);
   }
   return keys;
+}
+
+/**
+ * Sprint 06 (SPRINT_05_LESSONS finding #7 / DECISION_LOG PDL): dev/prod key
+ * separation so local/preview testing never consumes production quota.
+ *
+ * VERCEL_ENV === "production" → GEMINI_API_KEY_1..8 (prod set).
+ * Anything else (local `next dev` where VERCEL_ENV is undefined, or a
+ * Vercel preview deployment) → GEMINI_API_KEY_DEV_1..8 first; only falls
+ * back to the prod set if no dev keys are configured at all, so an
+ * unconfigured local .env.local doesn't silently break — a developer who
+ * *has* set up dev keys never touches production quota.
+ */
+function loadApiKeys(): string[] {
+  if (process.env.VERCEL_ENV === "production") {
+    return loadKeySet("GEMINI_API_KEY");
+  }
+
+  const devKeys = loadKeySet("GEMINI_API_KEY_DEV");
+  if (devKeys.length > 0) {
+    return devKeys;
+  }
+
+  return loadKeySet("GEMINI_API_KEY");
 }
 
 interface GeminiErrorBody {
