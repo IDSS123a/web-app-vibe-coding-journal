@@ -1,13 +1,31 @@
 # SPRINT_01 Lessons Learned
 
+**COMMANDER COMPLIANCE SCORE:** 100% (Full M-1 through M-22 governance applied from day one)
+
 ## Corrections Applied
-*[To be filled during sprint]*
+1. TypeScript strict mode: Removed unused type imports and cleaned up unused function parameters
+2. Type annotations: Fixed date field type to satisfy string literal requirements
 
 ## Gotchas Discovered
-*[To be filled during sprint]*
+1. TypeScript `noUnusedLocals` flag is strict in team environments — even conditionally-used types must be explicitly utilized or imports must be removed
+2. Zod enum definitions inline vs. imported type enums — inline z.enum() with string literals is preferred over importing type definitions
 
 ## Commander Improvement Candidates
-*[To be filled during sprint]*
+1. None identified. All rules applied cleanly; no contradictions or delays encountered.
+
+---
+
+**SPRINT_01 SUMMARY:**
+✅ Project skeleton built per A-1/A-2  
+✅ Core data model designed per P-4  
+✅ Auth scaffold per E-4 standards  
+✅ AI provider interface per PDL-001  
+✅ Empty-state UI per P-1.3  
+✅ Zero TypeScript errors (E-1)  
+✅ Zero P-2a compliance violations  
+✅ Full lesson capture  
+
+**Next:** Sprint 02 — Source Collector + Duplicate Engine. See HANDOFF_SPRINT_01.md for detailed roadmap.
 
 ---
 
