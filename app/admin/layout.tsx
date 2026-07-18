@@ -4,6 +4,7 @@
  */
 
 import type { ReactNode } from "react";
+import { AdminGuard } from "@/components/AdminGuard";
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
   return (
@@ -33,8 +34,11 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">{children}</main>
+      {/* Main Content — role-gated at the UI level (client session is not
+          visible to server middleware); admin API routes re-check independently */}
+      <main className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
+        <AdminGuard>{children}</AdminGuard>
+      </main>
     </div>
   );
 }

@@ -66,10 +66,13 @@ export function extractBearerToken(authHeader: string | null): string | null {
 }
 
 /**
- * Verify Bearer token and check admin role against user_profiles
- * E-6 Step 1 (authenticate: decode + expiry) + Step 2 (authorize: DB role check)
+ * Verify Bearer token and resolve the user + role from user_profiles.
+ * Returns the user for ANY valid token (admin or not); callers decide what
+ * to do with `isAdmin`. Returns null only for missing/invalid/expired tokens
+ * or a missing profile row.
+ * E-6 Step 1 (authenticate: decode + expiry) + role lookup (M-7: DB authority).
  */
-export async function verifyAdminToken(
+export async function getVerifiedUser(
   authHeader: string | null,
 ): Promise<VerifiedToken | null> {
   const token = extractBearerToken(authHeader);
@@ -96,16 +99,29 @@ export async function verifyAdminToken(
 
   const role = (profile.role as string) || "user";
 
-  if (role !== "admin") {
-    console.warn(`[AUTH] User ${decoded.email} attempted admin action without admin role`);
-    return null;
-  }
-
   return {
     sub: decoded.sub,
     email: decoded.email,
     role,
-    isAdmin: true,
+    isAdmin: role === "admin",
     expiresAt: decoded.exp || 0,
   };
+}
+
+/**
+ * Verify Bearer token AND require admin role.
+ * E-6 Step 2 (authorize): returns null for valid-but-non-admin tokens.
+ */
+export async function verifyAdminToken(
+  authHeader: string | null,
+): Promise<VerifiedToken | null> {
+  const user = await getVerifiedUser(authHeader);
+  if (!user) return null;
+
+  if (!user.isAdmin) {
+    console.warn(`[AUTH] User ${user.email} attempted admin action without admin role`);
+    return null;
+  }
+
+  return user;
 }

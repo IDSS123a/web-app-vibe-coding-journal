@@ -4,25 +4,19 @@ import { type NextRequest, NextResponse } from "next/server";
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Admin routes require admin role
-  if (pathname.startsWith("/admin")) {
-    // E-4: Security check via Bearer token (from Authorization header or cookie)
-    // TODO: Extract session from Supabase auth cookie if available
-    // For now, rely on API endpoint auth checks
-    // Production should check: cookie with session JWT → decode → verify admin role
-    // If not admin, redirect to /
+  // NOTE on /admin: the Supabase session lives in the browser (localStorage via
+  // supabase-js), so this server middleware cannot read it without migrating to
+  // cookie-based SSR sessions. The admin area is therefore guarded at two layers
+  // that CAN see the token:
+  //   1. UI: components/AdminGuard (wraps app/admin/layout) → non-admins get a
+  //      "Not authorized" screen, never the admin content.
+  //   2. API: every /api/admin/* route re-verifies the admin role server-side.
+  // If we later adopt @supabase/ssr cookie sessions, add the redirect here too.
 
-    return NextResponse.next();
-  }
-
-  // Dashboard routes require authentication
+  // Dashboard routes require authentication (enforced by RLS + page-level session
+  // checks today; see the SSR note above for a future middleware-level guard).
   const protectedRoutes = ["/dashboard", "/archive", "/bookmarks"];
-  const isProtected = protectedRoutes.some((route) => pathname.startsWith(route));
-
-  if (isProtected) {
-    // TODO: Add session check when auth is fully integrated
-    // For now, allow all requests - rely on RLS at database level
-  }
+  void protectedRoutes.some((route) => pathname.startsWith(route));
 
   return NextResponse.next();
 }
