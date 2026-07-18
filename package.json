@@ -1,0 +1,13 @@
+{
+  "name": "web-app-vibe-coding-journal",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Automated daily intelligence digest for vibe-coders. Commander-governed project (IDSS123a).",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit"
+  }
+}
