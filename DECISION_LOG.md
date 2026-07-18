@@ -276,4 +276,46 @@ PDL proposal to the Director first, not a code-level decision.
 
 ---
 
+## PDL-011 — RSS/Atom Parsing: `rss-parser` Library (Second Instance of a Known Bug Class)
+
+**Date:** 2026-07-18 (Sprint 06)
+**Decision:** Adopt the `rss-parser` npm package (v3.13.0) to replace the
+hand-rolled regex-based RSS parser in `features/sources/actions.ts`.
+
+**Rationale:** Root cause confirmed by fetching and diffing real feed XML
+(not guessed): `hnrss.org` wraps `<title>`/`<description>` in
+`<![CDATA[...]]>`; the regex `/<title>([^<]+)<\/title>/` requires a
+non-`<` character immediately after `<title>`, so it silently dropped
+every hnrss item (deterministic, not flaky). `github.blog/feed/` doesn't
+CDATA-wrap `<title>`, which is why it worked while hnrss consistently
+failed. Considered `fast-xml-parser` (generic XML→JS, solves CDATA but has
+no RSS/Atom awareness — item/entry and link normalization would still be
+hand-written) vs. `rss-parser` (purpose-built: real XML parser under the
+hood, and normalizes RSS 2.0 **and** Atom to the same output shape).
+`rss-parser` solves both bugs (CDATA and RSS2/Atom structural differences)
+in one library call; `fast-xml-parser` would only have solved the first.
+
+**M-12 pattern note:** this is the **second instance** of the same
+root-cause class — custom string/regex parsing standing in for a real
+library — the first being the dedup self-match/RLS defect class from
+Sprint 04 (see SPRINT_04_LESSONS findings #12–13). Logged explicitly so a
+third instance of this class gets caught faster: when a hand-rolled parser
+touches a well-established external format (XML, and by extension any
+other standard wire format), prefer an established library over extending
+custom string matching, even for a "just one more edge case" fix.
+
+**Verified live (SPRINT_06 DoD):** hnrss.org feeds went from 0 articles
+(documented bug) to 20 real articles each; github.blog regression-checked
+at unchanged 10 articles; Atom + CDATA together verified via a realistic
+Atom sample; parse-vs-fetch error message distinction verified against a
+deliberately non-XML feed response.
+
+**Process note:** the implementation commit (`9800bb0d`) referenced this
+PDL as already logged before it actually was — this entry was written
+immediately after as a follow-up commit, not by rewriting the prior
+commit's message (PROCESS_LESSONS: no history rewrites, no exceptions).
+Recorded here for accuracy, not to hide the ordering mistake.
+
+---
+
 *Vibe-Coding Journal — Project Decision Log — updated as decisions are made.*
