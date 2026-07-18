@@ -60,6 +60,81 @@ in-the-moment judgment said it was fine).
 
 ---
 
+## [2026-07-18] Explicit, one-time approved exception: `git filter-repo` to strip `node_modules` before first push
+
+**What happened:** `node_modules/` (19,687 files) had been tracked in git
+history since the very first commit (Sprint 01), despite `.gitignore`
+correctly listing it — `.gitignore` only prevents *new* untracked files
+from being added, it doesn't retroactively untrack what's already
+committed. Discovered during the pre-push secret audit. The Director
+explicitly authorized `git filter-repo --path node_modules --invert-paths
+--force` to strip it from all 33 commits, before the first-ever push to
+`origin`.
+
+**This is a deliberate, recorded exception to the rule above, not a
+reversal of it.** The rule ("history rewrite requires explicit Director
+approval before running, no exceptions for perceived low risk") still
+applies in full — what changed this time is that approval was actually
+**asked for and given**, in writing, with the exact command and flags
+specified by the Director themselves, before anything ran. The rule was
+never "never rewrite history"; it was "never without asking." This time
+the answer was yes. Recording the exception here is itself part of
+following the rule — a rewrite that happens (even approved) without a
+paper trail would defeat the purpose of the rule existing at all.
+
+**Director's stated justification:** nothing had been pushed to `origin`
+yet, so (in their words) there was no shared history to break.
+
+**A finding worth its own lesson — the stated justification was not
+quite accurate, and this was caught only by independently verifying it,
+not by trusting it:** `origin/main` was **not** actually empty. A direct
+`git ls-remote` against GitHub, run *during* the post-rewrite verification
+pass (not before), showed `origin/main` already had one commit (`chore:
+project initialization under Commander v1.2`) — predating this session's
+work, presumably created via GitHub's own repo-init flow. This
+contradicted both the Director's stated premise and this assistant's own
+earlier claim to the Director that "origin/main je prazan... ovo je
+stvarno prvi push."
+
+**Why this turned out to be harmless (but easily might not have been):**
+that one pre-existing commit never contained `node_modules`, so
+`git filter-repo` left its tree — and therefore its hash — completely
+unchanged. `git merge-base --is-ancestor` confirmed it remained a true
+ancestor of the rewritten local `HEAD`, meaning the eventual push would
+still be a clean fast-forward, not a divergent/force-push situation. Had
+that first commit contained *anything* the rewrite touched, its hash
+would have changed, `origin/main` and local `main` would have diverged at
+that point, and the "nothing shared to break" justification would have
+been actively wrong at the moment of execution — discovered too late to
+matter, after the rewrite had already run.
+
+**Commander Improvement Candidate (explicit rule):**
+> *"When a stated justification for an approved destructive-adjacent
+> action depends on a factual claim about external/shared state (e.g.
+> 'nothing is pushed yet', 'no one else has this branch', 'the remote is
+> empty'), verify that claim independently against the actual external
+> system — not against local assumptions or an earlier check that may be
+> stale — before executing, not after. If verification happens only
+> during a post-action audit, the action already ran on a possibly-false
+> premise; report the discrepancy plainly even if the outcome happened to
+> be safe, don't quietly fold it into 'all clear.'"*
+
+**How to apply going forward:** Before running any approved history
+rewrite (or any action whose safety depends on "nothing shared exists
+yet"), run the direct external check first (`git ls-remote <url>` for a
+git remote; the equivalent live check for any other external system) —
+not a cached/local belief about that system's state — and surface the
+actual result to the Director as part of requesting or confirming the
+action, even when it confirms what everyone already assumed.
+
+**Related:** the prior entry above (asking before rewriting) and
+SPRINT_06 finding about verifying live external API shape instead of
+trusting training-data assumptions (`SPRINT_05_LESSONS` #3) — same
+underlying pattern: verify against the real external system, don't trust
+a stated or assumed premise, however confident it sounds.
+
+---
+
 *Vibe-Coding Journal — Process Lessons — governed by Commander v1.2.
 Commander-candidate items feed the v1.3 improvement backlog
 (github.com/IDSS123a/commander).*
