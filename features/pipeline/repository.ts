@@ -1,2 +1,102 @@
-// Pipeline / Jobs — Dedup, Quality Engine, Classifier, Summary — Sprint 2+
-// Repository for managing pipeline state and article processing
+import { supabaseAdmin } from "@/lib/db/client";
+import type { Article } from "@/lib/validation/schemas";
+
+/**
+ * Get article by hash (fast lookup for exact duplicate detection)
+ * O(1) via database index on articles.hash
+ */
+export async function getArticleByHash(hash: string): Promise<Article | null> {
+  if (!supabaseAdmin) {
+    throw new Error("Admin client not available");
+  }
+
+  const { data, error } = await supabaseAdmin
+    .from("articles")
+    .select("*")
+    .eq("hash", hash)
+    .single();
+
+  if (error && error.code !== "PGRST116") {
+    // PGRST116 = not found
+    throw new Error(`Failed to find article by hash: ${error.message}`);
+  }
+
+  return (data as Article) || null;
+}
+
+/**
+ * Find all articles with summary similar to given text
+ * Returns candidates for fuzzy duplicate detection
+ * Production: Use embedding search (pgvector) for better performance
+ */
+export async function findArticlesByTextSimilarity(
+  _text: string,
+  limit: number = 10,
+): Promise<Article[]> {
+  if (!supabaseAdmin) {
+    throw new Error("Admin client not available");
+  }
+
+  // Simple approach: get recent articles with some summary text
+  // Production would use pgvector or similar vector DB
+  const { data, error } = await supabaseAdmin
+    .from("articles")
+    .select("*")
+    .not("raw_summary", "is", null)
+    .order("published_at", { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    throw new Error(`Failed to find similar articles: ${error.message}`);
+  }
+
+  return data as Article[];
+}
+
+/**
+ * Mark article as duplicate of another article
+ * Sets duplicate_of field and marks for later filtering
+ */
+export async function markArticleAsDuplicate(
+  articleId: string,
+  duplicateOfId: string,
+): Promise<void> {
+  if (!supabaseAdmin) {
+    throw new Error("Admin client not available");
+  }
+
+  const { error } = await supabaseAdmin
+    .from("articles")
+    .update({
+      duplicate_of: duplicateOfId,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", articleId);
+
+  if (error) {
+    throw new Error(`Failed to mark duplicate: ${error.message}`);
+  }
+}
+
+/**
+ * Get all articles that are not marked as duplicates
+ * Used by downstream pipeline stages (Quality Engine, etc.)
+ */
+export async function getNonDuplicateArticles(): Promise<Article[]> {
+  if (!supabaseAdmin) {
+    throw new Error("Admin client not available");
+  }
+
+  const { data, error } = await supabaseAdmin
+    .from("articles")
+    .select("*")
+    .is("duplicate_of", null)
+    .is("confidence_score", null) // Articles not yet processed by Quality Engine
+    .order("published_at", { ascending: false });
+
+  if (error) {
+    throw new Error(`Failed to fetch non-duplicate articles: ${error.message}`);
+  }
+
+  return data as Article[];
+}

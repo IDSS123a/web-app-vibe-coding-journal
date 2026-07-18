@@ -57,4 +57,27 @@ CONSTITUTION.md P-9, not a stack deviation.
 
 ---
 
+## PDL-003 — Duplicate Detection: Cosine Similarity Threshold
+
+**Date:** 2026-07-18 (Sprint 02)  
+**Decision:** Set initial similarity threshold at 0.85 for fuzzy duplicate detection (Duplicate Engine, feature/pipeline/domain.ts).
+
+**Rationale:** 
+- 0.85 provides high confidence in similarity while allowing minor variations (title rewordings, summary edits)
+- Below 0.85: too many false negatives (real duplicates slip through)
+- Above 0.90: too many false positives (legitimate related articles marked as duplicates)
+- Starting point based on industry practice; tunable via constant `SIMILARITY_THRESHOLD`
+
+**Tuning guidance (future sprints):**
+- If duplicate duplicates are not caught: increase to 0.90 (stricter)
+- If legitimate related articles are over-deduplicated: decrease to 0.80 (looser)
+- Threshold is a constant in `features/pipeline/domain.ts`, not hardcoded in algorithm
+
+**Current implementation:**
+- Hash-based exact match: O(1) lookup, 100% confidence
+- Similarity-based fuzzy match: Jaccard similarity on word-level tokenization (MVP; production would use embeddings)
+- Applied during `/api/cron/daily-digest` phase 2 (Duplicate Engine)
+
+---
+
 *Vibe-Coding Journal — Project Decision Log — updated as decisions are made.*
