@@ -71,7 +71,7 @@ export async function getDailyReportByDate(date: string): Promise<DailyReport | 
  */
 export async function updateDailyReportStatus(
   reportId: string,
-  status: "auto_published" | "held_for_review" | "manually_approved",
+  status: "auto_published" | "held_for_review" | "manually_approved" | "rejected",
 ): Promise<void> {
   if (!supabaseAdmin) {
     throw new Error("Admin client not available");

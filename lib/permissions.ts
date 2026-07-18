@@ -1,4 +1,4 @@
-import type { UserProfile } from "@/types/index";
+import type { UserProfile } from "@/lib/validation/schemas";
 
 export interface PermissionContext {
   user: UserProfile | null;
@@ -32,8 +32,20 @@ export function canSaveArticle(context: PermissionContext): boolean {
   return !!context.user;
 }
 
-export function canAccessAdminPanel(): boolean {
-  // Admin access — will be expanded when admin feature is implemented
-  // For now, placeholder that prevents unauthorized access
-  return false;
+export function canAccessAdminPanel(context: PermissionContext): boolean {
+  // E-4: Admin role required for admin panel access
+  if (!context.user) return false;
+  return context.user.role === "admin";
+}
+
+export function canApproveReports(context: PermissionContext): boolean {
+  // Admin role required to approve held reports
+  if (!context.user) return false;
+  return context.user.role === "admin";
+}
+
+export function canRejectReports(context: PermissionContext): boolean {
+  // Admin role required to reject held reports
+  if (!context.user) return false;
+  return context.user.role === "admin";
 }

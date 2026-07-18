@@ -12,14 +12,14 @@ export default function HomePage() {
 
         <div className="space-y-4">
           <a
-            href="/auth/register"
+            href="/register"
             className="inline-block rounded-lg bg-blue-600 px-8 py-3 text-white hover:bg-blue-700"
           >
             Get Started
           </a>
           <p className="text-sm text-gray-600">
             Already a member?{" "}
-            <a href="/login" className="font-semibold text-blue-600 hover:text-blue-800">
+            <a href="/register" className="font-semibold text-blue-600 hover:text-blue-800">
               Sign in
             </a>
           </p>

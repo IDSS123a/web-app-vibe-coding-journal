@@ -80,4 +80,57 @@ CONSTITUTION.md P-9, not a stack deviation.
 
 ---
 
+## PDL-004 — Confidence Threshold: 0.6 for Review Gate
+
+**Date:** 2026-07-18 (Sprint 03)  
+**Decision:** Set minimum confidence threshold at 0.6 (60%) for auto-publish. Articles below 0.6 are held for review.
+
+**Rationale:**
+- 0.6 is conservative for MVP: catches ~50% of new articles for human review
+- Too low (<0.5): risky, more hype/low-quality content auto-published
+- Too high (>0.7): excessive review queue burden, slows publication
+- Baseline scoring starts at 0.5, individual factors add/subtract 0.1
+- Starting point based on editor preference; tunable via constant `CONFIDENCE_THRESHOLD` in features/pipeline/quality-engine.ts
+
+**Tuning guidance (post-launch):**
+- Collect 2 weeks of production data
+- Analyze approval/rejection patterns
+- If >80% of reviews result in approval: lower to 0.55 (more auto-publish)
+- If >30% of reviews result in rejection: raise to 0.65 (more manual review)
+- Threshold is a constant, not hardcoded in algorithm
+
+**Current implementation:**
+- Applied during `/api/cron/daily-digest` phase 3 (Quality Engine)
+- Hype-word filter is a separate gate (also holds articles regardless of confidence)
+- Both gates feed into review_status = "held_for_review" if either triggers
+
+---
+
+## PDL-005 — Scheduler: Vercel Cron (Decision Pending Implementation)
+
+**Date:** 2026-07-18 (Sprint 04)  
+**Decision:** Use **Vercel Cron** for automated `/api/cron/daily-digest` execution.
+
+**Rationale:**
+- **Platform-native** (E-5: Vercel deployment = Vercel scheduler)
+- **Zero external dependencies** (no third-party cron service)
+- **Declarative** (cron config in vercel.ts, version-controlled)
+- **Reliable** (Vercel infrastructure, AWS-backed)
+- **Observable** (Vercel dashboard shows cron invocations + logs)
+- **No cost** (included with Vercel platform)
+- **Limitation:** Vercel projects only (acceptable given PDL-002 stack commitment)
+
+**Alternative considered:**
+- GitHub Actions: Works, but adds CI/CD coupling
+- External service (EasyCron, etc.): Adds external dependency, cost
+
+**Implementation:** 
+- Create `vercel.ts` at project root with cron config
+- Schedule: 9 AM UTC daily (adjustable per timezone needs)
+- Cron calls `/api/cron/daily-digest` with Bearer token auth (CRON_SECRET)
+
+**Current status:** Pending implementation in Sprint 04
+
+---
+
 *Vibe-Coding Journal — Project Decision Log — updated as decisions are made.*

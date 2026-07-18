@@ -33,6 +33,10 @@ const SEED_DAILY_REPORT: DailyReport = {
   article_count: 0,
   sections: ["Najvažnije", "Trendovi", "Novi alati", "Research", "GitHub", "Šta testirati danas"],
   review_status: "auto_published",
+  approved_by: null,
+  approved_at: null,
+  rejected_by: null,
+  rejected_at: null,
   created_at: new Date().toISOString(),
   updated_at: new Date().toISOString(),
 };

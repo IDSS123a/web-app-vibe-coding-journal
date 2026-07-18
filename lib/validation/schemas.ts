@@ -26,6 +26,7 @@ export type LoginInput = z.infer<typeof loginSchema>;
 export const userProfileSchema = z.object({
   id: z.string().uuid(),
   email: z.string().email(),
+  role: z.enum(["user", "admin"]).default("user"),
   tools_used: z.array(z.enum(["no_code_low_code", "ai_assisted_ide", "agent_based_coding", "other"])),
   depth_preference: z.enum(["simple", "technical_when_needed", "deep_technical"]),
   other_tools_freetext: z.string().nullable(),
@@ -77,8 +78,12 @@ export const dailyReportSchema = z.object({
   markdown: z.string(),
   reading_time_minutes: z.number().int().min(0).nullable(),
   article_count: z.number().int().min(0),
-  sections: z.array(z.string()), // ["Najvažnije", "Trendovi", ...]
-  review_status: z.enum(["auto_published", "held_for_review", "manually_approved"] as const),
+  sections: z.array(z.string()),
+  review_status: z.enum(["auto_published", "held_for_review", "manually_approved", "rejected"] as const),
+  approved_by: z.string().nullable(),
+  approved_at: z.string().datetime().nullable(),
+  rejected_by: z.string().nullable(),
+  rejected_at: z.string().datetime().nullable(),
   created_at: z.string().datetime(),
   updated_at: z.string().datetime(),
 });

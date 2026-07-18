@@ -7,6 +7,9 @@ import { Resend } from "resend";
 
 const resendApiKey = process.env.RESEND_API_KEY;
 const reviewQueueEmail = process.env.REVIEW_QUEUE_EMAIL || "admin@example.com";
+// Resend requires a verified domain for custom senders; onboarding@resend.dev
+// is the universally-available fallback usable without domain verification.
+const fromAddress = process.env.RESEND_FROM || "Vibe-Coding Journal <onboarding@resend.dev>";
 
 const resend = resendApiKey ? new Resend(resendApiKey) : null;
 
@@ -37,7 +40,7 @@ export async function sendReviewQueueAlert(payload: {
     `.trim();
 
     const { error } = await resend.emails.send({
-      from: "Vibe-Coding Journal <noreply@example.com>",
+      from: fromAddress,
       to: reviewQueueEmail,
       subject: `[REVIEW] Daily digest for ${payload.date} — ${payload.articleCount} articles`,
       html,
@@ -71,7 +74,7 @@ export async function sendAdminNotification(payload: {
 
   try {
     const { error } = await resend.emails.send({
-      from: "Vibe-Coding Journal <noreply@example.com>",
+      from: fromAddress,
       to: reviewQueueEmail,
       subject: `[ADMIN] ${payload.subject}`,
       html: payload.html,
