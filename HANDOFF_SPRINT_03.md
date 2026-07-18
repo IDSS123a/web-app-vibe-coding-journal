@@ -345,5 +345,35 @@ npm run typecheck
 
 ---
 
-**Ready for handoff.** ✅ All systems operational. Contact author with questions on Commander rules or architecture decisions.
+## DONE_CHECKLIST (actual status — added retroactively 2026-07-18)
+
+- [x] `tsc --noEmit` zero errors
+- [x] Quality scoring implemented; `confidence_score` populated
+- [x] Hype-word filter implemented (`containsHypeWords`, HYPE_WORDS)
+- [x] Classifier implemented; returns `null` when uncertain (M-4)
+- [x] Review-queue logic: confidence < 0.6 → `held_for_review`
+- [x] Email notification path implemented (verified live in Sprint 04)
+- [x] Confidence threshold logged in DECISION_LOG.md PDL-004
+- [x] Cron returns Quality Engine + Daily Report phases
+- [x] `next build` passes
+- [x] corrections/SPRINT_03_LESSONS.md created
+- [~] "Quality scoring tested with sample articles" — was tested only on
+      **synthetic** articles in Sprint 03; first real-data run happened in the
+      Sprint 04 close-out and exposed the upstream dedup/RLS bugs that had
+      starved this stage of input. Quality Engine itself was correct.
+- [ ] Hype-word filter NOT wired into the cron's hold decision — `containsHypeWords`
+      exists but `generateDailyReport` only checks the confidence threshold, not
+      hype words. **Latent gap**: a hype-laden article would not be held by the
+      pipeline today. Wire `shouldHoldForReview` into Phase 4 in a future sprint.
+
+**Legend:** [x] done · [~] done-but-partial · [ ] not done / gap
+
+**Blocker noted retroactively:** AI Summary (P-3 editorial voice) was never
+testable in Sprint 03 either — PDL-001 (provider) remains open. Quality Engine is
+heuristic and needs no provider; the editorial summary does.
+
+---
+
+**Ready for handoff.** ✅ Core Quality Engine operational. Two caveats above
+(hype-word filter not wired into the pipeline; AI Summary blocked on PDL-001).
 

@@ -111,6 +111,64 @@ Final DB state verified via REST: 2026-07-18 `manually_approved`; 2026-07-19 `re
 - Vercel deployment to activate the cron schedule (`vercel.json`)
 - Fix duplicated inline modal state in `app/admin/review-queue/[date]/page.tsx` (module-level `showRejectModal` hack must become `useState`)
 
+## Close-out Findings (2026-07-18, real-data run)
+
+### 12. `getEnabledSources` used the anon client — RLS hid every source
+- The cron runs server-side with no user session; the `sources` table RLS blocks
+  anon reads, so the collector saw **0 sources** despite 3 enabled rows. Never
+  caught in Sprint 02/03 because no real sources were ever configured — only the
+  cron endpoint shape was tested, never a real collection.
+- Fixed: `getEnabledSources` now uses `supabaseAdmin`.
+- **Commander candidate:** "Any server-side/cron read of an RLS-protected table
+  must use the service-role client. Test data inserted with the service role hides
+  this class of bug — verify at least one pipeline read path with a *real* enabled
+  row, not just a 200 from the endpoint."
+
+### 13. `getArticleByHash` self-match — every article a duplicate of itself
+- Ingestion upserts on `hash` (hash unique), so `getArticleByHash(hash)` returned
+  the article itself; the dedup loop then set `duplicate_of = self` for all 10 real
+  articles, starving the Quality Engine (0 scored). This is the true root cause of
+  the "everything is a duplicate" symptom mis-attributed to test-data artifacts in
+  [[SPRINT_02_LESSONS]].
+- Fixed with `excludeId`.
+- **Commander candidate:** "A dedup/self-reference check must exclude the row's own
+  id. A test that asserts 'duplicates were found' can pass on a self-match bug —
+  assert instead that *distinct* records collapse and *unique* records survive."
+
+### 14. Hype-word filter defined but not wired into the pipeline hold decision
+- `containsHypeWords` / `shouldHoldForReview` exist (Sprint 03) but the cron's
+  `generateDailyReport` only checks the confidence threshold — a hype-laden article
+  would auto-publish today, violating P-3 in the unattended path. Not yet fixed;
+  logged for a future sprint.
+
+---
+
+## Process Lesson (Task 5) — batch sprint approval
+
+### 15. Three sprints approved at once, with no review gate between them
+- **What happened:** Sprints 02, 03, and 04 were built and "approved" in rapid
+  succession within a single working stretch, each declared DONE (green
+  checklists, passing `tsc`/`build`) without an independent review gate before the
+  next sprint started. The green checklists were real for what they tested, but
+  they tested endpoint shapes and synthetic data, not real inputs.
+- **Consequence:** Two correctness bugs (findings 12 & 13) rode from Sprint 02 all
+  the way to Sprint 04 undetected, because no sprint boundary forced a real-data
+  run or an adversarial "does this actually work end-to-end?" pass. A per-sprint
+  review gate would have caught the dedup self-match the moment real articles flowed.
+- **Why it matters:** "DONE" that is self-certified by the same pass that wrote the
+  code, and never re-checked at a boundary, accumulates latent defects. Batching
+  approvals removes every checkpoint at once.
+- **Commander Improvement Candidate (explicit):** Add a rule prohibiting
+  batch-approval of multiple sprints. Proposed wording for Commander v1.3:
+  > *"Each sprint requires an independent review gate before the next sprint may
+  > begin: a real-data (not synthetic) exercise of the sprint's primary path, and a
+  > sign-off distinct from the implementation pass. Multiple sprints MUST NOT be
+  > approved in a single batch — every skipped gate is a defect checkpoint removed.
+  > DONE is provisional until the gate passes on real inputs."*
+- **Applies to this project now:** treat 02/03/04 as retro-gated by today's
+  real-data run; do not start Sprint 05 until PDL-001 is resolved and the gate
+  concept is adopted.
+
 ---
 
 *Vibe-Coding Journal — Sprint 04 — governed by Commander v1.2. Commander-candidate items above feed the v1.3 improvement backlog (github.com/IDSS123a/commander).*
