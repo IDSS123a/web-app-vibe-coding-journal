@@ -46,3 +46,10 @@ test-*.js
 # Misc
 .next-env.d.ts
 .env.local
+
+.vercel
+.env*
+
+# Generated/derived archives (repo snapshots, template exports) — never
+# belong in version control, same principle as node_modules
+*.zip
