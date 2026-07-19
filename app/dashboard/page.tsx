@@ -1,4 +1,5 @@
 import type { DailyReport } from "@/lib/validation/schemas";
+import { formatPublicTimestamp } from "@/lib/time/format-public-timestamp";
 
 /**
  * Dashboard — empty-state Daily Report page
@@ -67,6 +68,9 @@ export default function DashboardPage() {
               <p className="text-sm text-gray-500">
                 {SEED_DAILY_REPORT.article_count} articles •{" "}
                 {SEED_DAILY_REPORT.reading_time_minutes || "< 1"} min read
+              </p>
+              <p className="mt-1 text-xs text-gray-400">
+                Updated {formatPublicTimestamp(SEED_DAILY_REPORT.updated_at)}
               </p>
             </div>
             <div className="text-right">

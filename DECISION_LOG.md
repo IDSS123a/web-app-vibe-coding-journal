@@ -485,4 +485,49 @@ established and this entry now continues.
 
 ---
 
+## PDL-015 — Operations Timezone vs. Public Display Timezone: Deliberately Different, By Design
+
+**Date:** 2026-07-19
+
+**Decision:** The business's internal operations timezone (read only
+from the `OPERATIONS_TIMEZONE` environment variable — set in
+`.env.local`, gitignored, and in Vercel's private Production
+environment variables; never hardcoded in any committed file, and its
+specific IANA value is intentionally not written into this document
+either, for the same reason) and the timezone shown to end users
+(hardcoded `Europe/London`, freely usable anywhere including in
+committed code and UI, since it is the intended public-facing value)
+are deliberately different values. Both conversions use real IANA
+timezone data (`Intl.DateTimeFormat`) so each stays correct across its
+own DST boundary automatically, with no manual twice-yearly
+maintenance:
+- `lib/cron/schedule-gate.ts` gates the hourly-triggered
+  `/api/cron/daily-digest` endpoint to the correct target local hour in
+  the operations timezone.
+- `lib/time/format-public-timestamp.ts` formats the report's real UTC
+  generation timestamp into `Europe/London` local time (GMT/BST label
+  included automatically) for display on the dashboard.
+
+**Rationale:** Deliberate business-location-privacy decision — the
+operations timezone is not the same as the publicly displayed
+timezone, on purpose, so that the business's operating location cannot
+be inferred from published timestamps. This is not a bug or an
+oversight if the resulting gap between "when a report was actually
+generated" and "what time zone it displays in" is ever noticed; it is
+an intentional specification. The specific operations timezone value
+is deliberately omitted from this document (a public, already-pushed
+file) — recording *that* the two values differ and *why* is the
+decision worth logging; recording *what* the operations value
+literally is would defeat the purpose of making the decision in the
+first place.
+
+**Consequence:** any future code touching cron scheduling or
+public-facing timestamp display must keep reading the operations value
+only from `OPERATIONS_TIMEZONE` (never hardcode it, never let it reach
+a user-visible string) while treating `Europe/London` as free to
+hardcode. If this separation is ever removed, that is a new PDL
+superseding this one, not a silent revert.
+
+---
+
 *Vibe-Coding Journal — Project Decision Log — updated as decisions are made.*

@@ -1,0 +1,27 @@
+name: Hourly Digest Trigger
+
+# Vercel Hobby plan cron jobs can fire at most once per day, but the
+# daily-digest endpoint needs an hourly poke so its own target-local-hour
+# gate (lib/cron/schedule-gate.ts) can find the correct invocation without
+# a manually-maintained fixed UTC schedule. GitHub Actions has no such
+# once-per-day restriction, so it does the hourly triggering instead.
+#
+# GitHub's own scheduled-workflow delivery is also not minute-precise
+# (documented delays around the top of the hour under load) — this is fine
+# by design: the endpoint's target-hour + idempotency checks are exactly
+# what absorb that imprecision, the same way they already absorb Vercel's.
+
+on:
+  schedule:
+    - cron: "0 * * * *"
+  workflow_dispatch: {}
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call daily-digest endpoint
+        run: |
+          curl --fail-with-body -sS -X POST \
+            "${{ secrets.DIGEST_ENDPOINT_URL }}/api/cron/daily-digest" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"

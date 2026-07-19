@@ -4,6 +4,10 @@
  *               Classifier → Daily Report Generation
  * Security: Requires CRON_SECRET header (environment variable)
  * Usage: curl -X POST http://localhost:3000/api/cron/daily-digest -H "Authorization: Bearer $CRON_SECRET"
+ * Triggered hourly by .github/workflows/hourly-digest-trigger.yml (Vercel
+ * Hobby plan cannot schedule its own cron more than once a day); the
+ * target-hour + idempotency checks below decide which invocation actually
+ * runs the pipeline.
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -17,7 +21,8 @@ import {
   updateArticleSummary,
   getArticlesForDailyReport,
 } from "@/features/pipeline/repository";
-import { upsertDailyReport } from "@/features/daily-report/repository";
+import { upsertDailyReport, getDailyReportByDate } from "@/features/daily-report/repository";
+import { isTargetOperationsHour } from "@/lib/cron/schedule-gate";
 import {
   scoreArticleConfidence,
   classifyArticle,
@@ -57,12 +62,40 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    console.log("[CRON] Starting daily digest pipeline");
-    ensureAIProviderInitialized();
-
     // 2. AUTHORIZE (already authenticated)
 
-    // 3. VALIDATE (N/A — no request body)
+    // 3. VALIDATE — this endpoint is triggered hourly by an external
+    // scheduler (Vercel Hobby plan cannot run its own cron more than once
+    // a day, see .github/workflows). Only the invocation landing in the
+    // configured target local hour should actually run the pipeline.
+    // See lib/cron/schedule-gate.ts.
+    if (!isTargetOperationsHour()) {
+      console.log("[CRON] Not the configured target hour — skipping this invocation");
+      return NextResponse.json(
+        { success: true, skipped: true, reason: "not_target_hour" },
+        { status: 200 },
+      );
+    }
+
+    // Idempotency: Vercel cron delivery is at-least-once and Hobby-plan
+    // invocations aren't minute-precise, so more than one hourly tick could
+    // land inside the target hour window. If today's report already exists,
+    // the pipeline already ran today — skip rather than re-run the full
+    // (costly) pipeline a second time.
+    const todayDate = new Date().toISOString().split("T")[0]!;
+    const existingReport = await getDailyReportByDate(todayDate);
+    if (existingReport) {
+      console.log(
+        `[CRON] Report for ${todayDate} already exists (status: ${existingReport.review_status}) — skipping duplicate run`,
+      );
+      return NextResponse.json(
+        { success: true, skipped: true, reason: "already_generated_today" },
+        { status: 200 },
+      );
+    }
+
+    console.log("[CRON] Starting daily digest pipeline");
+    ensureAIProviderInitialized();
 
     // 4. EXECUTE
     console.log("[CRON] Phase 1: Source Collector (fetch + parse)");
