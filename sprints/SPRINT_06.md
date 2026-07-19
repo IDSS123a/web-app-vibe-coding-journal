@@ -64,7 +64,24 @@ regex extension.**
   message>"`) so it reads unambiguously as "the feed responded but its
   content is broken," not conflated with reachability.
 
-### 2. Dev/prod Gemini key separation (RESOLVED — Director confirmed 2026-07-18)
+### 2. Dev/prod Gemini key separation — SUPERSEDED same day by PDL-013
+
+**Original plan (below) was implemented, then deliberately reverted.**
+After PDL-012 established that there is genuinely only **one** 8-account
+key set (not two), the dev/prod branch this section describes became
+complexity with no corresponding need — and a `_DEV_`-named secret in the
+Vercel Production dashboard would read as a mistake to anyone reviewing
+it later. See DECISION_LOG.md PDL-013 for the full rationale. Current
+state: `lib/ai/gemini-provider.ts` reads a single flat `GEMINI_API_KEY_1..8`
+list, no `VERCEL_ENV` check, no `_DEV_` name, no fallback branching.
+SPRINT_05_LESSONS finding #7 (shared quota risk) is addressed at the
+governance level instead — PDL-012 states this is deliberate, temporary,
+testing-only use, with payment/subscription work (P-13/P-16) blocked on
+resolving it — not by a code-level dev/prod split that implied a
+separation which didn't actually exist.
+
+<details>
+<summary>Original plan (historical, no longer implemented)</summary>
 
 - New env var pair: `GEMINI_API_KEY_DEV_1` through `GEMINI_API_KEY_DEV_8`
   (mirrors the existing `GEMINI_API_KEY_1..8`, which become the production-only
@@ -77,6 +94,8 @@ regex extension.**
   local `.env.local` doesn't silently break, but a developer who *has* set up
   dev keys never touches production quota). Directly resolves
   SPRINT_05_LESSONS finding #7.
+
+</details>
 - No change to the fallback-on-error rotation logic itself — only which key
   array gets loaded.
 
@@ -191,9 +210,13 @@ Full Commander DONE_CHECKLIST.md applies, plus Sprint 06 specifics:
       (unchanged HEAD-check path) from a parse failure (new — labeled
       distinctly, e.g. `"Feed parse error: ..."`) so P-7 monitoring and any
       future debugging never conflates the two again
-- [ ] `GEMINI_API_KEY_DEV_*` used in local/preview, `GEMINI_API_KEY_1..8`
-      used only when `VERCEL_ENV === "production"` — proven by showing which
-      key set is actually loaded in each context, not just asserted
+- [x] ~~`GEMINI_API_KEY_DEV_*` used in local/preview, `GEMINI_API_KEY_1..8`
+      used only when `VERCEL_ENV === "production"`~~ — superseded by
+      PDL-013 same day: single flat `GEMINI_API_KEY_1..8` list, no branch.
+      Original dev/prod selection logic WAS proven live before removal
+      (both directions, plus the symmetric-fallback fix) — see
+      SPRINT_05_LESSONS addendum and git history for that evidence; not
+      re-proven here since the branch it proved no longer exists.
 - [ ] `tsc --noEmit` / `next build` clean
 - [ ] Vercel project linked, env vars set (prod secrets only where
       appropriate — dev Gemini keys never uploaded), production deploy

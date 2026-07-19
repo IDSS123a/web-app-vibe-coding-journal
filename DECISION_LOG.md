@@ -396,4 +396,43 @@ proposal to the Director first.
 
 ---
 
+## PDL-013 — Gemini Key Code Simplification: Remove Dev/Prod Branch (Follow-up to PDL-012)
+
+**Date:** 2026-07-18 (Sprint 06, same day as PDL-012)
+**Decision:** Remove the `VERCEL_ENV`-based dev/prod branching and the
+`GEMINI_API_KEY_DEV_*` naming from `lib/ai/gemini-provider.ts` and
+`lib/ai/init.ts`. `loadApiKeys()` now reads a single flat list,
+`GEMINI_API_KEY_1..8`, unconditionally — no environment check, no
+fallback direction, no second name prefix.
+
+**Rationale:** PDL-012 established that there is exactly **one** 8-account
+key set, used for both dev and (for now) production, by explicit Director
+decision — not two sets that happen to be identical. Once that was true,
+the `_DEV_`-named variant and its symmetric fallback logic (added earlier
+the same day, before PDL-012 was written) became complexity serving no
+real need: with only one set ever populated, the branch always resolved
+to the same 8 keys regardless of which path it took. Worse, a
+`GEMINI_API_KEY_DEV_*` secret sitting in the Vercel **Production**
+dashboard — which is where it would have had to go, since the "prod"
+names were empty — reads as a configuration mistake to anyone reviewing
+that panel later (Director in six months, a future ACA, a future
+collaborator), even though it wasn't one. Director's framing: "cijela DEV
+oznaka i fallback logika su sad suvišna složenost koja postoji samo zbog
+istorije zabune, ne zbog stvarne potrebe."
+
+**No functional change.** `loadApiKeys()` previously fell back
+prod→dev or dev→prod depending on `VERCEL_ENV`; since only the `_DEV_`
+set was ever populated, every call already resolved to that same 8-key
+set regardless of environment. This PDL removes dead branching, it does
+not change which keys the app actually uses.
+
+**Consequence:** the Vercel Production environment gets exactly
+`GEMINI_API_KEY_1` through `GEMINI_API_KEY_8` — no `_DEV_` names anywhere,
+matching what a reviewer would expect to see. If a genuinely separate
+production key strategy is adopted later (per PDL-012's stated
+precondition for payment/subscription work), that is its own new PDL and
+its own env var naming decision — this entry does not pre-empt it.
+
+---
+
 *Vibe-Coding Journal — Project Decision Log — updated as decisions are made.*
