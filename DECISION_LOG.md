@@ -228,7 +228,7 @@ stated DoD rigor requirement.
 
 ---
 
-## PDL-009 — Subscription Price: $10/year flat, no tiers
+## PDL-009 — Subscription Price: $10/year flat, no tiers `[SUPERSEDED 2026-07-19 → see PDL-014]`
 
 **Date:** 2026-07-18
 **Decision:** Single flat price: **$10 USD per year**. No monthly option,
@@ -432,6 +432,56 @@ matching what a reviewer would expect to see. If a genuinely separate
 production key strategy is adopted later (per PDL-012's stated
 precondition for payment/subscription work), that is its own new PDL and
 its own env var naming decision — this entry does not pre-empt it.
+
+---
+
+## PDL-014 — Subscription Pricing: Two Tiers ($10 Basic / $50 Premium) — Supersedes PDL-009
+
+**Date:** 2026-07-19
+**Decision:** Replaces the single flat $10/year price (PDL-009,
+`[SUPERSEDED]`) with two flat annual tiers, no monthly option:
+- **Basic — $10 USD/year.** The product as built through Sprint 06:
+  Daily Report, Archive, Bookmarks.
+- **Premium — $50 USD/year.** Everything in Basic, plus the Vibe-Coding
+  Assistant chatbot (CONSTITUTION P-19). Premium's **sole**
+  differentiator is the chatbot — P-8 (Personalization Boundary: Daily
+  Report content is the same for all users) is unchanged; Premium does
+  not get a different content feed.
+
+**Rationale:** Director's explicit decision, 2026-07-19, made when
+scoping the future chatbot feature (P-19). Two tiers exist because the
+chatbot has materially higher operating cost and risk than the base
+digest product (see P-18/PDL-012 cross-reference below) and is valuable
+enough to a subset of subscribers to price separately, rather than
+folding its cost into a single raised price for every subscriber
+including those who'd never use it.
+
+**Explicitly not yet decided (do not infer, do not implement until a
+future PDL resolves these):**
+- Whether the 3-day trial (P-13) grants Premium-level access
+  temporarily, or only Basic-level — open question for Sprint 07 scope.
+- Upgrade/downgrade behavior mid-year (e.g. proration, credit) — same
+  not-specified/not-invented discipline PDL-009 already established for
+  the single-tier case; still applies, now for tier changes too.
+
+**Cross-reference — this raises the stakes on P-18/PDL-012:** the
+Premium chatbot will generate far higher, more visible AI API call
+volume per user than the existing daily batch pipeline that PDL-012's
+ToS risk was originally weighed against. P-18 already blocks
+payment/subscription work from going live until the AI-provider-quota
+risk is resolved or consciously re-accepted (Sprint 08 precondition);
+this applies with materially higher urgency now that a chatbot —not just
+a once-a-day cron job — is the thing that risk has to hold up under.
+
+**Where this is used:** the PayPal Checkout flow (P-16) must charge the
+tier-appropriate amount (not a single hardcoded price as PDL-009
+originally assumed); `subscription_tier` (new P-4/P-13 schema field)
+determines which. `subscription_expires_at` behavior (+1 year from
+confirmed payment) is unchanged by this PDL.
+
+**Consequence:** if pricing changes again, that is a new PDL (this entry
+gets marked `[SUPERSEDED]`, never deleted) — same discipline PDL-009
+established and this entry now continues.
 
 ---
 

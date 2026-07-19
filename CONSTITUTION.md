@@ -206,6 +206,7 @@ subscription_status      enum: trial | active | expired (P-13)
 trial_started_at         timestamp (P-13)
 trial_ends_at            timestamp (P-13)
 subscription_expires_at  timestamp, nullable until first payment (P-13)
+subscription_tier        enum: basic | premium (P-13, added 2026-07-19)
 ```
 
 *Sprint 04 addition (why):* `role` was added to gate the admin Review
@@ -221,6 +222,15 @@ scheduled for a future sprint with its own scope document; documented here
 first per the P-12 rule that a schema field must exist in this Constitution
 in the same change that establishes the business rule, not be left to
 implementation time.
+
+*P-13 two-tier revision addition (why):* `subscription_tier` was added
+2026-07-19 when P-13 was revised from one tier to two (Basic $10/year,
+Premium $50/year — see DECISION_LOG.md for the PDL that supersedes the
+original single-tier pricing decision). Independent of
+`subscription_status`: status tracks trial/active/expired lifecycle,
+tier tracks which plan. Not yet implemented in code — same
+governance-first, implementation-later discipline as the original P-13
+fields above.
 
 No other tables/fields exist until a sprint document adds them.
 
@@ -393,32 +403,50 @@ this project is not done until:
 
 ## P-13. Business Model — Subscription & Trial `[ACTIVE]` 🔴 CRITICAL
 
-- **One tier only.** Flat annual subscription. No feature tiers, no
-  monthly option, no free-forever tier. Price and payment provider
-  are recorded in DECISION_LOG.md (PDL), not hardcoded in this
-  Constitution — see PDL entry for current published price.
+- **Two tiers, both flat annual, no monthly option** (revised
+  2026-07-19 — supersedes the original "one tier only" decision; see
+  DECISION_LOG.md for the superseded/superseding PDL pair):
+  - **Basic — $10/year.** The curated daily/weekly digest — the
+    entire product as built through Sprint 06: Daily Report, Archive,
+    Bookmarks.
+  - **Premium — $50/year.** Everything in Basic, plus the Vibe-Coding
+    Assistant chatbot (P-19). Premium is **not** a different content
+    feed — P-8 (Personalization Boundary: Daily Report is the same
+    for all users) is unchanged by this revision. The chatbot is the
+    only Premium-exclusive feature.
+  - Whether the trial grants Premium-level access temporarily, or
+    only Basic-level, is **not yet decided** — an open question for
+    Sprint 07 scope, not invented here.
+  - Upgrade/downgrade behavior (e.g. a Premium subscriber dropping to
+    Basic mid-year, prorated credit) is **not specified** — same
+    not-specified/not-invented discipline as the original no-proration
+    note. A future PDL must resolve this before billing UI is built.
 - **Trial:** 3 days from registration timestamp, full feature access,
-  no card required to start.
+  no card required to start. Unchanged by the two-tier revision.
 - **On trial expiry without an active subscription: hard block.** No
   access to Daily Report, Archive, or Bookmarks — redirect to a
   paywall/subscribe screen. No degraded "read-only" mode. This is a
   deliberate simplicity choice (Director's explicit decision) — do
-  not invent a softer fallback.
+  not invent a softer fallback. Unchanged by the two-tier revision.
 - **Data model extension of P-4** (`UserProfile`):
   ```
   subscription_status    enum: trial | active | expired
   trial_started_at
   trial_ends_at
   subscription_expires_at
+  subscription_tier      enum: basic | premium
   ```
-  This must be reflected in the P-4 schema block itself in the same
-  change, per the existing P-12 Definition-of-Done rule — do not let
-  this addendum be the only place this schema exists.
+  `subscription_tier` is new (2026-07-19) and independent of
+  `subscription_status` — status is trial/active/expired, tier is
+  which plan. This must be reflected in the P-4 schema block itself in
+  the same change, per the existing P-12 Definition-of-Done rule — do
+  not let this section be the only place this schema exists.
 - **Admin accounts (P-14) are billing-exempt.** The exemption must be
   an explicit, auditable check (e.g. a named function in
   `lib/permissions.ts`), never an accidental side-effect of role
   logic living somewhere else. Per P-1, an undocumented bypass is
   exactly the kind of silent behavior this project exists to avoid.
+  Unchanged by the two-tier revision, applies to both tiers.
 
 ---
 
@@ -548,6 +576,49 @@ this project is not done until:
   a ToS-risk infrastructure choice is a materially different risk
   posture than an MVP with no paying users yet — this must be an
   explicit decision point at that sprint's kickoff, not an assumption.
+
+---
+
+## P-19. Vibe-Coding Assistant Chatbot — Future Scope, Not MVP `[PLANNED]` 🟡 STANDARD
+
+- **Status: confirmed future feature, explicitly out of current sprint
+  scope.** Do not begin implementation until the Director opens a
+  dedicated sprint for it. This section exists so the commitment is
+  recorded and not lost — not as a green light to build.
+- **No RAG, no vector database, no continuously-updated knowledge
+  base.** The Director has explicitly declined this. The chatbot is a
+  conversational agent (system prompt + conversation context), not a
+  retrieval-augmented system querying an embeddings store. This keeps
+  the feature closer to this project's P-1 (Almost-Zero-Maintenance)
+  philosophy than a RAG pipeline would — no embedding pipeline to
+  maintain, no vector index to keep fresh.
+- **Behavior (as described by the Director):** helps a Premium
+  subscriber go from idea to a finished project — analysis, tech stack
+  recommendations, step-by-step planning, prompts, deployment
+  guidance. Exact scope/guardrails (what it will and won't do, rate
+  limits per user, conversation length limits, cost caps) are **not
+  yet decided** — to be resolved when this sprint is actually scoped,
+  not assumed here.
+- **Direct dependency on P-18 / PDL-012 (AI provider ToS risk).** A
+  chatbot generates far higher, far more visible API call volume per
+  user than the daily batch pipeline that PDL-012 was originally
+  weighed against. P-18 already requires the AI provider risk to be
+  resolved or consciously accepted before subscription payments go
+  live (Sprint 08); this requirement applies with materially higher
+  urgency once a chatbot is in scope, since sustained multi-account
+  free-tier rotation is far less viable — both technically (quota
+  exhaustion) and from a ToS-detection standpoint — under
+  chatbot-level traffic than under one daily cron run.
+- **Prompt injection / input sanitization** must be part of the
+  eventual scope document — this is a new attack surface this project
+  has not had before (the pipeline only ever processes content
+  Claude/Gemini summarizes one-way; a chatbot takes direct, repeated
+  user input).
+- **Cost monitoring** for a per-conversation, per-user feature is a
+  new operational concern distinct from the fixed daily-cron cost
+  model the rest of this project assumes — must be designed for before
+  launch, not discovered after Premium subscribers start using it
+  heavily.
 
 ---
 
