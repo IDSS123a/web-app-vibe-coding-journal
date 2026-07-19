@@ -1,6 +1,8 @@
 # SPRINT_06 — RSS Parser Fix, Dev/Prod Gemini Key Separation, Vercel Deploy
 # Vibe-Coding Journal
-# Status: APPROVED 2026-07-18 — implementation in progress
+# Status: MOSTLY COMPLETE 2026-07-19 — deploy execution itself intentionally
+# deferred to its own separate conversation (Director's explicit stop-gate,
+# see Definition of Done items 8-9 below)
 
 ---
 
@@ -195,21 +197,23 @@ not assumed):**
 
 Full Commander DONE_CHECKLIST.md applies, plus Sprint 06 specifics:
 
-- [ ] `rss-parser` added as a dependency; PDL logged in DECISION_LOG.md
-      (M-12 pattern: second instance of custom parsing vs. a real library)
-- [ ] **RSS fix proof — hard requirement, real feed, not synthetic:**
-      run the fixed collector against the live `hnrss.org/frontpage` feed
-      (the actual feed that fails today) and show a real before/after: 0
-      articles before → N real articles after, with at least one shown
-      example article's title correctly extracted from its CDATA wrapper
-- [ ] GitHub Blog collection still works after the fix (regression check —
-      the fix must not break the feed that already worked)
-- [ ] Atom-format normalization verified against a real or realistic Atom
-      sample (library claims support — claim gets verified, not assumed)
-- [ ] `sourceCollector.errors` text distinguishes a reachability failure
-      (unchanged HEAD-check path) from a parse failure (new — labeled
-      distinctly, e.g. `"Feed parse error: ..."`) so P-7 monitoring and any
-      future debugging never conflates the two again
+- [x] `rss-parser` added as a dependency (v3.13.0, npm-view-confirmed
+      before install); PDL-011 logged in DECISION_LOG.md
+- [x] **RSS fix proof — real feed, not synthetic:** `hnrss.org/frontpage`
+      and `hnrss.org/newest?q=AI+coding` went from the documented 0-article
+      bug to 20 real articles each in a live collector run; titles verified
+      correctly unwrapped from CDATA (e.g. "The Kimi K3 Moment")
+- [x] GitHub Blog regression check: still 10 articles, unchanged, in the
+      same live run
+- [x] Atom-format normalization verified via a realistic Atom sample
+      (`<feed>`/`<entry>`, `<link href="...">`, CDATA-wrapped `<title>`) run
+      through the real `rss-parser` call — both CDATA and Atom link/entry
+      shape confirmed handled correctly in one pass
+- [x] `sourceCollector.errors` text distinguishes reachability from parse
+      failure — verified live against a deliberately non-XML feed response:
+      `"Feed parse error: Non-whitespace before first tag..."`, distinct
+      from the unchanged `"Source unreachable (failure N/3)"` reachability
+      message
 - [x] ~~`GEMINI_API_KEY_DEV_*` used in local/preview, `GEMINI_API_KEY_1..8`
       used only when `VERCEL_ENV === "production"`~~ — superseded by
       PDL-013 same day: single flat `GEMINI_API_KEY_1..8` list, no branch.
@@ -217,18 +221,33 @@ Full Commander DONE_CHECKLIST.md applies, plus Sprint 06 specifics:
       (both directions, plus the symmetric-fallback fix) — see
       SPRINT_05_LESSONS addendum and git history for that evidence; not
       re-proven here since the branch it proved no longer exists.
-- [ ] `tsc --noEmit` / `next build` clean
-- [ ] Vercel project linked, env vars set (prod secrets only where
-      appropriate — dev Gemini keys never uploaded), production deploy
-      completed **only after explicit Director go-ahead immediately before
-      that specific step**
-- [ ] Cron actually fires on Vercel's schedule — verified via Vercel's own
-      deployment/cron logs showing a real invocation, not just that
-      `vercel.json` is syntactically present
-- [ ] `CRON_SECRET` rotated to a real value for production, confirmed not
-      equal to the local dev placeholder
-- [ ] corrections/SPRINT_06_LESSONS.md created
-- [ ] HANDOFF_SPRINT_06.md created, scoped to this sprint only
+- [x] `tsc --noEmit` / `next build` clean — reconfirmed after every change
+      in this sprint, most recently after the P-13/P-19 governance merge
+- [x] Vercel project linked (`idsssarajevo/web-app-vibe-coding-journal`,
+      GitHub-connected) and all 15 required env vars set in Production
+      (Supabase ×3, `GEMINI_API_KEY_1..8`, `CRON_SECRET`, Resend ×3) —
+      confirmed via `vercel env ls production` (names + "Encrypted" only,
+      no value ever shown)
+- [~] **Production deploy: NOT executed — intentionally deferred.**
+      Per the Director's explicit pre-deploy stop-gate (this is the first
+      time real production keys, real cron, and real email go live
+      together): three checks requested (cron config/CRON_SECRET wiring,
+      UTC/Sarajevo timezone correctness, this handoff) are complete, but
+      `vercel --prod` itself is its own separate conversation, plus a
+      Preview deploy (`vercel` without `--prod`) first. Not a gap — a
+      deliberate, requested boundary.
+- [ ] Cron actually fires on Vercel's schedule — **cannot be verified
+      until after the deferred deploy above**; blocked, not forgotten.
+      Schedule itself was found wrong during this close-out (see Open
+      Risks in the handoff) and corrected before any deploy could even be
+      considered.
+- [x] `CRON_SECRET` rotated to a real value for production — generated via
+      `crypto.randomBytes(32)`, piped directly into `vercel env add`, never
+      printed to any visible output, `unset` immediately after; confirmed
+      not equal to the local `dev-test-secret-sprint-02` placeholder (that
+      placeholder was never touched — a fresh value was generated)
+- [x] corrections/SPRINT_06_LESSONS.md created
+- [x] HANDOFF_SPRINT_06.md created, scoped to this sprint only
 
 ---
 
