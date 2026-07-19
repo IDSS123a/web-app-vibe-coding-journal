@@ -68,43 +68,27 @@ export class GeminiKeysExhaustedError extends Error {
   }
 }
 
-function loadKeySet(prefix: "GEMINI_API_KEY" | "GEMINI_API_KEY_DEV"): string[] {
+/**
+ * PDL-012 simplification (Sprint 06, 2026-07-18): there is exactly one
+ * Gemini key set (GEMINI_API_KEY_1..8), used for both local/preview work
+ * and production, by explicit Director decision — PDL-012 states plainly
+ * "one set for now, pending a separate non-ToS-risk production AI
+ * strategy." A VERCEL_ENV-based dev/prod branch (with a `_DEV_` name and
+ * symmetric fallback) briefly existed here and was deliberately removed:
+ * with only one real set, the branch was complexity with no corresponding
+ * need, and a `_DEV_`-named secret sitting in the Vercel Production
+ * dashboard reads as a mistake to anyone who looks (Director, future ACA,
+ * future collaborator) even though it wasn't one. No functional behavior
+ * changes: the previous fallback logic always resolved to this same 8-key
+ * set anyway, since only one set was ever actually populated.
+ */
+function loadApiKeys(): string[] {
   const keys: string[] = [];
   for (let i = 1; i <= 8; i++) {
-    const key = process.env[`${prefix}_${i}`];
+    const key = process.env[`GEMINI_API_KEY_${i}`];
     if (key) keys.push(key);
   }
   return keys;
-}
-
-/**
- * Sprint 06 (SPRINT_05_LESSONS finding #7 / DECISION_LOG PDL-012): dev/prod
- * key separation so local/preview testing never consumes production quota
- * — WHEN two genuinely separate sets exist. As of PDL-012, the Director has
- * confirmed a single 8-account set is used for both dev and (for now) prod,
- * pending a separate, non-ToS-risk production AI strategy decision — so the
- * fallback below is symmetric in both directions, not prod-only-strict:
- *
- * VERCEL_ENV === "production" → GEMINI_API_KEY_1..8 (prod set) first, falls
- * back to GEMINI_API_KEY_DEV_1..8 if no prod set is configured (today's
- * actual state — prod block intentionally not populated).
- * Anything else (local `next dev` where VERCEL_ENV is undefined, or a
- * Vercel preview deployment) → GEMINI_API_KEY_DEV_1..8 first, falls back to
- * GEMINI_API_KEY_1..8 if no dev set is configured.
- * The moment a Director decision gives production a genuinely separate key
- * source, only the fallback direction stops mattering — the two-set
- * preference order itself stays, so re-introducing a real prod-only set
- * later requires no code change here.
- */
-function loadApiKeys(): string[] {
-  const prodKeys = loadKeySet("GEMINI_API_KEY");
-  const devKeys = loadKeySet("GEMINI_API_KEY_DEV");
-
-  if (process.env.VERCEL_ENV === "production") {
-    return prodKeys.length > 0 ? prodKeys : devKeys;
-  }
-
-  return devKeys.length > 0 ? devKeys : prodKeys;
 }
 
 interface GeminiErrorBody {

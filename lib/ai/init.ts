@@ -14,13 +14,11 @@ export function ensureAIProviderInitialized(): void {
   if (initialized) return;
   initialized = true;
 
-  // Sprint 06: dev/prod key sets — either configured set is enough to
-  // activate GeminiProvider; loadApiKeys() inside it decides which set to
-  // actually use per-call based on VERCEL_ENV.
-  if (process.env.GEMINI_API_KEY_1 || process.env.GEMINI_API_KEY_DEV_1) {
+  // PDL-012: one Gemini key set (GEMINI_API_KEY_1..8), no dev/prod branch.
+  if (process.env.GEMINI_API_KEY_1) {
     setAIProvider(new GeminiProvider());
     console.log("[AI] Provider initialized: Gemini");
   } else {
-    console.log("[AI] No GEMINI_API_KEY_1 / GEMINI_API_KEY_DEV_1 configured — AI provider stays NoOp");
+    console.log("[AI] No GEMINI_API_KEY_1 configured — AI provider stays NoOp");
   }
 }
