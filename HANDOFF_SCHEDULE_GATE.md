@@ -78,12 +78,13 @@ report freshness in the product's public-facing timezone.
   label switches automatically across the DST boundary, not hardcoded.
 - **`tsc --noEmit`** and **`next build`**: both clean, both re-run after the
   frontend changes too (not just once at the start).
-- **Naming audit** — `git show f5177ae | grep -i 'sarajevo\|bosnia'` → zero
-  matches, in both the diff and the commit message. The only "Bosnian" hits
-  anywhere in `DECISION_LOG.md` are pre-existing, unrelated content about
-  Bosnian-language hype-word coverage (see
-  [[HANDOFF_HYPE_FILTER_AND_ADMIN_GUARD]]), confirmed via a diff-scoped grep
-  to not be part of this change.
+- **Naming audit** — commit `f5177ae` grepped (case-insensitive) for the two
+  forbidden location terms from requirement 3: zero matches, in both the diff
+  and the commit message. A small number of unrelated pre-existing hits
+  elsewhere in `DECISION_LOG.md` — about language-content coverage for hype-word
+  detection, not a location reference (see
+  [[HANDOFF_HYPE_FILTER_AND_ADMIN_GUARD]]) — were confirmed via a diff-scoped
+  grep to not be part of this change.
 
 ## GitHub Actions secrets — partially done
 
@@ -119,9 +120,9 @@ signal why.
       fallback anywhere
 - [x] Frontend: public timestamp display converts real UTC → Europe/London
       via real timezone data, GMT/BST automatic
-- [x] Naming discipline: zero "Sarajevo"/"Bosnia" in code, comments, commit
-      message, or env var *names* — verified via commit-scoped grep, not
-      just working-tree
+- [x] Naming discipline: zero occurrences of the two forbidden location
+      terms (requirement 3) in code, comments, commit message, or env var
+      *names* — verified via commit-scoped grep, not just working-tree
 - [x] DECISION_LOG PDL-015 records the decision and rationale without the
       specific operations timezone value, after surfacing the tension to
       the Director rather than resolving it silently
