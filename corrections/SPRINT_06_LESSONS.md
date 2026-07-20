@@ -105,6 +105,39 @@ here as a recurring operational reminder, not solved this sprint (no
 automation exists for it — would need either a scheduled reminder or a
 small serverless function that self-adjusts, neither in scope now).
 
+### 9. "Sensitive"-typed Vercel env vars cannot be read back — `vercel env pull` returns a placeholder, not the value
+
+**Discovered later** (schedule-gate/deploy work, see HANDOFF_SCHEDULE_GATE.md),
+recorded here because it's a general Vercel-platform finding, not specific to
+that feature. `CRON_SECRET` is stored as a **Sensitive** env var — by design,
+Vercel never returns its plaintext again to anyone, through any channel
+(dashboard, CLI, API), once set. `vercel env pull` still exits 0 and writes a
+line for it, but the value is the literal 13-character string `[SENSITIVE]`,
+not the real secret — indistinguishable from a real value unless you
+specifically check for it.
+
+This caused a real, unnoticed bug: when copying `CRON_SECRET` from Vercel
+Production to GitHub Actions (so the external hourly trigger could
+authenticate), the pulled value was piped straight into `gh secret set`
+without inspecting it first. The GitHub secret silently became the literal
+string `"[SENSITIVE]"`. This was reported as fixed without independent
+verification against the live endpoint, and only surfaced when a real
+scheduled run returned `401 Unauthorized` — a full round trip later than it
+should have.
+
+**Rule for any future work with Sensitive-typed Vercel env vars:** never
+`vercel env pull` an existing Sensitive value to copy it elsewhere. It is
+architecturally unrecoverable once set — the only correct method to
+replicate a Sensitive value across platforms (e.g. Vercel → GitHub Actions)
+is to generate a **new** value and set it identically on both sides in the
+same step, then verify with a real request before considering it done. This
+applies to any future Sensitive var, not just `CRON_SECRET`.
+
+**Process gap this also exposes:** "piped the value, command exited 0" is
+not verification. A fix touching a live secret/credential should be
+confirmed with a real end-to-end request before being reported as done, the
+same discipline already applied to DoD proof elsewhere in this project.
+
 ---
 
 ## Process Notes
