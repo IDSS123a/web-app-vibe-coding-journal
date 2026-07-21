@@ -172,6 +172,66 @@ real production data will eventually look like. This applies beyond
 `daily_reports` to any table where a "does this already exist for
 today/this key" check gates real work.
 
+### 11. Discarding an entire error body to protect a secret also destroys legitimate diagnostics
+
+**Discovered later**, investigating why 23/30 articles hit Gemini key
+exhaustion in the real production pipeline test above. `gemini-provider.ts`
+deliberately never logged Gemini's error response body at all — reasonable
+intent (the key must never leak into logs), but the implementation threw
+away the *whole* body, including fields that carry zero secret material:
+`quotaId` (e.g. `GenerateRequestsPerDayPerProjectPerModel-FreeTier` — which
+alone distinguishes a per-day cap from a per-minute one), `quotaValue`,
+`retryDelay`, and the API's own `status` string. Result: post-mortem
+analysis of *why* a run failed was impossible from any log, complete or
+not — the only way to get this data was a fresh live diagnostic call after
+the fact, hours later, wasting more quota to find out what the original
+failure already knew and had thrown away.
+
+**Fix:** `extractSafeQuotaInfo()` now pulls exactly that small allowlist of
+fields into the existing `[GEMINI]` warn lines — never the key, never the
+request URL, never the free-text `message` field (redundant with the
+structured fields and not on the allowlist). Verified live: triggered a
+real 429 through `GeminiProvider.summarize()` locally, confirmed the log
+line contains `quotaId=...`/`retryDelay=...`, and confirmed zero
+occurrences of the key prefix `AIzaSy` anywhere in the full server output.
+
+**Rule going forward:** "never log the secret" and "never log anything
+from the error response" are not the same rule — conflating them trades
+away debuggability for a safety margin the narrower rule already provides.
+When redacting a response body for logging, allowlist the specific fields
+known to be safe rather than blanket-discarding everything.
+
+### 12. Gemini free-tier RPD quota resets at midnight Pacific — not at the configured operations-timezone midnight, and not a fixed offset from it
+
+Confirmed directly against Google's current docs (`ai.google.dev/gemini-api/docs/rate-limits`,
+fetched live): *"Requests per day (RPD) quotas reset at midnight Pacific
+time."* Also confirmed live via a real 429 body during this investigation:
+`quotaId: "GenerateRequestsPerDayPerProjectPerModel-FreeTier"`,
+`quotaValue: "20"` — i.e. this project's actual free-tier cap is 20
+requests/day/model/project, not a number pulled from generic web docs.
+
+Computed via real IANA data (`Intl.DateTimeFormat`, not manual UTC
+arithmetic — Pacific and the configured operations timezone (see
+`OPERATIONS_TIMEZONE`, DECISION_LOG.md PDL-015) don't share a DST
+calendar):
+- **Most of the year:** midnight Pacific = **09:00 local** in the
+  configured operations timezone (both zones in DST together, e.g.
+  `2026-07-21`, or both out together, e.g. `2026-01-15`).
+- **During the two US/EU DST-mismatch windows** (roughly mid-March, when
+  the US has already sprung forward but the EU hasn't yet; and roughly
+  late-October to early-November, when the EU has already fallen back but
+  the US hasn't yet): midnight Pacific = **08:00 local** — a full hour
+  earlier than the rest of the year. Verified for `2026-03-10` and
+  `2026-10-28` specifically.
+
+**Why this matters operationally:** any manual Gemini-quota testing done
+close to the actual scheduled target-hour run (see `lib/cron/schedule-gate.ts`)
+risks consuming the same day's quota the real run will need — the reset
+does not happen at the operations timezone's own midnight, so "wait until
+tomorrow, local time" is not when quota actually refreshes. Plan manual
+testing with the real 08:00/09:00-local Pacific-midnight reset in mind, not
+local intuition about "a new day."
+
 ---
 
 ## Process Notes
