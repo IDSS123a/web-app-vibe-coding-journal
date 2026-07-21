@@ -138,6 +138,40 @@ not verification. A fix touching a live secret/credential should be
 confirmed with a real end-to-end request before being reported as done, the
 same discipline already applied to DoD proof elsewhere in this project.
 
+### 10. Future-dated test fixtures left in the production DB silently blocked every real cron run since
+
+**Discovered later** (schedule-gate/deploy work, see HANDOFF_SCHEDULE_GATE.md).
+During Sprint 06 admin-UI click-through testing (2026-07-18, 14:13–14:49
+UTC), 8 `daily_reports` test rows were inserted directly with **future**
+`date` values (`2026-07-21` through `2026-10-02`) so each manual
+approve/reject test would have its own row without colliding with the
+others. None were cleaned up afterward.
+
+Once the real hourly cron went live, its idempotency check
+(`getDailyReportByDate(todayDate)` — added specifically to prevent
+double-running the pipeline on the same day) started reading these test
+rows as "today's report already exists" as soon as the real calendar date
+caught up to each one, and skipped the pipeline entirely. `2026-07-21`'s
+target-hour run returned a clean `{"skipped":true,"reason":
+"already_generated_today"}` — indistinguishable, from the log alone, from
+a genuinely completed prior run. This meant the real pipeline (RSS fetch,
+dedup, Quality Engine, Gemini calls) had never actually executed in
+production, discovered only by directly inspecting the DB row's
+`created_at` (three days old) and `markdown` (labeled "Email Test 2") —
+not by anything in the cron's own output. `2026-07-22` was already primed
+to repeat the same false-skip the next day, and 6 more rows sat further out
+through October.
+
+**Rule going forward:** any test/fixture row inserted into a production
+table during manual testing must be either (a) deleted in the same session
+it was created, (b) tracked as an explicit DoD/cleanup checklist item
+before the sprint closes, or (c) seeded with a date that can never
+naturally collide with real data (e.g. `1970-01-01`, or a dedicated
+`is_test` flag) — never a near-future date that looks exactly like what
+real production data will eventually look like. This applies beyond
+`daily_reports` to any table where a "does this already exist for
+today/this key" check gates real work.
+
 ---
 
 ## Process Notes
