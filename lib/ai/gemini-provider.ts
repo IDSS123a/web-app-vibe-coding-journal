@@ -27,10 +27,15 @@
  *     interpretation, never silently downgraded to "just wait"). Callers
  *     use `reason` to produce a distinctly different P-6 hold/alert message
  *     — "wait until tomorrow" reads nothing like "act now."
- *   - Logging prints ONLY the key's index (e.g. "key 3 rate-limited, trying
- *     key 4"). The key value itself is never logged, including inside any
- *     error text — the message is rebuilt from status/code, never the raw
- *     SDK/fetch error object that might echo the request URL.
+ *   - Logging prints the key's index (e.g. "key 3 rate-limited, trying key
+ *     4") plus a small set of structured, non-secret quota fields pulled
+ *     from Google's error body when present (quotaId, quotaValue,
+ *     retryDelay, the error's `status` field) — e.g. distinguishing a
+ *     per-day cap from a per-minute one. The key VALUE itself, the request
+ *     URL, and the raw error body/message are never logged — only the
+ *     specific allowlisted fields below (2026-07-21 fix: the original
+ *     "discard everything" version made post-mortem quota diagnosis
+ *     impossible, discovered the hard way; see corrections/SPRINT_06_LESSONS.md).
  *   - Detection caveat: 401/403/PERMISSION_DENIED/UNAUTHENTICATED are
  *     Google's standard, documented API error model — this is NOT verified
  *     against a live suspended account (not something safe or ethical to
@@ -96,11 +101,40 @@ interface GeminiErrorBody {
     code?: number;
     status?: string;
     message?: string;
-    details?: Array<{ reason?: string; "@type"?: string }>;
+    details?: Array<{
+      reason?: string;
+      "@type"?: string;
+      retryDelay?: string;
+      violations?: Array<{ quotaId?: string; quotaValue?: string }>;
+    }>;
   };
 }
 
 type KeyFailureKind = "rate_limit" | "auth_or_suspended" | null;
+
+/**
+ * Pulls ONLY a small allowlist of non-secret diagnostic fields out of a
+ * Gemini error body — quotaId (e.g. "GenerateRequestsPerDayPerProjectPerModel-
+ * FreeTier", which distinguishes a per-day cap from a per-minute one),
+ * quotaValue, retryDelay, and the API's own `status` string. Never the key,
+ * never the request URL, never the free-text `message` field (which itself
+ * doesn't contain the key, but isn't on the allowlist and isn't needed —
+ * the structured fields say the same thing more precisely). Returns "" when
+ * there's nothing safe to report.
+ */
+function extractSafeQuotaInfo(body: GeminiErrorBody | null): string {
+  if (!body?.error) return "";
+  const parts: string[] = [];
+  if (body.error.status) parts.push(`apiStatus=${body.error.status}`);
+  for (const detail of body.error.details ?? []) {
+    if (detail.retryDelay) parts.push(`retryDelay=${detail.retryDelay}`);
+    for (const violation of detail.violations ?? []) {
+      if (violation.quotaId) parts.push(`quotaId=${violation.quotaId}`);
+      if (violation.quotaValue) parts.push(`quotaValue=${violation.quotaValue}`);
+    }
+  }
+  return parts.length > 0 ? ` (${parts.join(", ")})` : "";
+}
 
 /**
  * PDL-012 evidence note: a genuinely invalid/revoked key was verified live
@@ -171,8 +205,9 @@ async function callGeminiJSON(keys: string[], prompt: string): Promise<Record<st
       return JSON.parse(text) as Record<string, unknown>;
     }
 
-    // Read the error body defensively; never forward it to logs verbatim
-    // (it can contain the request context). Only status/code are used.
+    // Parse the error body to classify the failure and pull safe diagnostic
+    // fields (see extractSafeQuotaInfo) — never forwarded to logs verbatim,
+    // only the specific allowlisted fields.
     let body: GeminiErrorBody | null = null;
     try {
       body = (await response.json()) as GeminiErrorBody;
@@ -181,6 +216,7 @@ async function callGeminiJSON(keys: string[], prompt: string): Promise<Record<st
     }
 
     const failureKind = classifyFailure(response.status, body);
+    const quotaInfo = extractSafeQuotaInfo(body);
 
     if (failureKind === "rate_limit" || failureKind === "auth_or_suspended") {
       if (failureKind === "auth_or_suspended") {
@@ -189,10 +225,10 @@ async function callGeminiJSON(keys: string[], prompt: string): Promise<Record<st
       const label = failureKind === "auth_or_suspended" ? "auth/permission failure" : "rate-limited";
       const nextIndex = i + 1;
       if (nextIndex < keys.length) {
-        console.warn(`[GEMINI] key ${i + 1} ${label}, trying key ${nextIndex + 1}`);
+        console.warn(`[GEMINI] key ${i + 1} ${label}, trying key ${nextIndex + 1}${quotaInfo}`);
         continue;
       }
-      console.warn(`[GEMINI] key ${i + 1} ${label}, no more keys configured`);
+      console.warn(`[GEMINI] key ${i + 1} ${label}, no more keys configured${quotaInfo}`);
       throw new GeminiKeysExhaustedError(
         keys.length,
         sawAuthOrSuspended ? "suspected_suspension" : "quota",
