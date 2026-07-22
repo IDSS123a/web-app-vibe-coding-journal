@@ -232,6 +232,42 @@ tomorrow, local time" is not when quota actually refreshes. Plan manual
 testing with the real 08:00/09:00-local Pacific-midnight reset in mind, not
 local intuition about "a new day."
 
+### 13. A third-party trigger's own client-side timeout is not a pipeline-kill signal — and its failure notification will false-alarm on every real run
+
+Investigated whether an external scheduler (cron-job.org, added as a
+second, more reliable trigger after the GitHub Actions scheduling-gap
+finding) with a 30s request timeout would actually terminate the
+`/api/cron/daily-digest` pipeline mid-run, since a real run with a full
+RSS set takes 105s+. Tested directly against production: forcibly
+disconnected the client at 25s (`curl --max-time 25` → exit 28, no
+response received), then verified independently via a direct DB query
+that server-side execution completed ~105s after the call started —
+**79 seconds after the client had already given up.** Vercel functions
+keep running after the client disconnects; the client's timeout is not a
+kill signal. No architecture change (e.g. an immediate-202-plus-`waitUntil`
+pattern) was needed.
+
+**Direct consequence, easy to miss:** because every real pipeline run
+genuinely exceeds cron-job.org's 30s timeout, cron-job.org's own
+"execution of the cronjob fails" notification will fire on **every single
+real run**, success or not — not because anything is actually wrong, but
+because its own client gave up waiting before the server was done. Initially
+configured to enable that notification (reasonable-sounding default);
+reversed once this was understood, since normalized false alarms are worse
+than no alarm — they train you to stop reading them, which is exactly when
+a real failure slips through unnoticed. cron-job.org is used only as a
+trigger mechanism here; the actual success/failure signal comes from the
+application's own logic (`held_for_review` → email alert, plus direct DB
+inspection), never from the third-party scheduler's own opinion of whether
+the call it made looked successful.
+
+**Rule going forward:** when wiring any external trigger/monitoring service
+to a long-running endpoint, check whether the service's own
+success/failure notification is derived from *its own request timeout*
+rather than the actual work's outcome — if so, and the timeout is shorter
+than the real expected duration, that notification is structurally
+guaranteed to misfire and should be disabled, not tuned.
+
 ---
 
 ## Process Notes
