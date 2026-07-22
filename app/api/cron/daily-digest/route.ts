@@ -4,10 +4,11 @@
  *               Classifier → Daily Report Generation
  * Security: Requires CRON_SECRET header (environment variable)
  * Usage: curl -X POST http://localhost:3000/api/cron/daily-digest -H "Authorization: Bearer $CRON_SECRET"
- * Triggered hourly by .github/workflows/hourly-digest-trigger.yml (Vercel
+ * Triggered hourly by two independent external schedulers,
+ * .github/workflows/hourly-digest-trigger.yml and cron-job.org (Vercel
  * Hobby plan cannot schedule its own cron more than once a day); the
- * target-hour + idempotency checks below decide which invocation actually
- * runs the pipeline.
+ * target-hour + catch-up + idempotency checks below decide which
+ * invocation actually runs the pipeline. See lib/cron/schedule-gate.ts.
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -22,7 +23,7 @@ import {
   getArticlesForDailyReport,
 } from "@/features/pipeline/repository";
 import { upsertDailyReport, getDailyReportByDate } from "@/features/daily-report/repository";
-import { isTargetOperationsHour } from "@/lib/cron/schedule-gate";
+import { isTargetOperationsHour, isPastCatchUpDeadline } from "@/lib/cron/schedule-gate";
 import {
   scoreArticleConfidence,
   classifyArticle,
@@ -64,12 +65,18 @@ export async function POST(request: NextRequest) {
 
     // 2. AUTHORIZE (already authenticated)
 
-    // 3. VALIDATE — this endpoint is triggered hourly by an external
-    // scheduler (Vercel Hobby plan cannot run its own cron more than once
-    // a day, see .github/workflows). Only the invocation landing in the
-    // configured target local hour should actually run the pipeline.
-    // See lib/cron/schedule-gate.ts.
-    if (!isTargetOperationsHour()) {
+    // 3. VALIDATE — this endpoint is triggered hourly by two independent
+    // external schedulers (Vercel Hobby plan cannot run its own cron more
+    // than once a day, see .github/workflows and the cron-job.org config).
+    // Normally only the invocation landing in the configured target local
+    // hour runs the pipeline. isPastCatchUpDeadline is a safety net: if
+    // every trigger has missed the target hour outright by this point in
+    // the day (measured to happen — see corrections/SPRINT_06_LESSONS.md),
+    // the next invocation runs anyway rather than silently waiting for
+    // tomorrow. See lib/cron/schedule-gate.ts.
+    const now = new Date();
+    const isTargetHour = isTargetOperationsHour(now);
+    if (!isTargetHour && !isPastCatchUpDeadline(now)) {
       console.log("[CRON] Not the configured target hour — skipping this invocation");
       return NextResponse.json(
         { success: true, skipped: true, reason: "not_target_hour" },
@@ -77,10 +84,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Idempotency: Vercel cron delivery is at-least-once and Hobby-plan
-    // invocations aren't minute-precise, so more than one hourly tick could
-    // land inside the target hour window. If today's report already exists,
-    // the pipeline already ran today — skip rather than re-run the full
+    // Idempotency: at-least-once delivery from either scheduler, plus the
+    // catch-up path above, means more than one invocation could reach this
+    // point on the same day. If today's report already exists, the
+    // pipeline already ran today — skip rather than re-run the full
     // (costly) pipeline a second time.
     const todayDate = new Date().toISOString().split("T")[0]!;
     const existingReport = await getDailyReportByDate(todayDate);
@@ -94,6 +101,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (!isTargetHour) {
+      console.log("[CRON] Target hour was missed today — catch-up safety net triggering the pipeline now");
+    }
     console.log("[CRON] Starting daily digest pipeline");
     ensureAIProviderInitialized();
 
