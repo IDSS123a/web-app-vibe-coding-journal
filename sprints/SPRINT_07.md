@@ -80,19 +80,11 @@ logic living elsewhere.
    including a functional paywall/subscribe screen (without live PayPal
    payment behind it yet), but only after every backend layer is complete
    and tested — not deferred to Sprint 08 as a separate later build.
-3. **Existing users at migration time — still open.** The one real
-   `user_profiles` row checked live (`admin@test.local`) has no
-   subscription fields today. Once the migration runs, does it get
-   backfilled with a default state (e.g. `active`, `admin`-exempt anyway
-   per item 4) or left null? Director's most recent answer to this
-   specific question addressed something else (email routing, now
-   resolved separately as PDL-016) — re-asking directly:
-   **📌 RECOMMENDATION: backfill existing rows to `subscription_status:
+3. ~~**Existing users at migration time.**~~ **RESOLVED 2026-07-23
+   (Director confirmed).** Existing rows backfill to `subscription_status:
    active`, `subscription_tier: premium`, `subscription_expires_at: NULL`
-   (never expires) — since every existing row today is `admin@test.local`
-   (billing-exempt anyway) and defaulting real future non-admin backfills
-   to a hard-blocked `expired` state on migration day would be a harsh
-   surprise with no warning.** Confirm or override.
+   (never expires). Applies to the current `admin@test.local` row and any
+   other pre-migration row.
 
 ---
 
@@ -136,11 +128,17 @@ logic living elsewhere.
 
 ## Approval Record
 
-**Not yet approved.** This is a scope draft only — per this project's
-standing discipline (every prior sprint required explicit Director
-approval before implementation began), no code changes happen against
-this scope until reviewed and confirmed. Decisions 1 and 2 resolved
-2026-07-23; Decision 3 (migration backfill behavior) still open.
+**All three open decisions resolved 2026-07-23** (trial tier: Premium;
+paywall screen: ships this sprint, UI last per Commander build order;
+migration backfill: `active`/`premium`/never-expires). Scope content is
+final pending nothing further.
+
+**Implementation itself not yet started.** Per this project's standing
+discipline (every prior sprint required a distinct, explicit "begin
+implementation" confirmation, not inferred from answering scope
+questions — see `PROCESS_LESSONS.md`/SPRINT_04_LESSONS finding #15, no
+batch approval), a separate go-ahead is still needed before any code
+changes begin against this scope.
 
 ---
 
