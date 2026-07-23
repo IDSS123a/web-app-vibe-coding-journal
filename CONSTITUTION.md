@@ -619,6 +619,17 @@ this project is not done until:
   model the rest of this project assumes — must be designed for before
   launch, not discovered after Premium subscribers start using it
   heavily.
+- **Commander as the chatbot's guidance engine (Director, 2026-07-23):**
+  the chatbot's project-creation guidance is governed by the Commander
+  system (github.com/IDSS123a/commander) itself — the same operating
+  system the Director uses for every project — not an ad-hoc prompt.
+  This makes Commander's token efficiency a direct per-conversation
+  product cost (unit economics of the $50 tier), not just internal
+  convenience. Verified content from this journal feeds the chatbot's
+  recommendations **via system prompt / conversation context injection
+  only** — resolved explicitly by the Director 2026-07-23 as compatible
+  with the standing no-RAG decision above; the chatbot does not query
+  or retrieve from the article archive at runtime.
 
 ---
 
