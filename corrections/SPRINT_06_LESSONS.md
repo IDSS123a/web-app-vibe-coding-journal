@@ -268,6 +268,42 @@ rather than the actual work's outcome — if so, and the timeout is shorter
 than the real expected duration, that notification is structurally
 guaranteed to misfire and should be disabled, not tuned.
 
+### 14. `isPastCatchUpDeadline` has a permanent local-midnight blind spot — KNOWN BUG, NOT YET FIXED, PRIORITY #1
+
+**Status: open.** `lib/cron/schedule-gate.ts`'s catch-up check
+(`local hour >= 12`) wraps to `0` at the configured operations timezone's
+own local midnight. Because the `daily_reports.date` field is keyed on the
+**UTC** calendar date, not local calendar date, there is a recurring
+~2-hour window — local `22:00–00:00` — where local hour has already
+wrapped to `0`/`1` (so `isPastCatchUpDeadline` returns `false` again) while
+the UTC calendar date that "today" actually refers to hasn't rolled over
+yet. If neither external trigger has produced a report by the start of
+that window, catch-up becomes structurally unable to fire for the
+remainder of that UTC day — not delayed, permanently missed until
+tomorrow's target hour.
+
+**First observed real-world consequence:** `2026-07-22` most likely ended
+with zero report generated. Not because of a logic error in the deployed
+code (reproduced and confirmed `isPastCatchUpDeadline` returns the
+mathematically correct value for every timestamp tested) — the catch-up
+fix itself only went live at local-time-equivalent `21:49 UTC` (see finding
+#13's commit `3f57297`), giving an 11-minute window before the blind spot
+began at local `22:00`/`22:00 UTC`, with no trigger confirmed to land in
+that gap.
+
+**Not fixed tonight, by design** — Director's explicit call: document and
+stop, no live changes this late, no real users yet so a missed day is
+acceptable short-term. **This is priority #1 for the next session, before
+anything else.**
+
+**Likely direction for the fix** (not committed to, needs actual
+implementation): base the catch-up decision on remaining time before UTC
+date rollover rather than pure local-hour arithmetic, or track "has today's
+target hour already passed" independently of local-hour wraparound —
+either way, the fix needs to be live-tested across the same local-midnight
+boundary that caused this, not just the noon boundary already covered by
+finding #13's test suite.
+
 ---
 
 ## Process Notes
