@@ -70,21 +70,29 @@ logic living elsewhere.
 
 ## Decisions Needed (Director — not invented here, per M-4/M-13)
 
-1. **Trial tier level:** does the 3-day trial grant Premium-level access
-   (including the not-yet-built P-19 chatbot once it exists) or only
-   Basic-level? P-13 states this explicitly as unresolved. Blocks item 2
-   above until answered.
-2. **Paywall screen scope:** should this sprint build the paywall/redirect
-   *screen* (even without live payment behind it — e.g. a "subscribe"
-   page that doesn't yet process real payment), or should the screen
-   itself wait for Sprint 08 so it's built once, alongside the real
-   PayPal buttons? Affects whether trial-expired users see anything
-   coherent between Sprint 07 shipping and Sprint 08 shipping.
-3. **Existing users at migration time:** the one real `user_profiles` row
-   checked live (`admin@test.local`) has no subscription fields today.
-   Once the migration runs, does it get backfilled with a default state
-   (e.g. `active`, `admin`-exempt anyway per item 4) or left null? Affects
-   the migration's exact `DEFAULT`/backfill clause.
+1. ~~**Trial tier level.**~~ **RESOLVED 2026-07-23 (Director):** the 3-day
+   trial grants **Premium-level access**, including the P-19 chatbot once
+   it exists.
+2. ~~**Paywall screen scope.**~~ **RESOLVED 2026-07-23 (Director + Commander
+   FEATURE_LIFECYCLE.md Step 3):** "build strictly in dependency order,
+   never jump ahead" — migration → types → validation → repository →
+   domain → API route → **UI last**. This sprint builds the full feature,
+   including a functional paywall/subscribe screen (without live PayPal
+   payment behind it yet), but only after every backend layer is complete
+   and tested — not deferred to Sprint 08 as a separate later build.
+3. **Existing users at migration time — still open.** The one real
+   `user_profiles` row checked live (`admin@test.local`) has no
+   subscription fields today. Once the migration runs, does it get
+   backfilled with a default state (e.g. `active`, `admin`-exempt anyway
+   per item 4) or left null? Director's most recent answer to this
+   specific question addressed something else (email routing, now
+   resolved separately as PDL-016) — re-asking directly:
+   **📌 RECOMMENDATION: backfill existing rows to `subscription_status:
+   active`, `subscription_tier: premium`, `subscription_expires_at: NULL`
+   (never expires) — since every existing row today is `admin@test.local`
+   (billing-exempt anyway) and defaulting real future non-admin backfills
+   to a hard-blocked `expired` state on migration day would be a harsh
+   surprise with no warning.** Confirm or override.
 
 ---
 
@@ -131,8 +139,8 @@ logic living elsewhere.
 **Not yet approved.** This is a scope draft only — per this project's
 standing discipline (every prior sprint required explicit Director
 approval before implementation began), no code changes happen against
-this scope until reviewed and confirmed, including the three open
-Decisions above.
+this scope until reviewed and confirmed. Decisions 1 and 2 resolved
+2026-07-23; Decision 3 (migration backfill behavior) still open.
 
 ---
 

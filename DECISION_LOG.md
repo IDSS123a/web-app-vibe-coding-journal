@@ -530,4 +530,32 @@ superseding this one, not a silent revert.
 
 ---
 
+## PDL-016 — `REVIEW_QUEUE_EMAIL` cannot yet be the P-15 contact address — Resend sandbox restriction, verified live
+
+**Date:** 2026-07-23
+
+**Finding:** Director instructed that all application communication route
+to `ai-hero-studio@outlook.com`, consistent with P-15's stated contact
+channel. Attempted directly via a live Resend API call (not assumed):
+Resend rejected it with `403 validation_error` — *"You can only send
+testing emails to your own email address (mulalic.davor@outlook.com)."*
+This is Resend's standard unverified-domain sandbox restriction: until a
+domain is verified at resend.com/domains, delivery is hard-limited to the
+account owner's own address.
+
+**Decision:** `REVIEW_QUEUE_EMAIL` stays `mulalic.davor@outlook.com` for
+now — the only address Resend will currently deliver to. Changing it to
+`ai-hero-studio@outlook.com` was attempted, proven broken via a live send
+attempt, and reverted the same session rather than shipped in a state that
+would silently fail every P-6 review-queue alert going forward.
+
+**Resolution path (not yet actioned):** verifying a domain with Resend
+would lift this restriction and allow the P-15 address to be used for
+real, including as the `RESEND_FROM` sender (currently
+`onboarding@resend.dev`, itself only usable because no domain is
+verified). Needs a Director decision on which domain to verify and DNS
+access — out of scope to resolve unilaterally tonight.
+
+---
+
 *Vibe-Coding Journal — Project Decision Log — updated as decisions are made.*
