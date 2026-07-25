@@ -2,7 +2,6 @@
 
 import { supabaseAdmin } from "@/lib/db/client";
 import { registerSchema, loginSchema } from "@/lib/validation/schemas";
-import { hashPassword } from "@/lib/auth/password";
 
 interface AuthResponse {
   success: boolean;
@@ -44,10 +43,15 @@ export async function registerAction(input: unknown): Promise<AuthResponse> {
       };
     }
 
-    // Create auth user via Supabase Auth
+    // Create auth user via Supabase Auth. Supabase's Admin API hashes the
+    // password itself internally -- it must receive the plaintext value,
+    // never a pre-hashed one (hashing an already-hashed string here would
+    // make the stored credential correspond to bcrypt_hash_of(password),
+    // not password itself, so no user could ever sign back in with their
+    // real password -- confirmed live during Sprint 07 verification).
     const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email: parsed.email,
-      password: await hashPassword(parsed.password),
+      password: parsed.password,
       email_confirm: true,
     });
 
@@ -59,6 +63,11 @@ export async function registerAction(input: unknown): Promise<AuthResponse> {
     }
 
     // Create user profile
+    // P-13 (Sprint 07): 3-day trial, Premium-level access during trial
+    // (Director-confirmed 2026-07-23, sprints/SPRINT_07.md Decision 1).
+    const trialStartedAt = new Date();
+    const trialEndsAt = new Date(trialStartedAt.getTime() + 3 * 24 * 60 * 60 * 1000);
+
     const { error: profileError } = await supabaseAdmin
       .from("user_profiles")
       .insert({
@@ -67,6 +76,10 @@ export async function registerAction(input: unknown): Promise<AuthResponse> {
         tools_used: parsed.tools_used,
         depth_preference: parsed.depth_preference,
         other_tools_freetext: parsed.other_tools_freetext || null,
+        subscription_status: "trial",
+        trial_started_at: trialStartedAt.toISOString(),
+        trial_ends_at: trialEndsAt.toISOString(),
+        subscription_tier: "premium",
       });
 
     if (profileError) {
