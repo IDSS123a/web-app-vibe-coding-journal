@@ -62,9 +62,13 @@ logic living elsewhere.
   concern from the access-control logic this sprint covers.
 - Any change to the Gemini key-rotation ToS-risk posture (P-18) — that's
   Sprint 08's explicit precondition to resolve, not this sprint's.
-- Chatbot/Premium-exclusive feature itself (P-19) — Premium tier exists
-  as a billing state this sprint, not as a feature with anything
-  distinguishing it yet.
+- **Chatbot itself (P-19)** — Director confirmed 2026-07-24: far-future
+  scope, not this sprint or the next few. Premium exists here only as a
+  billing state; nothing distinguishes it as a feature yet.
+- **Branding / Contact form (P-15)** — Director confirmed 2026-07-24:
+  deferred to Sprint 09. `ai-hero-studio@outlook.com` as the single
+  contact channel is a P-15 rule already on the books, but the actual
+  Contact form UI is a separate, later build — not touched here.
 
 ---
 
