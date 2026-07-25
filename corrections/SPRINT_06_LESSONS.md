@@ -268,9 +268,22 @@ rather than the actual work's outcome — if so, and the timeout is shorter
 than the real expected duration, that notification is structurally
 guaranteed to misfire and should be disabled, not tuned.
 
-### 14. `isPastCatchUpDeadline` has a permanent local-midnight blind spot — KNOWN BUG, NOT YET FIXED, PRIORITY #1
+### 14. `isPastCatchUpDeadline` has a permanent local-midnight blind spot — FIXED 2026-07-24
 
-**Status: open.** `lib/cron/schedule-gate.ts`'s catch-up check
+**Status: resolved**, commit `753dbf0`, deployed to production same day.
+Fix: replaced the cyclical local-hour comparison with a linear UTC
+timestamp comparison — compute today's real target instant (via the same
+iterative Intl-correction technique already used elsewhere in this file)
+and compare `now >= target + 5h`, which cannot wrap around regardless of
+what local hour "now" happens to be. Live-verified via a temporary test
+route (deleted after use) across 8 cases: just-before-target,
+exactly-at-target, just-after-noon, late evening (the exact scenario that
+produced the real missed report below), just-after-local-midnight on a new
+day, and DST-winter equivalents of the noon/evening/midnight cases — all
+matched expected values before deploy, per the Director's explicit
+"test all 6 cases locally, show results, then deploy" instruction.
+
+**Original bug, for the record.** `lib/cron/schedule-gate.ts`'s catch-up check
 (`local hour >= 12`) wraps to `0` at the configured operations timezone's
 own local midnight. Because the `daily_reports.date` field is keyed on the
 **UTC** calendar date, not local calendar date, there is a recurring
@@ -291,18 +304,10 @@ fix itself only went live at local-time-equivalent `21:49 UTC` (see finding
 began at local `22:00`/`22:00 UTC`, with no trigger confirmed to land in
 that gap.
 
-**Not fixed tonight, by design** — Director's explicit call: document and
-stop, no live changes this late, no real users yet so a missed day is
-acceptable short-term. **This is priority #1 for the next session, before
-anything else.**
-
-**Likely direction for the fix** (not committed to, needs actual
-implementation): base the catch-up decision on remaining time before UTC
-date rollover rather than pure local-hour arithmetic, or track "has today's
-target hour already passed" independently of local-hour wraparound —
-either way, the fix needs to be live-tested across the same local-midnight
-boundary that caused this, not just the noon boundary already covered by
-finding #13's test suite.
+**Not fixed same-night it was found, by design** — Director's explicit
+call at the time: document and stop, no live changes that late, no real
+users yet so one missed day was acceptable short-term. Fixed the following
+session as the explicit priority #1 item — see "Status: resolved" above.
 
 ---
 
