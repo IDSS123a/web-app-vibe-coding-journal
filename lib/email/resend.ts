@@ -70,6 +70,56 @@ ${urgentBanner}
 }
 
 /**
+ * Send payment-issue alert (Sprint 08, P-16, Decision 3).
+ * Deliberately a separate function from sendReviewQueueAlert, not a
+ * variant of it — a payment ambiguity and a held Daily Report are
+ * different severities and different audiences, and P-1 applied to money
+ * means this must never be silently folded into unrelated notifications.
+ * `[PAYMENT ISSUE]` mirrors the `[URGENT]` escalation precedent from
+ * PDL-012: distinct at the inbox subject line, before opening the email.
+ */
+export async function sendPaymentIssueAlert(payload: {
+  paypalEventId: string;
+  eventType: string;
+  reason: string;
+  userId: string | null;
+}): Promise<boolean> {
+  if (!resend || !resendApiKey) {
+    console.warn("[EMAIL] Resend not configured — skipping payment issue alert");
+    return false;
+  }
+
+  try {
+    const html = `
+<h2>Vibe-Coding Journal — Payment Requires Manual Review</h2>
+<p style="background:#fee2e2;color:#991b1b;padding:12px;border-radius:6px;font-weight:bold;">⚠ A PayPal webhook event could not be resolved automatically — do not assume it succeeded or failed.</p>
+<p><strong>PayPal event ID:</strong> ${payload.paypalEventId}</p>
+<p><strong>Event type:</strong> ${payload.eventType}</p>
+<p><strong>Reason:</strong> ${payload.reason}</p>
+<p><strong>User ID:</strong> ${payload.userId ?? "unknown — could not correlate to a user"}</p>
+    `.trim();
+
+    const { error } = await resend.emails.send({
+      from: fromAddress,
+      to: reviewQueueEmail,
+      subject: `[PAYMENT ISSUE] ${payload.eventType} — manual review needed`,
+      html,
+    });
+
+    if (error) {
+      console.error("[EMAIL] Failed to send payment issue alert:", error);
+      return false;
+    }
+
+    console.log(`[EMAIL] Payment issue alert sent to ${reviewQueueEmail}`);
+    return true;
+  } catch (err) {
+    console.error("[EMAIL] Error sending payment issue alert:", err);
+    return false;
+  }
+}
+
+/**
  * Send admin notification (generic)
  * For future use: errors, warnings, system events
  */

@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Client-side subscription/trial route guard (UI level, Sprint 07, P-13).
+ * Client-side subscription/trial route guard (UI level, Sprint 07/08, P-13/P-16).
  *
  * Same architecture as AdminGuard: auth is client-side (supabase-js session
  * in localStorage), so this cannot be a server middleware check without
@@ -9,12 +9,20 @@
  * trial/subscription evaluation) is computed server-side in /api/me — this
  * component only acts on the returned `hasAccess` boolean, never
  * re-implements the business logic client-side.
+ *
+ * Payment (Sprint 08, Decision 2): PayPal's client-side `onApprove` is UX
+ * feedback ONLY — it never itself grants access. The actual activation
+ * happens server-side when the verified PayPal webhook arrives
+ * (POST /api/webhooks/paypal). After approval, this component polls
+ * /api/me for a short window so the UI reflects the real state once the
+ * webhook has landed, rather than trusting the client-side approval event.
  */
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useSession } from "@/lib/auth/use-session";
 
 type GuardState = "checking" | "anon" | "blocked" | "ok";
+type TierName = "basic" | "premium";
 
 interface MeResponse {
   authenticated: boolean;
@@ -22,17 +30,104 @@ interface MeResponse {
   accessReason: string;
 }
 
+let paypalSdkPromise: Promise<void> | null = null;
+
+function loadPayPalSdk(): Promise<void> {
+  if (paypalSdkPromise) return paypalSdkPromise;
+
+  const clientId = process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID;
+  paypalSdkPromise = new Promise((resolve, reject) => {
+    if (!clientId) {
+      reject(new Error("NEXT_PUBLIC_PAYPAL_CLIENT_ID is not configured"));
+      return;
+    }
+    if (document.getElementById("paypal-sdk")) {
+      resolve();
+      return;
+    }
+    const script = document.createElement("script");
+    script.id = "paypal-sdk";
+    script.src = `https://www.paypal.com/sdk/js?client-id=${clientId}&currency=USD&intent=capture`;
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error("Failed to load PayPal SDK"));
+    document.body.appendChild(script);
+  });
+  return paypalSdkPromise;
+}
+
+function PayPalTierButton({
+  tier,
+  token,
+  onApproved,
+}: {
+  tier: TierName;
+  token: string;
+  onApproved: () => void;
+}) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [sdkError, setSdkError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    loadPayPalSdk()
+      .then(() => {
+        if (cancelled || !containerRef.current) return;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const paypal = (window as any).paypal;
+        if (!paypal) {
+          setSdkError("PayPal SDK unavailable");
+          return;
+        }
+        paypal
+          .Buttons({
+            createOrder: async () => {
+              const response = await fetch("/api/payments/create-order", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({ tier }),
+              });
+              const data = await response.json();
+              if (!response.ok || !data.orderId) {
+                throw new Error(data.error || "Failed to create order");
+              }
+              return data.orderId;
+            },
+            // Deliberately no capture call here (Decision 2) -- the
+            // webhook is the sole source of truth for activation. This is
+            // UX feedback only: tell the caller approval happened, so the
+            // UI can start polling for the real, server-confirmed state.
+            onApprove: async () => {
+              onApproved();
+            },
+          })
+          .render(containerRef.current);
+      })
+      .catch((err: Error) => setSdkError(err.message));
+
+    return () => {
+      cancelled = true;
+    };
+  }, [tier, token, onApproved]);
+
+  if (sdkError) {
+    return <p className="text-sm text-red-600 dark:text-red-400">{sdkError}</p>;
+  }
+
+  return <div ref={containerRef} />;
+}
+
 export function SubscriptionGuard({ children }: { children: ReactNode }) {
   const { token, loading } = useSession();
   const [state, setState] = useState<GuardState>("checking");
   const [accessReason, setAccessReason] = useState<string>("");
+  const [awaitingWebhook, setAwaitingWebhook] = useState(false);
 
-  useEffect(() => {
-    if (loading) return;
-    if (!token) {
-      setState("anon");
-      return;
-    }
+  function checkAccess() {
+    if (!token) return;
     let active = true;
     fetch("/api/me", { headers: { authorization: `Bearer ${token}` } })
       .then((r) => r.json())
@@ -47,7 +142,45 @@ export function SubscriptionGuard({ children }: { children: ReactNode }) {
     return () => {
       active = false;
     };
+  }
+
+  useEffect(() => {
+    if (loading) return;
+    if (!token) {
+      setState("anon");
+      return;
+    }
+    return checkAccess();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, loading]);
+
+  // After client-side approval, poll /api/me for a short window so the UI
+  // reflects real activation once the webhook lands, instead of trusting
+  // the client-side approval event itself.
+  useEffect(() => {
+    if (!awaitingWebhook || !token) return;
+    let attempts = 0;
+    const interval = setInterval(() => {
+      attempts += 1;
+      fetch("/api/me", { headers: { authorization: `Bearer ${token}` } })
+        .then((r) => r.json())
+        .then((d: MeResponse) => {
+          if (d.hasAccess) {
+            setAccessReason(d.accessReason);
+            setState("ok");
+            setAwaitingWebhook(false);
+            clearInterval(interval);
+          } else if (attempts >= 8) {
+            // ~16s elapsed — stop polling, leave the user a manual next step.
+            clearInterval(interval);
+          }
+        })
+        .catch(() => {
+          if (attempts >= 8) clearInterval(interval);
+        });
+    }, 2000);
+    return () => clearInterval(interval);
+  }, [awaitingWebhook, token]);
 
   if (loading || state === "checking") {
     return (
@@ -72,6 +205,21 @@ export function SubscriptionGuard({ children }: { children: ReactNode }) {
 
   if (state === "blocked") {
     const isTrialExpired = accessReason === "trial_expired";
+
+    if (awaitingWebhook) {
+      return (
+        <div className="mx-auto max-w-md px-4 py-16 text-center">
+          <h2 className="mb-2 text-xl font-semibold text-gray-900 dark:text-gray-50">
+            Processing your payment…
+          </h2>
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            This usually takes a few seconds. If access doesn&apos;t appear
+            shortly, refresh this page.
+          </p>
+        </div>
+      );
+    }
+
     return (
       <div className="mx-auto max-w-2xl px-4 py-16 text-center">
         <h2 className="mb-2 text-2xl font-bold text-gray-900 dark:text-gray-50">
@@ -91,12 +239,13 @@ export function SubscriptionGuard({ children }: { children: ReactNode }) {
             <p className="mb-6 text-sm text-gray-600 dark:text-gray-400">
               Daily Report, Archive, and Bookmarks.
             </p>
-            <button
-              disabled
-              className="w-full cursor-not-allowed rounded-md border border-gray-300 py-2 text-sm font-semibold text-gray-400 dark:border-gray-600"
-            >
-              Subscribe — coming soon
-            </button>
+            {token && (
+              <PayPalTierButton
+                tier="basic"
+                token={token}
+                onApproved={() => setAwaitingWebhook(true)}
+              />
+            )}
           </div>
           <div className="rounded-lg border-2 border-blue-600 p-6 text-left">
             <h3 className="mb-1 font-semibold text-gray-900 dark:text-gray-50">Premium</h3>
@@ -106,16 +255,17 @@ export function SubscriptionGuard({ children }: { children: ReactNode }) {
             <p className="mb-6 text-sm text-gray-600 dark:text-gray-400">
               Everything in Basic, plus the Vibe-Coding Assistant chatbot.
             </p>
-            <button
-              disabled
-              className="w-full cursor-not-allowed rounded-md bg-blue-600 py-2 text-sm font-semibold text-white opacity-50"
-            >
-              Subscribe — coming soon
-            </button>
+            {token && (
+              <PayPalTierButton
+                tier="premium"
+                token={token}
+                onApproved={() => setAwaitingWebhook(true)}
+              />
+            )}
           </div>
         </div>
         <p className="mt-8 text-xs text-gray-400">
-          Payment processing is not live yet.
+          Sandbox mode — no real payment is processed.
         </p>
       </div>
     );

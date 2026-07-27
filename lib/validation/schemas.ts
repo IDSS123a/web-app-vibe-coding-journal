@@ -105,3 +105,21 @@ export const bookmarkSchema = z.object({
 });
 
 export type Bookmark = z.infer<typeof bookmarkSchema>;
+
+// Payment events (Sprint 08, P-16) — idempotency + audit log for PayPal
+// webhook deliveries. `status` distinguishes a successfully-activated
+// subscription from an ambiguous state needing manual review (P-1) from
+// a real-but-unacted-on event type.
+export const paymentEventSchema = z.object({
+  id: z.string().uuid(),
+  paypal_event_id: z.string().min(1),
+  event_type: z.string().min(1),
+  user_id: z.string().uuid().nullable(),
+  tier: z.enum(["basic", "premium"]).nullable(),
+  amount_usd: z.number().nonnegative().nullable(),
+  status: z.enum(["processed", "ambiguous", "ignored"]),
+  raw_payload: z.record(z.string(), z.unknown()),
+  created_at: z.string().datetime(),
+});
+
+export type PaymentEvent = z.infer<typeof paymentEventSchema>;
