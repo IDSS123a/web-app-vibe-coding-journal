@@ -1,6 +1,6 @@
 # SPRINT_08 — PayPal Checkout Integration
 # Vibe-Coding Journal
-# Status: SCOPE DRAFT — awaiting Director approval, no implementation started
+# Status: APPROVED 2026-07-27 — implementation may begin
 
 ---
 
@@ -54,27 +54,45 @@ immediately before public launch, not part of this sprint.
 
 ### 2. Payment confirmation → subscription activation
 
-On confirmed payment: `subscription_status` → `active`,
-`subscription_expires_at` set to +1 year from confirmation,
-`subscription_tier` set to whichever tier was purchased. Reuses the
-Sprint 07 data model and `SubscriptionGuard` unchanged — this sprint only
-adds the write path that flips a blocked account to an unblocked one.
+**Webhook is the sole source of truth (Decision 2, resolved).** A PayPal
+webhook (server-to-server, signature-verified) is what flips
+`subscription_status` → `active`, sets `subscription_expires_at` to +1
+year from confirmation, and sets `subscription_tier` to whichever tier
+was purchased. The client-side redirect after checkout is **UX
+confirmation only** — it may show the user a "thanks, activating…" style
+message, but it never itself writes `subscription_status`. A user
+returning to the site after checkout is not evidence of payment; a
+verified webhook is. Reuses the Sprint 07 data model and
+`SubscriptionGuard` unchanged — this sprint only adds the write path that
+flips a blocked account to an unblocked one, and it's a server-to-server
+path, not a client-triggered one.
 
 ### 3. Ambiguous payment states never resolve silently (P-1 applied to money)
 
 P-16's explicit rule: if a webhook or confirmation step fails, times out,
 or returns an unexpected shape, the system must not assume success or
-failure — it flags the account for manual admin review (P-14). Exact
-mechanism (reuse the existing P-6 review-queue/email-alert path, or a new
-one specific to payments) is Decision 2 below, not assumed here.
+failure — it flags the account for manual admin review (P-14).
+**Mechanism (Decision 3, resolved): a separate, distinctly-labeled alert
+path from the existing P-6 review-queue emails** — a `[PAYMENT ISSUE]`
+subject-prefix pattern, mirroring PDL-012's existing `[URGENT]`
+escalation precedent, not folded into or confused with content-hold
+(held Daily Report) notifications. Different severity, different
+audience expectation.
 
-### 4. Client ID / Client Secret handling
+### 4. Secrets — three distinct credentials, same discipline as always
 
-PayPal Client ID is client-safe by design (ships in the frontend SDK
-script) — not held to server-secret standards. If a Client **Secret** is
-ever needed (server-side payment verification), it gets the exact same
-discipline as `SUPABASE_SERVICE_ROLE_KEY` / `GEMINI_API_KEY_*`:
-server-only, never logged, never pasted in chat with any ACA.
+- **Client ID** — client-safe by design (ships in the frontend SDK
+  script), not held to server-secret standards.
+- **Client Secret** (if server-side payment verification needs it) —
+  server-only, never logged, never pasted in chat with any ACA. Same
+  discipline as `SUPABASE_SERVICE_ROLE_KEY` / `GEMINI_API_KEY_*`.
+- **Webhook ID/Secret** (for signature verification on the webhook
+  endpoint) — a **third, distinct** credential from Client ID/Secret, not
+  the same value reused. Same never-echo, Sensitive-typed Vercel env var
+  pattern already established for `CRON_SECRET` and every other secret
+  this project handles: generated/obtained out-of-band, piped directly
+  into `vercel env add` without ever appearing in a visible command or
+  chat message, never hardcoded anywhere in committed code.
 
 ---
 
@@ -112,16 +130,16 @@ server-only, never logged, never pasted in chat with any ACA.
    as its own dedicated decision at that time, never inferred from this
    sandbox-phase deferral. See the DoD's hard-blocking live-mode gate
    item — this is enforced there, not just stated here.
-2. **Payment confirmation mechanism:** PayPal webhook (server-to-server,
-   more reliable, needs a public endpoint + signature verification) vs.
-   client-side redirect/capture confirmation (simpler, but a closed
-   browser tab mid-flow is a real ambiguous-state case per item 3 above)
-   vs. both? Affects the actual implementation shape significantly.
-3. **Ambiguous-payment admin alert:** extend the existing P-6
-   review-queue/email mechanism (`lib/email/resend.ts`,
-   `sendReviewQueueAlert`) to cover payment anomalies, or build a
-   separate, distinctly-labeled alert path? A payment ambiguity and a
-   held Daily Report are different severities/audiences.
+2. ~~**Payment confirmation mechanism.**~~ **RESOLVED 2026-07-27
+   (Director):** webhook (server-to-server, signature-verified) is the
+   sole source of truth for activation. Client-side redirect is UX
+   confirmation only, never a trigger for writing `subscription_status`.
+   See Scope IN item 2.
+3. ~~**Ambiguous-payment admin alert.**~~ **RESOLVED 2026-07-27
+   (Director):** a separate path from the existing P-6 review-queue
+   emails, distinctly labeled (`[PAYMENT ISSUE]` prefix, mirroring the
+   `[URGENT]` precedent from PDL-012), never mixed with content-hold
+   notifications. See Scope IN item 3.
 
 ---
 
@@ -161,13 +179,25 @@ server-only, never logged, never pasted in chat with any ACA.
       side-effect of unrelated work.
 - [ ] PayPal sandbox Checkout wired to both tiers' correct flat annual
       fee — live-verified with real sandbox transactions, not mocked
-- [ ] Confirmed payment correctly sets `subscription_status: active`,
+- [ ] Webhook signature verification actually implemented and
+      live-verified against a real sandbox webhook delivery — not
+      assumed to work because the code compiles
+- [ ] Confirmed payment (via verified webhook, not client redirect)
+      correctly sets `subscription_status: active`,
       `subscription_expires_at` = +1 year, correct `subscription_tier`
       — live-verified against a real sandbox payment, not just code
       review
+- [ ] Live-verified specifically: closing the browser tab / not
+      returning from checkout does NOT itself grant access, and does
+      NOT block a webhook that arrives late from still activating the
+      subscription correctly
 - [ ] A deliberately-broken/ambiguous payment scenario (sandbox) verified
-      live to produce a flagged-for-review state, never a silent
-      guess either way
+      live to produce a `[PAYMENT ISSUE]`-labeled alert, distinct from
+      the P-6 review-queue path, never a silent guess either way
+- [ ] Client ID, Client Secret (if used), and Webhook ID/Secret verified
+      as three genuinely distinct values, none reused across roles,
+      Webhook ID/Secret Sensitive-typed in Vercel following the same
+      never-echo pattern as `CRON_SECRET`
 - [ ] No live-mode PayPal credential anywhere in this sprint's work
 - [ ] `tsc --noEmit` / `next build` clean
 - [ ] Naming-discipline audit clean on every new/changed file before
@@ -179,11 +209,18 @@ server-only, never logged, never pasted in chat with any ACA.
 
 ## Approval Record
 
-**Not yet approved — scope draft only, per explicit Director instruction
-("ne implementiraj ništa dok ne vidim i odobrim scope").** Decision 1
-resolved 2026-07-27, narrowly (sandbox/test phase only — the live-mode
-question stays open, enforced by the hard-blocking DoD gate). Decisions 2
-and 3 still need an explicit answer before implementation begins.
+**Approved 2026-07-27 (Director).** All three Decisions resolved:
+
+1. PDL-012 — sandbox-phase deferral only; live-mode gate stays
+   hard-blocked in the DoD, not satisfied by anything in this sprint.
+2. Payment confirmation — webhook is the sole source of truth;
+   client-side redirect is UX confirmation only.
+3. Ambiguous-payment alert — separate, `[PAYMENT ISSUE]`-labeled path,
+   distinct from the P-6 review-queue.
+
+Implementation may begin. The hard-blocking live-mode DoD item remains
+unchecked and stays that way for the entirety of this sprint — checking
+it is never a side-effect of finishing sandbox work.
 
 ---
 
