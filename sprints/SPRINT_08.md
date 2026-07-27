@@ -1,6 +1,6 @@
 # SPRINT_08 — PayPal Checkout Integration
 # Vibe-Coding Journal
-# Status: APPROVED 2026-07-27 — implementation may begin
+# Status: CLOSED 2026-07-27 — partial DoD, closed by explicit Director decision (see Known Gaps + Approval Record)
 
 ---
 
@@ -177,33 +177,58 @@ audience expectation.
       sandbox → live must re-verify this item is still unchecked and
       treat checking it as its own explicit approval step, not a
       side-effect of unrelated work.
-- [ ] PayPal sandbox Checkout wired to both tiers' correct flat annual
-      fee — live-verified with real sandbox transactions, not mocked
-- [ ] Webhook signature verification actually implemented and
-      live-verified against a real sandbox webhook delivery — not
-      assumed to work because the code compiles
-- [ ] Confirmed payment (via verified webhook, not client redirect)
-      correctly sets `subscription_status: active`,
-      `subscription_expires_at` = +1 year, correct `subscription_tier`
-      — live-verified against a real sandbox payment, not just code
-      review
-- [ ] Live-verified specifically: closing the browser tab / not
-      returning from checkout does NOT itself grant access, and does
-      NOT block a webhook that arrives late from still activating the
-      subscription correctly
-- [ ] A deliberately-broken/ambiguous payment scenario (sandbox) verified
-      live to produce a `[PAYMENT ISSUE]`-labeled alert, distinct from
-      the P-6 review-queue path, never a silent guess either way
-- [ ] Client ID, Client Secret (if used), and Webhook ID/Secret verified
-      as three genuinely distinct values, none reused across roles,
-      Webhook ID/Secret Sensitive-typed in Vercel following the same
-      never-echo pattern as `CRON_SECRET`
-- [ ] No live-mode PayPal credential anywhere in this sprint's work
-- [ ] `tsc --noEmit` / `next build` clean
-- [ ] Naming-discipline audit clean on every new/changed file before
-      commit
-- [ ] `corrections/SPRINT_08_LESSONS.md` and a handoff note created at
-      close
+- [x] PayPal sandbox order creation live-verified against the real
+      sandbox API (Basic tier, real order ID + approve URL returned).
+      **Partial:** only Basic was click-tested end-to-end in a real
+      browser; Premium ($50) was never separately click-tested.
+- [x] Webhook signature verification actually implemented and
+      live-verified — both directions, against real deliveries: a
+      bogus/mock signature was genuinely rejected (401), and multiple
+      genuine PayPal-signed events (`CHECKOUT.ORDER.APPROVED`,
+      `PAYMENT.CAPTURE.DECLINED`) were genuinely accepted.
+- [ ] **NOT DONE.** Confirmed payment (via verified webhook) correctly
+      setting `subscription_status: active` was never live-verified — no
+      real sandbox capture ever reached `COMPLETED` this sprint (see
+      Known Gaps). The code path is implemented and unit-reasoned but
+      unproven against a real success case.
+- [ ] **NOT DONE.** Browser-tab-close / late-webhook independence was
+      never explicitly tested this sprint — deprioritized once the
+      capture-success gap (above) became the blocker.
+- [x] A payment scenario (real sandbox `PAYMENT.CAPTURE.DECLINED`)
+      genuinely produced a `[PAYMENT ISSUE]`-labeled alert, confirmed
+      received in the inbox — before the DENIED→DECLINED fix, when this
+      event type was still unrecognized. Not a *deliberately constructed*
+      ambiguous case as originally envisioned, but a real one the system
+      caught correctly and alerted on, exactly as designed.
+- [x] Client ID, Client Secret, and Webhook ID/Secret confirmed as three
+      distinct values, Sensitive-typed in Vercel Production
+      (`PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET`, `PAYPAL_WEBHOOK_ID`),
+      plus `NEXT_PUBLIC_PAYPAL_CLIENT_ID` (same Client ID value,
+      client-exposed by design per P-16).
+- [x] No live-mode PayPal credential anywhere in this sprint's work —
+      `PAYPAL_API_BASE` stayed hardcoded to
+      `api-m.sandbox.paypal.com` throughout, never touched.
+- [x] `tsc --noEmit` / `next build` clean at every commit.
+- [x] Naming-discipline audit clean on every new/changed file before
+      every commit.
+- [x] `corrections/SPRINT_08_LESSONS.md` and `HANDOFF_SPRINT_08.md`
+      created at close.
+
+### Known Gaps (accepted by Director 2026-07-27, see Approval Record)
+
+- **No genuine `PAYMENT.CAPTURE.COMPLETED` was ever achieved.** Two
+  different sandbox buyer accounts (one with no configured funding
+  source, one with a full default bank+card funding set) both had their
+  $10 capture attempt **declined** by PayPal's sandbox. Buyer funding was
+  ruled out as the cause. Root cause not identified — most likely
+  something on the sandbox **business/merchant** account
+  (`sb-vdkwb49652610@business.example.com`) side, not in this project's
+  code. Follow-up: investigate that account's status/limitations in
+  PayPal's Sandbox Accounts dashboard, or try a fresh business+buyer
+  account pairing, before Sprint 09 or before live-launch prep.
+- Premium tier and the tab-close/late-webhook independence check were
+  never separately live-verified (deprioritized behind the capture-decline
+  investigation above).
 
 ---
 
@@ -221,6 +246,19 @@ audience expectation.
 Implementation may begin. The hard-blocking live-mode DoD item remains
 unchecked and stays that way for the entirety of this sprint — checking
 it is never a side-effect of finishing sandbox work.
+
+**Closed 2026-07-27 (Director), partial DoD, explicit decision:** after
+live E2E verification surfaced and fixed two real bugs (missing order
+capture call; `PAYMENT.CAPTURE.DENIED`→`DECLINED` event-name typo) and
+hit a sandbox-side payment decline whose root cause sits outside this
+project's code (see Known Gaps above), Director chose to accept the
+evidence gathered so far — real signature verification proven in both
+directions, real classification proven against genuine PayPal events,
+real `[PAYMENT ISSUE]` alert delivery proven — rather than continue
+chasing the sandbox decline within this sprint. The unproven "processed"
+activation path is carried forward as an explicit, documented gap, not a
+silent one. Live-mode hard gate remains unchecked, unaffected by this
+closure.
 
 ---
 
