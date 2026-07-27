@@ -5,7 +5,10 @@ create-order and webhook signature verification proven live in both
 directions; two real bugs found and fixed via live E2E testing; the
 "processed"/activation happy path was never achieved this sprint due to a
 sandbox-side payment decline whose root cause sits outside this project's
-code. Closed with a documented, explicit gap rather than a silent one.
+code. **Sprint paused, not closed** — per its own DoD, the sandbox-payment
+items cannot be checked off without a real successful payment. Director
+is investigating the sandbox merchant account directly; no further code
+changes are expected for this specific problem.
 
 ---
 
@@ -150,11 +153,11 @@ deleting the `user_profiles`/`auth.users` row.
   account and its `payment_events` rows were deleted from production at
   close, keeping the real-account count consistent with Sprint 07's
   established audit baseline.
-- Sprint closed with an explicit, Director-approved partial DoD rather
-  than either (a) silently declaring victory on an unproven activation
-  path, or (b) blocking indefinitely on a sandbox-side issue outside this
-  project's code. See `sprints/SPRINT_08.md`'s "Known Gaps" section for
-  the specific carried-forward item.
+- Sprint explicitly **paused**, not closed, with a documented blocking
+  gap rather than either (a) silently declaring victory on an unproven
+  activation path, or (b) marking the sprint done when its own DoD isn't
+  met. See `sprints/SPRINT_08.md`'s "Known Gaps" section for the specific
+  blocking item and next step.
 
 ---
 

@@ -1,6 +1,6 @@
 # SPRINT_08 — PayPal Checkout Integration
 # Vibe-Coding Journal
-# Status: CLOSED 2026-07-27 — partial DoD, closed by explicit Director decision (see Known Gaps + Approval Record)
+# Status: PAUSED 2026-07-27 — blocked on a PayPal sandbox merchant-account problem, not code (see Known Gaps + Approval Record)
 
 ---
 
@@ -214,21 +214,24 @@ audience expectation.
 - [x] `corrections/SPRINT_08_LESSONS.md` and `HANDOFF_SPRINT_08.md`
       created at close.
 
-### Known Gaps (accepted by Director 2026-07-27, see Approval Record)
+### Known Gaps — blocking, sprint paused until resolved (2026-07-27)
 
 - **No genuine `PAYMENT.CAPTURE.COMPLETED` was ever achieved.** Two
   different sandbox buyer accounts (one with no configured funding
   source, one with a full default bank+card funding set) both had their
   $10 capture attempt **declined** by PayPal's sandbox. Buyer funding was
-  ruled out as the cause. Root cause not identified — most likely
-  something on the sandbox **business/merchant** account
-  (`sb-vdkwb49652610@business.example.com`) side, not in this project's
-  code. Follow-up: investigate that account's status/limitations in
-  PayPal's Sandbox Accounts dashboard, or try a fresh business+buyer
-  account pairing, before Sprint 09 or before live-launch prep.
+  ruled out as the cause. Root cause not identified from the code side —
+  leading hypothesis is a **Negative Testing** setting on the sandbox
+  **business/merchant** account (`sb-vdkwb49652610@business.example.com`),
+  not this project's code. **Director is investigating directly in the
+  PayPal Developer Dashboard — no further code changes should be
+  attempted for this problem.** Once resolved, the next step is simply to
+  repeat the same live test (order → approval → webhook → activation)
+  with the code already written, no changes expected.
 - Premium tier and the tab-close/late-webhook independence check were
   never separately live-verified (deprioritized behind the capture-decline
-  investigation above).
+  investigation above) — also to be re-attempted once the above is
+  resolved.
 
 ---
 
@@ -247,18 +250,22 @@ Implementation may begin. The hard-blocking live-mode DoD item remains
 unchecked and stays that way for the entirety of this sprint — checking
 it is never a side-effect of finishing sandbox work.
 
-**Closed 2026-07-27 (Director), partial DoD, explicit decision:** after
-live E2E verification surfaced and fixed two real bugs (missing order
-capture call; `PAYMENT.CAPTURE.DENIED`→`DECLINED` event-name typo) and
-hit a sandbox-side payment decline whose root cause sits outside this
-project's code (see Known Gaps above), Director chose to accept the
-evidence gathered so far — real signature verification proven in both
-directions, real classification proven against genuine PayPal events,
-real `[PAYMENT ISSUE]` alert delivery proven — rather than continue
-chasing the sandbox decline within this sprint. The unproven "processed"
-activation path is carried forward as an explicit, documented gap, not a
-silent one. Live-mode hard gate remains unchecked, unaffected by this
-closure.
+**Paused 2026-07-27 (Director) — not closed.** Live E2E verification
+surfaced and fixed two real bugs (missing order capture call;
+`PAYMENT.CAPTURE.DENIED`→`DECLINED` event-name typo), and proved real
+signature verification (both directions) and a real `[PAYMENT
+ISSUE]` alert delivery against genuine PayPal events. But every real
+sandbox payment attempt was **declined**, across two different buyer
+accounts — root cause sits outside this project's code, most likely a
+Negative Testing setting on the sandbox Business account. Per this
+sprint's own DoD, the "live-verified against a real sandbox payment"
+items cannot be checked off without an actual successful payment, so
+this sprint is **paused, not done** — it stays open until that happens.
+Director is investigating the PayPal Developer Dashboard directly. No
+further code changes should be attempted for this problem. Once
+resolved, the next step is to repeat the exact same live test with the
+code already written — no changes expected. Live-mode hard gate remains
+unchecked, unaffected by this pause.
 
 ---
 

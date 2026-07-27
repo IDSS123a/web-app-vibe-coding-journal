@@ -1,10 +1,22 @@
 # HANDOFF — Sprint 08 (PayPal Checkout Integration)
 
-**Status:** ⚠ Closed with a partial DoD, by explicit Director decision —
-core integration proven live in most respects; the actual
-payment-success/activation path was never achieved this sprint (sandbox-side
-issue, not this project's code). See `sprints/SPRINT_08.md`'s Known Gaps
-section.
+**Status:** ⏸ PAUSED — blocked on a PayPal sandbox **merchant/business
+account** problem, not on this project's code. Per this sprint's own DoD,
+the "live-verified against a real sandbox payment" items stay unchecked
+until at least one sandbox payment actually succeeds — that has not
+happened yet, so this sprint is not done, only paused pending the
+Director's own investigation in the PayPal Developer Dashboard (most
+likely a Negative Testing setting on the sandbox Business account). See
+`sprints/SPRINT_08.md`'s Known Gaps section.
+
+**No further code changes should be attempted for this specific problem.**
+Everything already proven live — signature verification (both
+directions), the `[PAYMENT ISSUE]` alert pipeline, and the two real bugs
+found and fixed — is correct and should not be touched. **Once the
+Director confirms the merchant-account issue is resolved, the next step
+is simply to repeat the live test (order → approval → webhook →
+activation) with the exact code already written — no code changes
+expected to be needed.**
 **Date:** 2026-07-27
 **Commits:** feature code (`a43a362`), two live-bug fixes
 (`5a2cc6f` capture-order, `827301d` DENIED→DECLINED), temp diagnostic
@@ -75,10 +87,12 @@ limitation. This means:
   calculation on a real confirmed payment, and the tab-close/late-webhook
   independence behavior are all **unverified** against real data.
 
-**Recommended follow-up before Sprint 09 or live-launch prep:** check the
-sandbox business account's status/limitations in PayPal's Sandbox
-Accounts dashboard, or create a fresh business+buyer account pairing and
-retry the same click-through test.
+**Director is investigating directly in the PayPal Developer Dashboard.**
+Leading hypothesis: a **Negative Testing** setting on the sandbox
+Business account (`sb-vdkwb49652610@business.example.com`) deliberately
+forcing declines — a known PayPal sandbox feature, not a code defect.
+No further code changes should be attempted for this specific problem
+until the Director confirms what the account-side issue actually was.
 
 ---
 
@@ -98,22 +112,27 @@ explicitly and by name, not silently.
 - **Pricing changes, tier upgrade/downgrade, Archive/Bookmarks pages,
   chatbot, contact form** — all explicitly out of scope per
   `sprints/SPRINT_08.md`, unchanged from that scope document.
-- **Root-causing the sandbox merchant-account decline** — flagged as a
-  follow-up, not solved here (see above).
+- **Root-causing the sandbox merchant-account decline** — the Director's
+  own investigation, not an ACA code task (see above).
 
 ---
 
 ## Next Steps
 
-1. Investigate the sandbox business account's decline (see follow-up
-   above) — needed before this sprint's activation path can be
-   considered proven.
-2. Once resolved, re-run the specific unproven DoD items: real
-   `PAYMENT.CAPTURE.COMPLETED` → `subscription_status: active` with
-   correct `subscription_expires_at`/`subscription_tier`; Premium tier
-   click-through; tab-close/late-webhook independence.
-3. Live-mode launch prep (separate, explicitly reviewed step per the
-   hard gate) remains untouched and un-scheduled.
+1. **Director** investigates the sandbox Business account directly in the
+   PayPal Developer Dashboard (Negative Testing setting is the leading
+   hypothesis). No code changes should be attempted for this from the ACA
+   side until that's confirmed.
+2. Once the Director confirms the account-side issue is resolved: **repeat
+   the exact same live test** (order → approval → webhook → activation)
+   using the code already written, no changes expected. This re-run
+   either checks off the remaining DoD items (real `PAYMENT.CAPTURE.COMPLETED`
+   → `subscription_status: active` with correct
+   `subscription_expires_at`/`subscription_tier`; Premium tier
+   click-through; tab-close/late-webhook independence) or surfaces a new,
+   different finding if something still doesn't work.
+3. Live-mode launch prep (separate, explicitly reviewed step per the hard
+   gate) remains untouched and un-scheduled.
 
 ---
 
