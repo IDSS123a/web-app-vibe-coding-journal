@@ -3,92 +3,94 @@
 
 ---
 
-## GOVERNANCE — READ FIRST, EVERY SESSION
+## GOVERNANCE — TIERED LOADING (M-21)
 
-This project is governed by Commander v1.2. Before writing any code,
-read documents per M-21 tier rules appropriate to your task.
+This project is governed by **Commander v1.4**
+(github.com/IDSS123a/commander). The 🔴 CRITICAL rules are inlined
+below and always apply — do NOT bulk-load full Commander documents at
+session start. Read a full document only when the task enters its
+domain:
 
-**TIER 2 (sprints, features, bug fixes) — read these:**
+| Read on demand | When |
+|---|---|
+| ENGINEERING_RULES.md | before implementation work (Tier 2) |
+| ARCHITECTURE_PATTERNS.md | before structural/schema decisions (Tier 2) |
+| ACA_COMMUNICATION_PROTOCOL.md (C-1–C-5) | output/format questions (Tier 2) |
+| FEATURE_LIFECYCLE.md + DONE_CHECKLIST.md | at sprint close |
+| PROMPT_LIBRARY/* | when the Director invokes that ritual |
 
-```
-https://raw.githubusercontent.com/IDSS123a/commander/main/CONSTITUTION.md
-https://raw.githubusercontent.com/IDSS123a/commander/main/ENGINEERING_RULES.md
-https://raw.githubusercontent.com/IDSS123a/commander/main/ARCHITECTURE_PATTERNS.md
-https://raw.githubusercontent.com/IDSS123a/commander/main/ACA_COMMUNICATION_PROTOCOL.md
-https://raw.githubusercontent.com/IDSS123a/commander/main/DONE_CHECKLIST.md
-```
+Base URL: `https://raw.githubusercontent.com/IDSS123a/commander/main/`
 
-Project Constitution (project-specific rules, wins over Commander for this project):
-```
-https://raw.githubusercontent.com/IDSS123a/web-app-vibe-coding-journal/main/CONSTITUTION.md
-```
-
-Current sprint:
-```
-https://raw.githubusercontent.com/IDSS123a/web-app-vibe-coding-journal/main/sprints/SPRINT_01.md
-```
+**Always read (small, project-specific):**
+- Project Constitution: `web-app-vibe-coding-journal/CONSTITUTION.md` — wins over Commander for this project
+- Current sprint: `web-app-vibe-coding-journal/sprints/SPRINT_XX.md`
 
 ---
 
-## AUTOMATIC LESSON CAPTURE — NO PERMISSION NEEDED
+## 🔴 CRITICAL RULES — ALWAYS IN FORCE
 
-**This is a standing order. Execute it automatically. Never ask the
-Director whether to do it. Never wait for a reminder.**
+Compressed here for zero-fetch loading; full text in CONSTITUTION.md /
+ENGINEERING_RULES.md governs on any doubt.
 
-### Continuous capture (during work)
+**Mindset (M):**
+- **M-1 CTO Principle** — act as CTO, not task-executor; every decision must survive: "maintainable and understandable by the next ACA with no extra context?"
+- **M-2 Thinking Order** — vision → architecture → domain → data → API → feature → component → code. Never UI-first, never skip.
+- **M-3 Decision Hierarchy** — institution rules > security > data integrity > architecture consistency > performance > developer convenience > UI > visuals.
+- **M-4 Anti-Hallucination** — never invent endpoints, tables, env vars, services, roles, or policies. Not specified → STOP and ask.
+- **M-5 Layered Architecture** — exact layer order, never mix, never skip.
+- **M-7 Single Source of Truth** — every fact lives in exactly one place.
+- **M-10 Context Insufficiency** — missing context is stated, never guessed around.
+- **M-15 Confidentiality Propagation** — secrecy/anonymity rules apply to EVERY surface: code, comments, commits, logs, filenames, docs.
+- **M-21 Tiered Loading** — this file implements it; reference docs (DECISION_LOG, ACA_MANAGEMENT_GUIDE, CLAUDE_CODE_OPERATIONS) are never session-start reads.
+- **M-22 KRAJ Protocol** — on "KRAJ": collect corrections → analyse → propose COMMANDER_UPDATE_PROPOSAL.md → wait for approval → only then touch the commander repo.
+- **M-23 Destructive-Action Confirmation** — history rewrites and external-state claims require explicit prior approval and live verification; no low-risk exception.
 
-The moment ANY of the following happens, immediately append an entry
-to `corrections/SPRINT_[current]_LESSONS.md` — in the same turn,
-before continuing with the task:
+**Engineering (E) — read the full rules before heavy code work:**
+- **E-1 TypeScript** — strict, no `any`, no `@ts-ignore`.
+- **E-2 Zod** — validate every boundary; schemas only in `lib/validation/schemas.ts`.
+- **E-4 Security** — bcrypt ≥12; HTTP-only SameSite=Strict sessions; RBAC resolved server-side from DB, never from token claims; uploads MIME+magic-byte verified; user text HTML-escaped in emails; secrets only in `.env`.
+- **E-5 Error Handling** — every async op in try/catch; no silent failures; standard `{ success, ... }` response shapes; specific status codes before generic 500; a "successful" external/AI call is not proof the payload was usable.
+- **E-6 Route Sequence** — authenticate → authorise → validate (Zod) → execute → return.
+- **E-13 Mechanically Checkable Rules Ship as Automation** — scriptable rules are hooks, not memory.
 
-1. The Director corrects something you did (wrong approach, wrong
-   assumption, wrong output format, misunderstood intent)
-2. You hit an environment gotcha (tooling trap, dependency issue,
-   platform quirk, failed command that needed a workaround)
-3. You discover a bug caused by violating or overlooking a Commander
-   rule
-4. You make a 🔄 COURSE CORRECTION
-5. You identify an improvement candidate for Commander (a rule that
-   is missing, unclear, outdated, or slowed the work)
+---
 
-Entry format (append, never overwrite):
+## LESSON CAPTURE (M-18 — hook-enforced)
 
-```markdown
-### [YYYY-MM-DD HH:MM] — [one-line title]
-- **What happened:** [1-2 sentences]
-- **Resolution:** [what fixed it]
-- **Commander relevance:** [M-XX / E-XX / C-XX / "new rule candidate" / "none"]
-```
+The `lessons-guard` hook blocks session end if files changed without
+lessons captured. Append to `corrections/SPRINT_XX_LESSONS.md`
+**immediately** when: the Director corrects you, an environment gotcha
+bites, a rule-violation bug appears, a course correction happens, or a
+Commander improvement candidate surfaces. Entry format:
+PROMPT_LIBRARY/sprint-lessons.md. Consolidate at sprint close per
+DONE_CHECKLIST.md — or run `/sprint-close` directly.
 
-If `corrections/` folder or the sprint file does not exist yet:
-create it silently and continue.
+---
 
-**Why continuous, not end-of-sprint:** session context gets compacted
-during long work. A lesson captured immediately survives; a lesson
-held in memory until sprint end may be lost. The filesystem is the
-memory (M-18).
+## AUTOMATION LAYER (hooks — deterministic, zero-token)
 
-### End-of-sprint consolidation (automatic)
+Installed in `.claude/`:
+- `version-check.js` (SessionStart) — warns on Commander version drift
+- `log-change.js` + `project-guard.js` (PostToolUse) — auto-logs every
+  edit; project-guard BLOCKS forbidden patterns per E-13
+  (config: `.claude/project-guard.config.json` — add this project's
+  own forbidden strings, e.g. the confidentiality/anonymity patterns
+  from CONSTITUTION.md, alongside the shipped secret-pattern defaults)
+- `lessons-guard.js` + `patterns-detect.js` (Stop) — enforces lesson
+  capture; pre-computes rule recurrence for KRAJ
 
-When a sprint is declared complete (Done Checklist passed), WITHOUT
-being asked:
+Also installed: `.github/workflows/project-guard.yml` (enforces the
+same guard server-side on every push/PR — active once
+`.claude/project-guard.config.json` has real rules) and skills
+`/kraj`, `/sprint-close`, `/commander-audit`, `/specify`,
+`/plan-feature`, `/tasks`.
 
-1. Review `corrections/SPRINT_[current]_LESSONS.md` — consolidate
-   duplicate entries, sharpen wording
-2. Add the three summary sections at the top of the file:
-   `## Corrections Applied`, `## Gotchas Discovered`,
-   `## Commander Improvement Candidates`
-3. Fill in the COMMANDER COMPLIANCE score (from DONE_CHECKLIST.md)
-4. Commit the file: `docs: sprint XX lessons learned`
-5. State in the handoff note: "Lessons captured: [N] entries in
-   corrections/SPRINT_XX_LESSONS.md"
+Treat guards as allies, not obstacles — session memory is unreliable,
+the filesystem is not (M-18).
 
-### End-of-project (only step that needs the Director)
-
-When the Director says **KRAJ**, execute M-22 (KRAJ Protocol) from
-CONSTITUTION.md exactly. Reference: PROMPT_LIBRARY/kraj.md.
-Do NOT push changes to the Commander repository without explicit
-approval — M-22 Step 4 (CONFIRM) requires it.
+**ACAs without hook support:** run
+`node .claude/hooks/project-guard.js --scan` before every commit
+(E-13 graceful degradation).
 
 ---
 
@@ -117,24 +119,13 @@ approval — M-22 Step 4 (CONFIRM) requires it.
   Consistency" in the M-3 Decision Hierarchy for this project
   specifically. Every pipeline feature must be built to fail loudly
   (held for review) rather than degrade silently. See P-1, P-6, P-7.
+- **Upgraded from Commander v1.2 to v1.4 on 2026-07-26.** Prior
+  sprints (01–08) were governed under v1.2 and their handoff/lessons
+  footers correctly say so — that text is historical record, not
+  updated retroactively. Sprint 09 onward is the first real-world use
+  of the v1.4 spec layer (`/specify → /plan-feature → /tasks`);
+  capture what happens as M-18 lessons regardless of outcome.
 
 ---
 
-*Commander v1.2 — IDSS123a Organisation — Davor Mulalić*
-
----
-
-## AUTOMATION LAYER (hooks — deterministic)
-
-This project has Commander Automation hooks installed in `.claude/`:
-
-- `hooks/log-change.js` (PostToolUse) — every file edit is automatically
-  logged to `corrections/ACTIVITY_LOG.md`. You do not need to do this
-  manually; it happens at the system level.
-- `hooks/lessons-guard.js` (Stop) — you will be blocked from finishing
-  a response if files changed but lessons were not captured. When the
-  guard message appears: review ACTIVITY_LOG.md, append lessons (or the
-  explicit "No lessons this session" line), then finish.
-
-Treat the guard as an ally, not an obstacle — it exists because session
-memory is unreliable and the filesystem is not (M-18).
+*Commander v1.4 — IDSS123a Organisation — Davor Mulalić*

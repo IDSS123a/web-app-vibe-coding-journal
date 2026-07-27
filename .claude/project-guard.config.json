@@ -1,0 +1,17 @@
+{
+  "_usage": "Copy to <project>/.claude/project-guard.config.json and edit per project. Each 'forbidden' entry: 'pattern' (JS regex source), optional 'flags', 'reason' (shown when the guard blocks). Without this file the guard is inactive. 'extensions' and 'exclude' are optional and have sensible defaults.",
+  "forbidden": [
+    {
+      "pattern": "AIzaSy[A-Za-z0-9_-]{10,}",
+      "reason": "Google API key material must never appear in a tracked file"
+    },
+    {
+      "pattern": "-----BEGIN (RSA |EC )?PRIVATE KEY-----",
+      "reason": "Private key material must never appear in a tracked file"
+    },
+    {
+      "pattern": "eyJ[A-Za-z0-9_-]{20,}\\.[A-Za-z0-9_-]{20,}\\.[A-Za-z0-9_-]{20,}",
+      "reason": "Real JWT token (3 substantial segments) must never appear in a tracked file. Tightened from the shipped default, which matched truncated documentation examples like 'eyJhbGciOi...' in SPRINT_04_TEST_PLAN.md / SUPABASE_ADMIN_SETUP_GUIDE.md as false positives (verified 2026-07-26: header-only, explicit '...' truncation, no real secret)."
+    }
+  ]
+}
