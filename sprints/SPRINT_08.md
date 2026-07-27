@@ -21,10 +21,19 @@ Google accounts, `lib/ai/gemini-provider.ts`) is a Google ToS risk
 (PDL-012), accepted so far because there were no paying subscribers
 depending on it. Once real payment goes live, a paying subscriber's Daily
 Report could go dark because of an infrastructure choice made for a
-free/testing-only phase — a materially different risk posture. **This
-document does not resolve it below — Decision 1 asks the Director to.**
-Per the Constitution's own rule, this sprint may not proceed past scope
-status until that decision is made, one way or the other.
+free/testing-only phase — a materially different risk posture.
+
+**Director's resolution (2026-07-27), scoped precisely — see Decision 1:**
+PDL-012 resolution is **knowingly deferred through this sprint's
+sandbox/test phase only** — sandbox mode moves no real money, so the risk
+during Sprint 08's own development and testing is low. **This is not a
+permanent or general acceptance.** The P-18 gate stays fully open and
+unresolved for actual live launch — PayPal LIVE mode may not be activated
+until PDL-012 is either resolved (e.g. a paid Gemini tier) or
+consciously re-approved *specifically for live launch*, as its own
+decision, not inferred from this sandbox-phase deferral. This is encoded
+as a hard-blocking Definition of Done item below, not just this
+paragraph — see the DoD's live-mode gate item.
 
 Pricing itself is unchanged and not open for renegotiation here — PDL-014
 (two flat annual tiers, Basic $10 / Premium $50) stands as-is.
@@ -92,15 +101,17 @@ server-only, never logged, never pasted in chat with any ACA.
 
 ## Decisions Needed (Director — not invented here, per M-4/M-13)
 
-1. **P-18/PDL-012 resolution for this sprint — required by the
-   Constitution before this sprint can proceed past scope status.**
-   Resolved prerequisite (e.g. a paid Gemini tier or single-account
-   arrangement, actioned before Sprint 08 code begins) — or a
-   knowingly-accepted launch limitation (real subscribers depend on
-   pipeline uptime that carries a real, if so-far-unrealized, Google ToS
-   suspension risk)? 📌 No recommendation offered here deliberately —
-   this is exactly the kind of institutional-policy, real-money-risk
-   decision M-4/M-13 says isn't the ACA's to invent or nudge.
+1. ~~**P-18/PDL-012 resolution for this sprint.**~~ **RESOLVED 2026-07-27
+   (Director) — scoped narrowly, not a general acceptance:** PDL-012
+   resolution is deferred through Sprint 08's **sandbox/test phase only**
+   (no real money moves in sandbox mode, so the risk is low for
+   development and testing purposes). **The live-launch question remains
+   fully open** — PayPal LIVE mode must not be activated until PDL-012 is
+   either resolved (e.g. a paid Gemini tier or single-account
+   arrangement) or explicitly re-approved *specifically for live launch*,
+   as its own dedicated decision at that time, never inferred from this
+   sandbox-phase deferral. See the DoD's hard-blocking live-mode gate
+   item — this is enforced there, not just stated here.
 2. **Payment confirmation mechanism:** PayPal webhook (server-to-server,
    more reliable, needs a public endpoint + signature verification) vs.
    client-side redirect/capture confirmation (simpler, but a closed
@@ -133,9 +144,21 @@ server-only, never logged, never pasted in chat with any ACA.
 
 ## Definition of Done (draft — none of this is done yet)
 
-- [ ] Decision 1 (P-18/PDL-012) explicitly answered and recorded before
+- [x] Decision 1 (P-18/PDL-012) explicitly answered and recorded before
       any code is written — the Constitution gate itself, not just this
-      sprint's own preference
+      sprint's own preference. Resolved for the sandbox/test phase only
+      (2026-07-27) — see the hard-blocking live-mode gate item below,
+      which this does NOT satisfy.
+- [ ] **🔒 HARD GATE — PayPal LIVE mode is NOT activated.** No live
+      Client ID, live Client Secret, or live-mode API call anywhere in
+      this sprint's work. This item cannot be checked off by finishing
+      sandbox development — it is only satisfied at the point of an
+      actual future launch decision, made explicitly and specifically
+      for live mode, never inferred from the sandbox-phase deferral
+      above (Decision 1). Any future sprint/session proposing to flip
+      sandbox → live must re-verify this item is still unchecked and
+      treat checking it as its own explicit approval step, not a
+      side-effect of unrelated work.
 - [ ] PayPal sandbox Checkout wired to both tiers' correct flat annual
       fee — live-verified with real sandbox transactions, not mocked
 - [ ] Confirmed payment correctly sets `subscription_status: active`,
@@ -157,9 +180,10 @@ server-only, never logged, never pasted in chat with any ACA.
 ## Approval Record
 
 **Not yet approved — scope draft only, per explicit Director instruction
-("ne implementiraj ništa dok ne vidim i odobrim scope").** All three
-Decisions above, especially Decision 1, need an explicit answer before
-implementation begins.
+("ne implementiraj ništa dok ne vidim i odobrim scope").** Decision 1
+resolved 2026-07-27, narrowly (sandbox/test phase only — the live-mode
+question stays open, enforced by the hard-blocking DoD gate). Decisions 2
+and 3 still need an explicit answer before implementation begins.
 
 ---
 
