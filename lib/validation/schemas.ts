@@ -30,6 +30,12 @@ export const userProfileSchema = z.object({
   tools_used: z.array(z.enum(["no_code_low_code", "ai_assisted_ide", "agent_based_coding", "other"])),
   depth_preference: z.enum(["simple", "technical_when_needed", "deep_technical"]),
   other_tools_freetext: z.string().nullable(),
+  // P-13 (Sprint 07): subscription/trial lifecycle
+  subscription_status: z.enum(["trial", "active", "expired"]),
+  trial_started_at: z.string().datetime().nullable(),
+  trial_ends_at: z.string().datetime().nullable(),
+  subscription_expires_at: z.string().datetime().nullable(),
+  subscription_tier: z.enum(["basic", "premium"]),
   created_at: z.string().datetime(),
   updated_at: z.string().datetime(),
 });

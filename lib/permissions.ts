@@ -49,3 +49,18 @@ export function canRejectReports(context: PermissionContext): boolean {
   if (!context.user) return false;
   return context.user.role === "admin";
 }
+
+// P-13: "Admin accounts (P-14) are billing-exempt. The exemption must be
+// an explicit, auditable check ... never an accidental side-effect of role
+// logic living somewhere else." This is that check — the sole place the
+// subscription/paywall gate is allowed to bypass on role, so the exemption
+// stays visible and searchable rather than an inline `role === "admin"`
+// scattered next to unrelated logic.
+//
+// Takes a narrower shape than PermissionContext deliberately — the only
+// caller (the /api/me subscription-gate composition) has a verified token,
+// not a full UserProfile, and this check only ever needs the role.
+export function isBillingExempt(user: { role: string } | null): boolean {
+  if (!user) return false;
+  return user.role === "admin";
+}

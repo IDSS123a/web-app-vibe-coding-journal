@@ -22,6 +22,9 @@ export interface VerifiedToken {
   role: string;
   isAdmin: boolean;
   expiresAt: number;
+  subscriptionStatus: "trial" | "active" | "expired";
+  trialEndsAt: string | null;
+  subscriptionTier: "basic" | "premium";
 }
 
 /**
@@ -88,7 +91,7 @@ export async function getVerifiedUser(
 
   const { data: profile, error } = await supabaseAdmin
     .from("user_profiles")
-    .select("role")
+    .select("role, subscription_status, trial_ends_at, subscription_tier")
     .eq("id", decoded.sub)
     .single();
 
@@ -105,6 +108,9 @@ export async function getVerifiedUser(
     role,
     isAdmin: role === "admin",
     expiresAt: decoded.exp || 0,
+    subscriptionStatus: (profile.subscription_status as VerifiedToken["subscriptionStatus"]) || "expired",
+    trialEndsAt: (profile.trial_ends_at as string | null) ?? null,
+    subscriptionTier: (profile.subscription_tier as VerifiedToken["subscriptionTier"]) || "basic",
   };
 }
 
