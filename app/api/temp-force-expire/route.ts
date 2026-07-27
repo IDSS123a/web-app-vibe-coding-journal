@@ -17,6 +17,14 @@ export async function POST(request: Request) {
     });
   }
 
+  const { searchParams } = new URL(request.url);
+  if (searchParams.get("delete") === "1") {
+    await supabaseAdmin.from("user_profiles").delete().eq("id", target.id);
+    const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(target.id);
+    if (deleteError) return NextResponse.json({ error: deleteError.message }, { status: 500 });
+    return NextResponse.json({ found: true, deleted: true, id: target.id });
+  }
+
   const { error } = await supabaseAdmin
     .from("user_profiles")
     .update({ subscription_status: "expired" })
