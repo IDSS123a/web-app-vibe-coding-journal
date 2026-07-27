@@ -35,7 +35,7 @@ export type WebhookClassification =
 const KNOWN_NON_ACTIVATING_EVENT_TYPES = new Set([
   "CHECKOUT.ORDER.APPROVED",
   "PAYMENT.CAPTURE.PENDING",
-  "PAYMENT.CAPTURE.DENIED",
+  "PAYMENT.CAPTURE.DECLINED",
 ]);
 
 export function classifyPaymentWebhookEvent(
