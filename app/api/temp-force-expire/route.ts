@@ -19,6 +19,7 @@ export async function POST(request: Request) {
 
   const { searchParams } = new URL(request.url);
   if (searchParams.get("delete") === "1") {
+    await supabaseAdmin.from("payment_events").delete().eq("user_id", target.id);
     const profileDelete = await supabaseAdmin.from("user_profiles").delete().eq("id", target.id);
     const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(target.id);
     if (deleteError) {
