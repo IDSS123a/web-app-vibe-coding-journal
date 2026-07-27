@@ -96,11 +96,22 @@ function PayPalTierButton({
               }
               return data.orderId;
             },
-            // Deliberately no capture call here (Decision 2) -- the
-            // webhook is the sole source of truth for activation. This is
-            // UX feedback only: tell the caller approval happened, so the
-            // UI can start polling for the real, server-confirmed state.
-            onApprove: async () => {
+            // Capture is required for PayPal to ever emit
+            // PAYMENT.CAPTURE.COMPLETED (what the webhook activates on) --
+            // without it an approved order just sits uncaptured forever.
+            // Capture does NOT itself grant access (Decision 2): only the
+            // verified webhook writes subscription_status. This callback
+            // just finalizes payment with PayPal, then tells the UI to
+            // start polling for the real, server-confirmed state.
+            onApprove: async (data: { orderID: string }) => {
+              await fetch("/api/payments/capture-order", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({ orderId: data.orderID }),
+              }).catch(() => undefined);
               onApproved();
             },
           })

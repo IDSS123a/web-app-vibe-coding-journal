@@ -106,6 +106,34 @@ export async function createPayPalOrder(
 }
 
 /**
+ * Captures a buyer-approved order. Without this, an approved order just
+ * sits in APPROVED status forever -- PayPal only emits
+ * PAYMENT.CAPTURE.COMPLETED (the event our webhook activates on) once
+ * something actually calls capture. Server-side here (not the client SDK's
+ * own capture action) to keep this on the same trusted path as order
+ * creation.
+ */
+export async function capturePayPalOrder(orderId: string): Promise<{ status: string }> {
+  const accessToken = await getAccessToken();
+
+  const response = await fetch(`${PAYPAL_API_BASE}/v2/checkout/orders/${orderId}/capture`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+  });
+
+  if (!response.ok) {
+    const body = await response.text();
+    throw new Error(`PayPal capture-order failed: HTTP ${response.status} ${body}`);
+  }
+
+  const data = await response.json();
+  return { status: data.status as string };
+}
+
+/**
  * Verifies a webhook's signature via PayPal's own verify-webhook-signature
  * endpoint (the PayPal-recommended approach — delegates trust to PayPal
  * rather than this project re-implementing certificate/signature crypto).
