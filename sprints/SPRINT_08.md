@@ -1,6 +1,6 @@
 # SPRINT_08 — PayPal Checkout Integration
 # Vibe-Coding Journal
-# Status: PAUSED 2026-07-27 — blocked on a PayPal sandbox merchant-account problem, not code (see Known Gaps + Approval Record)
+# Status: CLOSED 2026-09-09 — genuinely done, real sandbox payment succeeded end-to-end (see Known Gaps + Approval Record)
 
 ---
 
@@ -186,14 +186,23 @@ audience expectation.
       bogus/mock signature was genuinely rejected (401), and multiple
       genuine PayPal-signed events (`CHECKOUT.ORDER.APPROVED`,
       `PAYMENT.CAPTURE.DECLINED`) were genuinely accepted.
-- [ ] **NOT DONE.** Confirmed payment (via verified webhook) correctly
-      setting `subscription_status: active` was never live-verified — no
-      real sandbox capture ever reached `COMPLETED` this sprint (see
-      Known Gaps). The code path is implemented and unit-reasoned but
-      unproven against a real success case.
-- [ ] **NOT DONE.** Browser-tab-close / late-webhook independence was
-      never explicitly tested this sprint — deprioritized once the
-      capture-success gap (above) became the blocker.
+- [x] **DONE 2026-09-09.** Confirmed payment (via verified webhook, not
+      client redirect) correctly set `subscription_status: active`,
+      `subscription_tier: basic`, `subscription_expires_at` = exactly +1
+      year from confirmation. Real sandbox transaction: a new US Business
+      account/app pairing, real buyer approval, real capture reaching
+      `COMPLETED`, real `PAYMENT.CAPTURE.COMPLETED` webhook received,
+      signature-verified, classified `processed`. See Known Gaps
+      resolution below for the account-side fix that unblocked this.
+- [~] Browser-tab-close / late-webhook independence was not separately,
+      explicitly isolated as its own test (e.g. closing the tab
+      mid-checkout). Indirectly demonstrated by design: the client never
+      wrote `subscription_status` itself — the UI showed a "processing"
+      state and polled `/api/me` until the webhook-confirmed state
+      arrived, which is the same mechanism that would let a late webhook
+      activate correctly even if the user had already left. Director
+      accepted this as sufficient to close the sprint (2026-09-09) rather
+      than requiring a separate isolated test.
 - [x] A payment scenario (real sandbox `PAYMENT.CAPTURE.DECLINED`)
       genuinely produced a `[PAYMENT ISSUE]`-labeled alert, confirmed
       received in the inbox — before the DENIED→DECLINED fix, when this
@@ -214,24 +223,25 @@ audience expectation.
 - [x] `corrections/SPRINT_08_LESSONS.md` and `HANDOFF_SPRINT_08.md`
       created at close.
 
-### Known Gaps — blocking, sprint paused until resolved (2026-07-27)
+### Known Gaps — RESOLVED 2026-09-09
 
-- **No genuine `PAYMENT.CAPTURE.COMPLETED` was ever achieved.** Two
-  different sandbox buyer accounts (one with no configured funding
-  source, one with a full default bank+card funding set) both had their
-  $10 capture attempt **declined** by PayPal's sandbox. Buyer funding was
-  ruled out as the cause. Root cause not identified from the code side —
-  leading hypothesis is a **Negative Testing** setting on the sandbox
-  **business/merchant** account (`sb-vdkwb49652610@business.example.com`),
-  not this project's code. **Director is investigating directly in the
-  PayPal Developer Dashboard — no further code changes should be
-  attempted for this problem.** Once resolved, the next step is simply to
-  repeat the same live test (order → approval → webhook → activation)
-  with the code already written, no changes expected.
-- Premium tier and the tab-close/late-webhook independence check were
-  never separately live-verified (deprioritized behind the capture-decline
-  investigation above) — also to be re-attempted once the above is
-  resolved.
+- ~~No genuine `PAYMENT.CAPTURE.COMPLETED` was ever achieved.~~
+  **RESOLVED.** The original BA-region sandbox Business account
+  (`sb-vdkwb49652610@business.example.com`) consistently declined every
+  capture attempt regardless of buyer funding — root cause never
+  identified precisely (Director's own investigation), but confirmed
+  account-side by switching entirely: Director created a **new US-region
+  sandbox Business account** (`sb-rvlhv50635659@business.example.com`)
+  with its own new sandbox App and credentials. The exact same,
+  unmodified live-test procedure — order → buyer approval → capture →
+  webhook → activation — **succeeded completely** on the first real
+  attempt against the new account. No code changes were made to resolve
+  this; the problem really was the old sandbox account, not this
+  project's code, exactly as suspected.
+- Premium tier and an explicitly isolated tab-close/late-webhook test
+  remain not separately verified (see the DoD item's `[~]` note above) —
+  Director explicitly accepted this as sufficient rather than blocking
+  closure on it.
 
 ---
 
@@ -267,6 +277,23 @@ resolved, the next step is to repeat the exact same live test with the
 code already written — no changes expected. Live-mode hard gate remains
 unchecked, unaffected by this pause.
 
+**Closed 2026-09-09 (Director) — genuinely done.** Director created a new
+US-region sandbox Business account and App, entirely separate from the
+old (BA-region) one — no code changes. The exact same, unmodified live
+test (order → approval → capture → webhook → activation) was repeated
+against the new account and **succeeded completely** on the first real
+attempt: real `PAYMENT.CAPTURE.COMPLETED` webhook received,
+signature-verified, correctly classified `processed`,
+`subscription_status` flipped to `active` with the correct tier and a
+correct +1-year `subscription_expires_at`, and the client UI correctly
+reflected this via its existing polling mechanism — never by writing
+state itself. Premium tier and an explicitly isolated tab-close/late-webhook
+test were not separately re-run; Director explicitly accepted this as
+sufficient (see the DoD item's note) rather than requiring further
+testing. Live-mode hard gate remains unchecked and untouched throughout
+— this closure is about sandbox correctness only, per P-16/P-18's
+unchanged separation between sandbox proof and a live-launch decision.
+
 ---
 
 ## Handoff Note Template (fill at sprint end)
@@ -282,4 +309,4 @@ Next sprint: [...]
 
 ---
 
-*Vibe-Coding Journal — Sprint 08 — governed by Commander v1.2*
+*Vibe-Coding Journal — Sprint 08 — governed by Commander v1.2 through most of this sprint's work, v1.4 as of closure (2026-09-09)*

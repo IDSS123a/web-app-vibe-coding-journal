@@ -1,27 +1,19 @@
 # HANDOFF — Sprint 08 (PayPal Checkout Integration)
 
-**Status:** ⏸ PAUSED — blocked on a PayPal sandbox **merchant/business
-account** problem, not on this project's code. Per this sprint's own DoD,
-the "live-verified against a real sandbox payment" items stay unchecked
-until at least one sandbox payment actually succeeds — that has not
-happened yet, so this sprint is not done, only paused pending the
-Director's own investigation in the PayPal Developer Dashboard (most
-likely a Negative Testing setting on the sandbox Business account). See
-`sprints/SPRINT_08.md`'s Known Gaps section.
-
-**No further code changes should be attempted for this specific problem.**
-Everything already proven live — signature verification (both
-directions), the `[PAYMENT ISSUE]` alert pipeline, and the two real bugs
-found and fixed — is correct and should not be touched. **Once the
-Director confirms the merchant-account issue is resolved, the next step
-is simply to repeat the live test (order → approval → webhook →
-activation) with the exact code already written — no code changes
-expected to be needed.**
-**Date:** 2026-07-27
-**Commits:** feature code (`a43a362`), two live-bug fixes
-(`5a2cc6f` capture-order, `827301d` DENIED→DECLINED), temp diagnostic
-routes added and removed (`3cee5f5`…`f2d35d6`), governance docs (this
-handoff + lessons + `sprints/SPRINT_08.md` updates).
+**Status:** ✅ Complete. A real sandbox payment succeeded end-to-end —
+order → buyer approval → capture → webhook → signature verification →
+classification → `subscription_status: active` — confirmed live, not by
+code review. The sprint spent time **paused** (2026-07-27 to 2026-09-09)
+blocked on a PayPal sandbox merchant-account problem unrelated to this
+project's code; resolved by the Director creating a new sandbox Business
+account, with no code changes needed to fix it.
+**Date:** 2026-09-09 (feature work 2026-07-27, resolution + final proof
+2026-09-09)
+**Commits:** feature code (`a43a362`), three live-bug fixes/gaps
+(`5a2cc6f` capture-order, `827301d` DENIED→DECLINED, plus an untracked
+`.env.local` correction for `NEXT_PUBLIC_PAYPAL_CLIENT_ID` drift), temp
+diagnostic routes added and removed across both sessions, governance
+docs (this handoff + lessons + `sprints/SPRINT_08.md` updates).
 
 ---
 
@@ -67,40 +59,39 @@ handoff + lessons + `sprints/SPRINT_08.md` updates).
   `PAYPAL_WEBHOOK_ID` confirmed as separate Sensitive-typed Vercel
   Production env vars, plus `NEXT_PUBLIC_PAYPAL_CLIENT_ID` for the
   client-safe SDK load.
-- **Two real bugs found and fixed live** — see
-  `corrections/SPRINT_08_LESSONS.md` findings #1 and #2.
+- **Three real bugs/gaps found and fixed live** — see
+  `corrections/SPRINT_08_LESSONS.md` findings #1, #2, and #10.
+- **Genuine payment success, real activation** — the blocking gap from
+  earlier in this sprint. A new US-region sandbox Business account
+  (`sb-rvlhv50635659@business.example.com`) and App replaced the original
+  BA-region one that had declined every attempt; no code changes. The
+  exact same live-test procedure succeeded completely on the first real
+  attempt: real capture reached `COMPLETED`, real
+  `PAYMENT.CAPTURE.COMPLETED` webhook received and signature-verified,
+  correctly classified `processed`, `subscription_status` flipped to
+  `active` with correct `subscription_tier: basic` and a correct +1-year
+  `subscription_expires_at`. The client UI (already-built polling
+  mechanism) correctly reflected this without ever writing state itself.
 
-### ⚠ Not achieved — genuine payment success / subscription activation
+### Original blocker, now resolved
 
-Two different sandbox buyer accounts (one with no configured funding
-source, one with a full default bank+card funding set) both had their
-real $10 capture attempt **declined** by PayPal's sandbox. Buyer funding
-was ruled out. Root cause not identified within this sprint — most likely
-the sandbox **business/merchant** account
-(`sb-vdkwb49652610@business.example.com`) has some restriction or
-limitation. This means:
-
-- `PAYMENT.CAPTURE.COMPLETED` classification/activation code path is
-  implemented and reasoned through, but has **never been exercised by a
-  real successful payment**.
-- The `subscription_status: active` write, `subscription_expires_at`
-  calculation on a real confirmed payment, and the tab-close/late-webhook
-  independence behavior are all **unverified** against real data.
-
-**Director is investigating directly in the PayPal Developer Dashboard.**
-Leading hypothesis: a **Negative Testing** setting on the sandbox
-Business account (`sb-vdkwb49652610@business.example.com`) deliberately
-forcing declines — a known PayPal sandbox feature, not a code defect.
-No further code changes should be attempted for this specific problem
-until the Director confirms what the account-side issue actually was.
+Two different sandbox buyer accounts against the *original* Business
+account (one with no configured funding source, one with a full default
+bank+card funding set) both had their real $10 capture attempt
+**declined**. Buyer funding was ruled out; root cause was confirmed to be
+account-side (not this project's code) by the clean before/after result
+of simply switching to a new account — the precise PayPal-side cause
+(most likely a Negative Testing setting) was never confirmed in detail,
+and didn't need to be once this comparison was this clean.
 
 ---
 
 ## DONE_CHECKLIST
 
-See `sprints/SPRINT_08.md` Definition of Done — most items checked with
-live evidence above; the "Known Gaps" subsection lists what remains open,
-explicitly and by name, not silently.
+See `sprints/SPRINT_08.md` Definition of Done — all items checked with
+live evidence above, except Premium-tier click-through and an explicitly
+isolated tab-close/late-webhook test, which the Director accepted as
+sufficient without separate re-verification (see that DoD item's note).
 
 ---
 
@@ -112,28 +103,18 @@ explicitly and by name, not silently.
 - **Pricing changes, tier upgrade/downgrade, Archive/Bookmarks pages,
   chatbot, contact form** — all explicitly out of scope per
   `sprints/SPRINT_08.md`, unchanged from that scope document.
-- **Root-causing the sandbox merchant-account decline** — the Director's
-  own investigation, not an ACA code task (see above).
+- **Premium tier click-through and isolated tab-close/late-webhook
+  test** — not separately re-verified; Director explicitly accepted the
+  Basic-tier proof as sufficient.
 
 ---
 
 ## Next Steps
 
-1. **Director** investigates the sandbox Business account directly in the
-   PayPal Developer Dashboard (Negative Testing setting is the leading
-   hypothesis). No code changes should be attempted for this from the ACA
-   side until that's confirmed.
-2. Once the Director confirms the account-side issue is resolved: **repeat
-   the exact same live test** (order → approval → webhook → activation)
-   using the code already written, no changes expected. This re-run
-   either checks off the remaining DoD items (real `PAYMENT.CAPTURE.COMPLETED`
-   → `subscription_status: active` with correct
-   `subscription_expires_at`/`subscription_tier`; Premium tier
-   click-through; tab-close/late-webhook independence) or surfaces a new,
-   different finding if something still doesn't work.
-3. Live-mode launch prep (separate, explicitly reviewed step per the hard
-   gate) remains untouched and un-scheduled.
+Sprint 08 is closed. `sprints/SPRINT_09.md` (branding + contact form,
+P-15) is the next scope document — see that file for what's proposed;
+no Sprint 09 code has been started.
 
 ---
 
-*Vibe-Coding Journal — Sprint 08 — governed by Commander v1.2.*
+*Vibe-Coding Journal — Sprint 08 — governed by Commander v1.4.*

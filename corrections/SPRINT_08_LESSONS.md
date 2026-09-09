@@ -2,13 +2,12 @@
 
 **Scope:** PayPal Checkout integration, sandbox-only (P-16). **Outcome:**
 create-order and webhook signature verification proven live in both
-directions; two real bugs found and fixed via live E2E testing; the
-"processed"/activation happy path was never achieved this sprint due to a
-sandbox-side payment decline whose root cause sits outside this project's
-code. **Sprint paused, not closed** — per its own DoD, the sandbox-payment
-items cannot be checked off without a real successful payment. Director
-is investigating the sandbox merchant account directly; no further code
-changes are expected for this specific problem.
+directions; two real bugs found and fixed via live E2E testing; a
+sandbox-side payment decline blocked the "processed"/activation happy
+path for a while, root-caused (informally) and resolved by switching to
+a new sandbox Business account — no code changes needed. **Sprint
+genuinely closed 2026-09-09**, real activation proven end-to-end against
+real data.
 
 ---
 
@@ -101,16 +100,24 @@ one covers both.
 PayPal's Buttons SDK renders inside a cross-origin iframe that the
 accessibility tree cannot see into (confirmed: a single opaque
 `presentation` node, no children, `read_page` with full depth returns
-nothing further). Combined with this session's Browser pane being unable
-to composite/screenshot (blocking coordinate-based clicks entirely), the
-actual "click PayPal's button" step could not be automated. This is
-consistent with anti-fraud/anti-bot hardening common to real payment
-widgets, not a project-specific bug. **Resolution:** the Director
-performed the actual click-through personally in their own browser while
-this session drove setup (order creation, log monitoring) and verification
-(DB state checks) around it. Worth remembering for any future payment-UI
-automation: budget for a human click-through step, don't assume full
-automation is achievable.
+nothing further). In the original session, the Browser pane was also
+unable to composite/screenshot at all, which blocked coordinate-based
+clicks entirely, so the actual "click PayPal's button" step could not be
+automated — the Director performed that click-through personally.
+
+**Update, later session (2026-09-09):** in a fresh session where the
+Browser pane *could* composite/screenshot, coordinate-based clicks into
+the same cross-origin PayPal iframe worked correctly end-to-end —
+button click, email entry, password entry, and "Complete Purchase" all
+succeeded via `computer{action:"left_click", coordinate:[...]}` and
+`type`, once verified against a screenshot rather than the (still-blind)
+accessibility tree. So the earlier limitation was this session's
+screenshot/compositing capability specifically, not an inherent
+PayPal/anti-bot restriction on synthetic input. Lesson: if
+`read_page`/`find` come up empty inside a payment iframe, don't assume
+automation is impossible — try screenshot-based coordinate clicks first;
+only fall back to a human click-through if screenshots themselves are
+unavailable.
 
 ### 7. A real secret fragment was briefly exposed in this session's own transcript
 
@@ -134,6 +141,48 @@ deleted first. Test-account cleanup for any future payment-related sprint
 must delete `payment_events` (or any other FK-referencing table) before
 deleting the `user_profiles`/`auth.users` row.
 
+### 9. RESOLVED — the sandbox decline was genuinely the merchant account, confirmed by switching accounts
+
+After a long pause (this sprint spanned 2026-07-27 to 2026-09-09),
+Director created a brand-new sandbox Business account
+(`sb-rvlhv50635659@business.example.com`, US region) with its own new
+sandbox App, entirely separate from the original
+`sb-vdkwb49652610@business.example.com` (BA region) that had declined
+every attempt. **No code changes were made.** The exact same, unmodified
+live-test procedure succeeded completely on the first real attempt
+against the new account — real capture reached `COMPLETED`, real webhook
+arrived, correct activation. This is about as clean a confirmation as
+this kind of environmental issue gets: identical code, different
+external account, different (successful) outcome. The original account's
+specific problem was never root-caused precisely (most likely a Negative
+Testing setting, per the Director's own reasoning, but not confirmed),
+and that's fine — it didn't need to be, once the account-vs-code
+distinction was proven this cleanly.
+
+### 10. `NEXT_PUBLIC_PAYPAL_CLIENT_ID` silently diverged from `PAYPAL_CLIENT_ID`
+
+While re-running the live test with the new US account's credentials,
+the paywall showed "Failed to load PayPal SDK" even though
+`PAYPAL_CLIENT_ID` had been correctly updated — `.env.local`'s
+`NEXT_PUBLIC_PAYPAL_CLIENT_ID` still held an unrelated, unexplained old
+value rather than mirroring the new `PAYPAL_CLIENT_ID`. Since these two
+variables must always hold the *same* value (one server-only, one
+client-exposed by design), any future credential rotation should
+explicitly re-derive `NEXT_PUBLIC_PAYPAL_CLIENT_ID` from
+`PAYPAL_CLIENT_ID` (a one-line `awk`/`sed` copy) rather than assuming a
+manual paste kept both in sync — it's an easy thing to miss since the
+symptom (SDK load failure) only shows up client-side, not in any
+server-side check.
+
+### 11. A long real-world gap (over a month) can invalidate saved CLI auth
+
+Returning to this sprint after roughly six weeks, the Vercel CLI's saved
+token had expired ("The specified token is not valid"), requiring a
+fresh `vercel login` (device-flow, browser approval) before any `vercel
+env`/deploy commands would work again. Worth expecting this whenever a
+sprint resumes after a long real-world gap, not just for Vercel but for
+any CLI-based tool with a session/token lifetime.
+
 ---
 
 ## Process Notes
@@ -153,34 +202,41 @@ deleting the `user_profiles`/`auth.users` row.
   account and its `payment_events` rows were deleted from production at
   close, keeping the real-account count consistent with Sprint 07's
   established audit baseline.
-- Sprint explicitly **paused**, not closed, with a documented blocking
-  gap rather than either (a) silently declaring victory on an unproven
-  activation path, or (b) marking the sprint done when its own DoD isn't
-  met. See `sprints/SPRINT_08.md`'s "Known Gaps" section for the specific
-  blocking item and next step.
+- Sprint went through an explicit **paused** state, not closed, while a
+  documented blocking gap (sandbox merchant decline) was unresolved,
+  rather than either (a) silently declaring victory on an unproven
+  activation path, or (b) marking the sprint done when its own DoD wasn't
+  met. Once the Director resolved the account-side issue and the same
+  live test succeeded, the sprint was genuinely closed
+  (`sprints/SPRINT_08.md`).
 
 ---
 
 ## DONE_CHECKLIST
 
 See `sprints/SPRINT_08.md` Definition of Done for the full item-by-item
-list and its "Known Gaps" section for what remains open. Summary:
+list. Summary:
 
 - [x] Order creation live-verified against real sandbox PayPal API
 - [x] Webhook signature verification live-verified in both directions
       (bogus signature rejected; genuine signatures accepted)
 - [x] Real ambiguous-payment alert delivery confirmed end-to-end
       (received email, correct `[PAYMENT ISSUE]` subject prefix)
+- [x] Genuine `PAYMENT.CAPTURE.COMPLETED` → `subscription_status: active`
+      confirmed end-to-end against a real sandbox transaction
+      (2026-09-09, new US sandbox Business account)
 - [x] Three distinct PayPal secrets confirmed Sensitive-typed in Vercel
       Production
 - [x] No live-mode credential anywhere; hard gate DoD item stays unchecked
-- [x] Two real bugs found via live testing, fixed, committed separately
+- [x] Three real bugs/gaps found via live testing, fixed, committed
+      separately (missing capture call; DENIED→DECLINED typo;
+      `NEXT_PUBLIC_PAYPAL_CLIENT_ID` drift during credential rotation)
 - [x] `tsc --noEmit` / `next build` clean throughout
 - [x] Naming-discipline audit clean on every commit
-- [ ] **NOT DONE:** genuine `PAYMENT.CAPTURE.COMPLETED` / subscription
-      activation never achieved — sandbox-side decline, root cause
-      outside this project's code, carried forward as an explicit gap
+- [~] Premium tier and an isolated tab-close/late-webhook test not
+      separately re-verified — Director explicitly accepted this as
+      sufficient rather than requiring further testing
 
 ---
 
-*Vibe-Coding Journal — Sprint 08 — governed by Commander v1.2.*
+*Vibe-Coding Journal — Sprint 08 — governed by Commander v1.2 through most of this sprint's work, v1.4 as of closure (2026-09-09).*
