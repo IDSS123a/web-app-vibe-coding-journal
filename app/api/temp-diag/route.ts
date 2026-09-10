@@ -11,9 +11,9 @@ export async function GET() {
 
   const { data: reports, error: reportsError } = await supabaseAdmin
     .from("daily_reports")
-    .select("date, review_status, article_count")
+    .select("date, review_status, article_count, reading_time_minutes, sections, markdown")
     .order("date", { ascending: false })
-    .limit(10);
+    .limit(3);
   if (reportsError) return NextResponse.json({ error: reportsError.message }, { status: 500 });
 
   const { count: heldCount } = await supabaseAdmin
@@ -21,5 +21,12 @@ export async function GET() {
     .select("*", { count: "exact", head: true })
     .eq("review_status", "held_for_review");
 
-  return NextResponse.json({ sources, reports, heldCount });
+  const reportsSummary = reports?.map((r) => ({
+    ...r,
+    markdown_length: r.markdown?.length ?? 0,
+    markdown_preview: r.markdown?.slice(0, 500) ?? "",
+    markdown: undefined,
+  }));
+
+  return NextResponse.json({ sources, reports: reportsSummary, heldCount });
 }
