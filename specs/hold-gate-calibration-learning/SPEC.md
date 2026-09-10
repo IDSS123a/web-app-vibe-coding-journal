@@ -126,10 +126,7 @@ publishing behavior unilaterally.
   optional. `/plan-feature` still owns *how* (this SPEC deliberately
   excludes mechanism), but the acceptance criterion above now requires
   an actual automated verdict per occurrence, not raw statistics alone.
-- **Still open:** should Phase 2+ (other pipeline layers — source
-  selection, dedup, scoring, classification) be scoped now as a roadmap
-  item, or deferred entirely until Phase 1 proves useful in practice?
-  Director's answer so far only committed to starting with Phase 1, not
-  to a specific sequencing after that — needs an explicit answer before
-  `/plan-feature`, or `/plan-feature` should proceed Phase-1-only and
-  this gets revisited once Phase 1 ships.
+- ~~Should Phase 2+ be scoped now as a roadmap item?~~ **RESOLVED
+  2026-09-11 (Director):** left fully open — no Phase 2+ scoping, roadmap
+  note, or planning of any kind until Phase 1 actually ships and proves
+  useful in practice. Revisit then.
