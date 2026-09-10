@@ -66,8 +66,22 @@ export async function updateCalibrationRun(
  * resolved 2026-09-11). Two queries rather than a raw SQL subquery,
  * matching this project's established repository style (no raw SQL in
  * repository functions).
+ *
+ * Selects only id/date/markdown -- the fields detectHypeWordsInReport
+ * actually needs, not `*`. Found live 2026-09-11: fetching every column
+ * (including full markdown) across all 54 reports in one query risked a
+ * large-payload truncation on the old pre-fix bloated reports (up to
+ * ~745KB of markdown each, features/pipeline/repository.ts's
+ * getArticlesForDailyReport bug, fixed the same day) -- a real run
+ * missed a genuine "revolutionary" occurrence deep in one such report's
+ * markdown, only caught on a second run. The free-only design is
+ * self-correcting across runs regardless (a missed report just stays
+ * "not yet judged" and gets retried), but narrowing the select reduces
+ * how often that has to happen.
  */
-export async function getReportsNotYetJudged(): Promise<DailyReport[]> {
+export async function getReportsNotYetJudged(): Promise<
+  Array<Pick<DailyReport, "id" | "date" | "markdown">>
+> {
   if (!supabaseAdmin) {
     throw new Error("Admin client not available");
   }
@@ -83,7 +97,10 @@ export async function getReportsNotYetJudged(): Promise<DailyReport[]> {
 
   const coveredIds = [...new Set((coveredRows ?? []).map((r) => r.report_id as string))];
 
-  let query = supabaseAdmin.from("daily_reports").select("*").order("date", { ascending: true });
+  let query = supabaseAdmin
+    .from("daily_reports")
+    .select("id, date, markdown")
+    .order("date", { ascending: true });
   if (coveredIds.length > 0) {
     query = query.not("id", "in", `(${coveredIds.join(",")})`);
   }
@@ -94,7 +111,7 @@ export async function getReportsNotYetJudged(): Promise<DailyReport[]> {
     throw new Error(`Failed to fetch reports not yet judged: ${error.message}`);
   }
 
-  return data as DailyReport[];
+  return data as Array<Pick<DailyReport, "id" | "date" | "markdown">>;
 }
 
 /**
