@@ -47,7 +47,16 @@ silently folded into an adjacent step.
     responses are parsed before trusted, not just DB rows)
   - `tsc --noEmit` clean
 
-- [ ] **4. Repository functions** — `features/hold-gate-calibration/repository.ts`
+- [x] **4. Repository functions** — `features/hold-gate-calibration/repository.ts`
+  (commit `4521910`) — **all 10 functions live-tested against the real
+  applied tables** via a temp route (commits `869da34` fix, `294ce60`
+  removal): insert/update run, `getReportsNotYetJudged` (54 real
+  historical reports correctly returned), insert finding, get all
+  findings, insert suggestion, get pending suggestions, update
+  suggestion status (real FK to a real `user_profiles` row), get
+  latest/history run. Cleanup verified with a direct count query
+  afterward (0/0/0), not assumed from the test route's own "cleaned
+  up" claim.
   - `insertCalibrationRun()` → `status: 'running'`
   - `updateCalibrationRun(id, updates)` → completed/failed transitions
   - `getReportsNotYetJudged()` — `daily_reports` rows with no existing
