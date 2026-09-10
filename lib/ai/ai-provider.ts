@@ -47,9 +47,28 @@ export interface ClassifyOutput {
   confidence: number;
 }
 
+/**
+ * specs/hold-gate-calibration-learning/ — judges whether a specific
+ * hype-word occurrence (already found by the domain layer's
+ * detectHypeWordsInReport, features/hold-gate-calibration/domain.ts) was
+ * genuine hype/marketing language or a false positive (e.g. a proper
+ * noun coincidentally containing the word), given the surrounding
+ * excerpt for context.
+ */
+export interface JudgeHoldReasonInput {
+  reportExcerpt: string;
+  holdReason: string;
+}
+
+export interface JudgeHoldReasonOutput {
+  verdict: "genuine_hype" | "false_positive" | "uncertain";
+  reasoning: string;
+}
+
 export interface AIProvider {
   summarize(input: SummarizeInput): Promise<SummarizeOutput>;
   classify(input: ClassifyInput): Promise<ClassifyOutput>;
+  judgeHoldReason(input: JudgeHoldReasonInput): Promise<JudgeHoldReasonOutput>;
   // Additional methods will be added as pipeline stages are implemented
 }
 
@@ -84,6 +103,13 @@ class NoOpProvider implements AIProvider {
     return {
       category: "uncategorized",
       confidence: 0,
+    };
+  }
+
+  async judgeHoldReason(): Promise<JudgeHoldReasonOutput> {
+    return {
+      verdict: "uncertain",
+      reasoning: "[AI provider not configured]",
     };
   }
 }

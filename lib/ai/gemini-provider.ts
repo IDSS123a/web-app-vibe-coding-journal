@@ -52,7 +52,15 @@ import type {
   SummarizeOutput,
   ClassifyInput,
   ClassifyOutput,
+  JudgeHoldReasonInput,
+  JudgeHoldReasonOutput,
 } from "./ai-provider";
+
+// A-5/AUDIT-003: sized to the longest expected output for this specific
+// call (a verdict + a short sentence of reasoning) -- far shorter than
+// summarize/classify's outputs, confirmed against real judged output
+// during live verification of this method, not assumed.
+const JUDGE_HOLD_REASON_MAX_OUTPUT_TOKENS = 512;
 
 const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
 const API_BASE = "https://generativelanguage.googleapis.com/v1beta/models";
@@ -165,7 +173,11 @@ function classifyFailure(httpStatus: number, body: GeminiErrorBody | null): KeyF
   return null; // not a per-key-rotatable failure — surfaces immediately
 }
 
-async function callGeminiJSON(keys: string[], prompt: string): Promise<Record<string, unknown>> {
+async function callGeminiJSON(
+  keys: string[],
+  prompt: string,
+  maxOutputTokens?: number,
+): Promise<Record<string, unknown>> {
   if (keys.length === 0) {
     throw new Error("No GEMINI_API_KEY_* configured");
   }
@@ -188,7 +200,15 @@ async function callGeminiJSON(keys: string[], prompt: string): Promise<Record<st
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { responseMimeType: "application/json" },
+          generationConfig: {
+            responseMimeType: "application/json",
+            // A-5/AUDIT-003: size to the LONGEST expected structured output
+            // for the specific call, not the average -- omitted (Gemini's
+            // own default) for summarize/classify, unchanged from before
+            // this parameter existed, and explicitly set by
+            // judgeHoldReason below.
+            ...(maxOutputTokens !== undefined && { maxOutputTokens }),
+          },
         }),
       });
     } catch {
@@ -323,6 +343,30 @@ ${input.text.slice(0, 2000)}
     return {
       category,
       confidence: typeof result.confidence === "number" ? result.confidence : 0.5,
+    };
+  }
+
+  async judgeHoldReason(input: JudgeHoldReasonInput): Promise<JudgeHoldReasonOutput> {
+    const prompt = `You are auditing a content-quality filter for a developer news digest. The filter blocked publication because the word/phrase "${input.holdReason}" appeared in an article. Judge whether this specific occurrence is genuine hype/marketing language (the kind the filter is meant to catch) or a false positive (e.g. a proper noun, a quote, or plain factual usage that happens to contain the word but isn't hype).
+
+Excerpt containing the occurrence:
+"""
+${input.reportExcerpt}
+"""
+
+Return ONLY a JSON object: { "verdict": "genuine_hype" | "false_positive" | "uncertain", "reasoning": string (one sentence) }
+Use "uncertain" only if the excerpt genuinely doesn't give enough context to decide either way.`;
+
+    const result = await callGeminiJSON(this.keys, prompt, JUDGE_HOLD_REASON_MAX_OUTPUT_TOKENS);
+
+    const verdict =
+      result.verdict === "genuine_hype" || result.verdict === "false_positive" || result.verdict === "uncertain"
+        ? result.verdict
+        : "uncertain";
+
+    return {
+      verdict,
+      reasoning: typeof result.reasoning === "string" ? result.reasoning : "",
     };
   }
 }
