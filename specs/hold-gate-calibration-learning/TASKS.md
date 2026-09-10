@@ -31,21 +31,21 @@ silently folded into an adjacent step.
     `information_schema`/`pg_class`, not assumed from the API call's
     success alone.
 
-- [ ] **2. TypeScript types** — deliberately **no** separate
-  `types/index.ts` or `features/hold-gate-calibration/types.ts` file.
-  Per `PLAN.md`'s Rule Constraints Applied section, this project's real
-  precedent (confirmed against every existing feature, not the generic
-  template) is `z.infer<>` on schemas centralized in
-  `lib/validation/schemas.ts` — so this step's output is folded into
-  Step 3 below, not a separate file.
+- [x] **2. TypeScript types** — folded into Step 3 (commit `3d4786e`),
+  deliberately **no** separate `types/index.ts` or
+  `features/hold-gate-calibration/types.ts` file, per this project's
+  real established precedent (`z.infer<>` centralized in
+  `lib/validation/schemas.ts`).
 
-- [ ] **3. Zod validation schemas** — `lib/validation/schemas.ts`
+- [x] **3. Zod validation schemas** — `lib/validation/schemas.ts`
+  (commit `3d4786e`)
   - `holdGateCalibrationRunSchema` / `HoldGateCalibrationRun`
   - `holdGateCalibrationFindingSchema` / `HoldGateCalibrationFinding`
   - `holdGateCalibrationSuggestionSchema` / `HoldGateCalibrationSuggestion`
   - `judgeHoldReasonOutputSchema` / `JudgeHoldReasonOutput` — validates
     the AI provider's response specifically (E-2: external API
     responses are parsed before trusted, not just DB rows)
+  - `tsc --noEmit` clean
 
 - [ ] **4. Repository functions** — `features/hold-gate-calibration/repository.ts`
   - `insertCalibrationRun()` → `status: 'running'`
