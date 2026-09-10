@@ -127,19 +127,26 @@ E-6 five-step, with the dual-auth step 1 spelled out:
    a. Insert a `hold_gate_calibration_runs` row, `status: 'running'`.
    b. Repository: fetch every `daily_reports` row (all `review_status`
       values, per SPEC's requirement to cover both held and published
-      history).
-   c. For each historical hold reason recorded, call the AIProvider's
-      new judgment method (see below) to classify
+      history), **excluding any `report_id` that already has a
+      `hold_gate_calibration_findings` row from a prior run** (free-only
+      constraint, resolved 2026-09-11 — see Risks/Deviations: never
+      re-judge an occurrence already judged).
+   c. For each *newly-covered* hold reason from that filtered set only,
+      call the AIProvider's new judgment method (see below) to classify
       `genuine_hype | false_positive | uncertain`, with reasoning.
       Insert one `hold_gate_calibration_findings` row per occurrence,
       validated with a new Zod schema (E-2) before insert — an
       unparseable AI response is logged and counted as a finding-level
       failure (E-5's AUDIT-003 addendum: a successful HTTP call is not
-      a successful result), never silently dropped.
+      a successful result), never silently dropped. On a run with
+      nothing new to judge, this step makes zero AI calls — not an
+      error, a normal no-op outcome.
    d. Domain layer (`features/hold-gate-calibration/domain.ts`, pure):
-      group findings by hold reason, compute false-positive rates, and
-      derive `hold_gate_calibration_suggestions` rows from the
-      aggregated evidence.
+      group **all findings to date** (this run's new ones plus every
+      prior run's) by hold reason, compute false-positive rates, and
+      derive `hold_gate_calibration_suggestions` rows from the full
+      accumulated evidence — the free-only constraint limits new AI
+      calls, not the evidence base a suggestion draws from.
    e. Update the run row: `status: 'completed'`, `completed_at`,
       `reports_analyzed_count`, `summary_markdown` (human-readable
       rollup for the admin page). On any unrecoverable failure inside
@@ -238,25 +245,27 @@ page Server Component calls repository functions
   trigger can be folded into it rather than staying a separate
   workflow file — noted here so that consolidation isn't forgotten,
   not decided now.
-- **`CRON_SECRET` reuse vs. a dedicated secret:** this plan reuses the
-  existing `CRON_SECRET` for the new scheduled trigger rather than
-  minting a new one, on the reasoning that both are "is this a
-  legitimate scheduled job" checks at the same trust boundary (M-7:
-  one fact, one place). If the Director wants per-job secrets instead
-  (e.g. for independent rotation), that's a one-line change at
-  `/tasks` time, not a structural one — flagging so it's a conscious
-  choice, not an assumption that survives silently.
-- **Gemini call volume (PDL-012 relevance):** judging every historical
-  hold-reason occurrence individually means one AI call per occurrence
-  on the first run (potentially dozens across 51+ held reports), then
-  presumably fewer on subsequent runs if findings are cached/not
-  re-judged for reports already analyzed by a prior run. Whether to
-  re-judge previously-seen occurrences on every run, or only judge
-  *new* ones since the last run (cheaper, faster, but a finding's
-  verdict never gets reconsidered once made) is a real design choice
-  with real Gemini-quota cost implications given PDL-012's existing
-  ToS-risk posture — left to `/tasks` to decide explicitly, not
-  defaulted silently either way.
+- **`CRON_SECRET` reuse — RESOLVED 2026-09-11 (default accepted, no
+  objection raised):** reuses the existing `CRON_SECRET` rather than
+  minting a new one (M-7: one "is this a legitimate scheduled job"
+  fact, one place). No cost or security difference either way; if a
+  dedicated secret is wanted later, that's a one-line change, not
+  structural.
+- **Gemini call volume — RESOLVED 2026-09-11 (Director): only a free
+  solution is acceptable.** The system **never re-judges a hold-reason
+  occurrence already judged by a prior run.** Each run only calls
+  `judgeHoldReason` for occurrences from reports added since the
+  *last* run (tracked via `hold_gate_calibration_findings.report_id` —
+  a report already covered by an existing finding row is skipped).
+  This bounds Gemini usage to genuinely new content only, keeping this
+  feature inside the existing PDL-012 free-tier key rotation rather
+  than adding meaningful incremental cost. Direct consequence, stated
+  explicitly rather than left implicit: a finding's verdict is
+  permanent once made — if the hype-word list or hold logic itself
+  later changes, old findings do **not** get re-evaluated
+  retroactively under the new rules. Acceptable given the "free only"
+  constraint; noted here so it's a known tradeoff, not a surprise
+  later.
 - **No UI mockup/wireframe** — per FEATURE_LIFECYCLE's "no UI-first"
   principle (M-2), Presentation is planned last and only structurally
   (Server Component + one Client button) here; exact page layout is a
