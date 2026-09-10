@@ -7,17 +7,25 @@ Two items are added beyond the standard 8-step build sequence because
 external scheduled-trigger workflow) — noted where they appear, not
 silently folded into an adjacent step.
 
-- [ ] **1. Database migration** — `supabase/migrations/00X_hold_gate_calibration.sql`
+- [x] **1. Database migration** — `supabase/migrations/007_hold_gate_calibration.sql`
+  (commit `a98ad8a`)
   - `hold_gate_calibration_runs`, `hold_gate_calibration_findings`,
     `hold_gate_calibration_suggestions` exactly as specified in
     `PLAN.md`'s Data Model section, including the `ON DELETE CASCADE`
-    FKs and their A-10 reasoning already written into the SQL file's
-    comments (don't just put the reasoning in `PLAN.md` — a future
-    reader of the migration file alone should see it too).
-  - Header comment block per A-6 (Migration/Date/Author/Description/Rollback).
-  - Applied by the Director via the Supabase Dashboard SQL Editor —
-    same established pattern as every prior migration this project has
-    used (no DDL execution path available to the ACA).
+    FKs and their A-10 reasoning written directly into the SQL file's
+    comments, not just `PLAN.md`.
+  - Header comment: brief context + pointer to SPEC.md/PLAN.md,
+    matching this project's **actual** established convention
+    (migrations 005/006), not A-6's generic
+    Migration/Date/Author/Description/Rollback template literally.
+  - RLS enabled, service_role-only on every operation/table — added
+    beyond `PLAN.md`'s literal Data Model text, per
+    `DONE_CHECKLIST.md`'s unconditional "RLS enabled + deny-by-default
+    on EVERY table" requirement (noticed `payment_events`, migration
+    006, skipped this — not repeating that gap here).
+  - **NOT YET APPLIED to the live database** — needs the Director to
+    run it via the Supabase Dashboard SQL Editor before Step 4
+    (repository functions) can be live-tested against real tables.
 
 - [ ] **2. TypeScript types** — deliberately **no** separate
   `types/index.ts` or `features/hold-gate-calibration/types.ts` file.
