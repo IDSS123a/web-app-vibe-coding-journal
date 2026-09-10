@@ -71,15 +71,29 @@ silently folded into an adjacent step.
   - `getLatestCalibrationRun()`, `getCalibrationRunHistory()` — for the
     admin page
 
-- [ ] **5. Domain logic** — `features/hold-gate-calibration/domain.ts`
-  (pure — no I/O, no AI calls, matching A-1's dependency direction)
-  - Group findings by hold reason; compute false-positive rate per
-    reason
-  - Derive `hold_gate_calibration_suggestions` candidates from that
-    aggregation, each with the specific evidence backing it (`SPEC.md`
-    acceptance criterion: suggestions must be actionable, not raw
-    statistics)
-  - Build the human-readable `summary_markdown` for the run row
+- [x] **5. Domain logic** — `features/hold-gate-calibration/domain.ts`
+  (commit `445d3b4`; temp-route verification `1868b07`)
+  - `groupFindingsByHoldReason`, `deriveSuggestions` (with named
+    constants `MIN_OCCURRENCES_FOR_SUGGESTION`/
+    `FALSE_POSITIVE_RATE_THRESHOLD`, per E-11), `buildSummaryMarkdown`
+    — all live-tested with synthetic finding data, correct aggregation
+    and suggestion output confirmed
+  - **Real gap found and closed while implementing:** `PLAN.md` assumed
+    per-occurrence hold-reason granularity existed already; it didn't
+    — `containsHypeWords()` (features/pipeline/quality-engine.ts) only
+    ever returned a boolean. Added `detectHypeWordsInReport()`,
+    re-scanning a report's already-stored markdown against the
+    existing `HYPE_WORDS` list (imported, not duplicated) to recover
+    which specific word(s) matched. **Live-tested against 5 real
+    reports — found real matches**, including "revolutionary" matching
+    "Iran's *Revolutionary* Guard Corps," a genuine false-positive
+    example that is itself a small piece of evidence this feature is
+    solving a real problem.
+  - One false alarm chased down and resolved: local `python3 -m
+    json.tool` display showed mojibake on em-dash characters; verified
+    via raw response bytes (`e2 80 94`, correct UTF-8) that this was a
+    local terminal display artifact, not a real bug — no code change
+    needed, noted so it isn't re-investigated later.
 
 - [ ] **5a. AI Provider interface extension** *(added beyond the
   standard 8 steps — `PLAN.md` calls for this as its own piece of
