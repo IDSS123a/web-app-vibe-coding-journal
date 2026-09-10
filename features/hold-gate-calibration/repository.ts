@@ -58,6 +58,8 @@ export async function updateCalibrationRun(
   }
 }
 
+const REPORTS_PAGE_SIZE = 5;
+
 /**
  * Get every daily_reports row (any review_status, per SPEC.md's
  * requirement to cover both held and published history) that has NOT
@@ -68,16 +70,18 @@ export async function updateCalibrationRun(
  * repository functions).
  *
  * Selects only id/date/markdown -- the fields detectHypeWordsInReport
- * actually needs, not `*`. Found live 2026-09-11: fetching every column
- * (including full markdown) across all 54 reports in one query risked a
- * large-payload truncation on the old pre-fix bloated reports (up to
- * ~745KB of markdown each, features/pipeline/repository.ts's
- * getArticlesForDailyReport bug, fixed the same day) -- a real run
- * missed a genuine "revolutionary" occurrence deep in one such report's
- * markdown, only caught on a second run. The free-only design is
- * self-correcting across runs regardless (a missed report just stays
- * "not yet judged" and gets retried), but narrowing the select reduces
- * how often that has to happen.
+ * actually needs, not `*` -- AND paginates in small pages via `.range()`
+ * rather than one unbounded query. Found live 2026-09-11: a single query
+ * across all 54 reports (several of them old pre-fix bloated rows, up to
+ * ~745KB of markdown each -- features/pipeline/repository.ts's
+ * getArticlesForDailyReport bug, fixed the same day) intermittently
+ * returned an incomplete result set -- real runs repeatedly missed
+ * genuine "revolutionary" occurrences that only surfaced on later runs.
+ * Narrowing the `select` alone reduced but did not eliminate this
+ * (confirmed live across three real runs); paginating closes it properly
+ * rather than relying on the free-only design's self-correction (which
+ * does work, but shouldn't be the primary defense against a payload-size
+ * issue that pagination avoids outright).
  */
 export async function getReportsNotYetJudged(): Promise<
   Array<Pick<DailyReport, "id" | "date" | "markdown">>
@@ -97,21 +101,33 @@ export async function getReportsNotYetJudged(): Promise<
 
   const coveredIds = [...new Set((coveredRows ?? []).map((r) => r.report_id as string))];
 
-  let query = supabaseAdmin
-    .from("daily_reports")
-    .select("id, date, markdown")
-    .order("date", { ascending: true });
-  if (coveredIds.length > 0) {
-    query = query.not("id", "in", `(${coveredIds.join(",")})`);
+  const allReports: Array<Pick<DailyReport, "id" | "date" | "markdown">> = [];
+  let from = 0;
+
+  while (true) {
+    let query = supabaseAdmin
+      .from("daily_reports")
+      .select("id, date, markdown")
+      .order("date", { ascending: true })
+      .range(from, from + REPORTS_PAGE_SIZE - 1);
+    if (coveredIds.length > 0) {
+      query = query.not("id", "in", `(${coveredIds.join(",")})`);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      throw new Error(`Failed to fetch reports not yet judged: ${error.message}`);
+    }
+
+    const page = (data ?? []) as Array<Pick<DailyReport, "id" | "date" | "markdown">>;
+    allReports.push(...page);
+
+    if (page.length < REPORTS_PAGE_SIZE) break;
+    from += REPORTS_PAGE_SIZE;
   }
 
-  const { data, error } = await query;
-
-  if (error) {
-    throw new Error(`Failed to fetch reports not yet judged: ${error.message}`);
-  }
-
-  return data as Array<Pick<DailyReport, "id" | "date" | "markdown">>;
+  return allReports;
 }
 
 /**
