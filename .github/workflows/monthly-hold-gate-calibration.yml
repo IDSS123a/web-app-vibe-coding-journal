@@ -1,0 +1,25 @@
+name: Monthly Hold-Gate Calibration
+
+# specs/hold-gate-calibration-learning/ -- Phase 1 of the Director's
+# continuous-learning idea. Reuses CRON_SECRET/DIGEST_ENDPOINT_URL (same
+# secrets as hourly-digest-trigger.yml) rather than minting a new secret
+# for what's the same "is this a legitimate scheduled job" trust
+# boundary (M-7). workflow_dispatch is included for manual/on-demand
+# testing of the scheduled path itself, distinct from the admin page's
+# own "Re-run now" button (which authenticates via an admin session, not
+# this secret).
+
+on:
+  schedule:
+    - cron: "0 3 1 * *"
+  workflow_dispatch: {}
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call hold-gate calibration endpoint
+        run: |
+          curl --fail-with-body -sS -X POST \
+            "${{ secrets.DIGEST_ENDPOINT_URL }}/api/admin/hold-gate-calibration/run" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
