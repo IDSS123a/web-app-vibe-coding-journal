@@ -24,7 +24,7 @@ import {
   getReportsNotYetJudged,
   insertFinding,
   getAllFindings,
-  insertSuggestion,
+  upsertSuggestion,
   getLatestCalibrationRun,
 } from "@/features/hold-gate-calibration/repository";
 import {
@@ -141,7 +141,11 @@ export async function POST(request: NextRequest) {
       const suggestionDrafts = deriveSuggestions(stats);
 
       for (const draft of suggestionDrafts) {
-        await insertSuggestion({
+        // upsertSuggestion, not insertSuggestion: refreshes an existing
+        // pending suggestion's rationale rather than accumulating a new
+        // duplicate row every run (real bug found live 2026-09-11 --
+        // five duplicate "revolutionary" suggestions had piled up).
+        await upsertSuggestion({
           run_id: run.id,
           suggestion_text: draft.suggestionText,
           rationale: draft.rationale,

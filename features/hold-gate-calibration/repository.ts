@@ -179,6 +179,10 @@ export async function getAllFindings(): Promise<HoldGateCalibrationFinding[]> {
 
 /**
  * Insert one candidate-change suggestion, status 'pending' by default.
+ * Prefer `upsertSuggestion` below for anything driven by a fresh
+ * `deriveSuggestions()` run -- this raw insert is what caused a real bug
+ * (5 duplicate "revolutionary" suggestions accumulated, one per run,
+ * found live 2026-09-11) when called unconditionally every run.
  */
 export async function insertSuggestion(
   suggestion: Pick<HoldGateCalibrationSuggestion, "run_id" | "suggestion_text" | "rationale">,
@@ -198,6 +202,61 @@ export async function insertSuggestion(
   }
 
   return data as HoldGateCalibrationSuggestion;
+}
+
+/**
+ * Insert a suggestion only if one for this exact suggestion_text doesn't
+ * already exist; otherwise refresh the existing PENDING one's rationale
+ * with the latest evidence (a `pending` suggestion is expected to stay
+ * current as more history is judged), or leave an already-`applied`/
+ * `dismissed` one alone entirely (that decision is closed -- a new run
+ * re-deriving the same draft must not resurrect it, per SPEC.md's "the
+ * system never applies a change on its own authority" -- silently
+ * un-dismissing counts as that).
+ *
+ * `deriveSuggestions()` (features/hold-gate-calibration/domain.ts)
+ * builds `suggestion_text` deterministically from the hold reason alone
+ * (no randomness, no run-specific wording), so an exact-string match is
+ * a reliable identity key without needing a separate column/migration.
+ */
+export async function upsertSuggestion(
+  suggestion: Pick<HoldGateCalibrationSuggestion, "run_id" | "suggestion_text" | "rationale">,
+): Promise<void> {
+  if (!supabaseAdmin) {
+    throw new Error("Admin client not available");
+  }
+
+  const { data: existing, error: existingError } = await supabaseAdmin
+    .from("hold_gate_calibration_suggestions")
+    .select("id, status")
+    .eq("suggestion_text", suggestion.suggestion_text)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (existingError) {
+    throw new Error(`Failed to check for existing suggestion: ${existingError.message}`);
+  }
+
+  if (!existing) {
+    await insertSuggestion(suggestion);
+    return;
+  }
+
+  if (existing.status !== "pending") {
+    // Already applied or dismissed -- a closed Director decision, never
+    // silently resurrected by fresh evidence alone.
+    return;
+  }
+
+  const { error: updateError } = await supabaseAdmin
+    .from("hold_gate_calibration_suggestions")
+    .update({ rationale: suggestion.rationale, run_id: suggestion.run_id })
+    .eq("id", existing.id);
+
+  if (updateError) {
+    throw new Error(`Failed to refresh existing suggestion: ${updateError.message}`);
+  }
 }
 
 /**
