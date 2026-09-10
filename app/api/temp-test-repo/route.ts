@@ -48,7 +48,9 @@ export async function GET() {
     const pending = await getPendingSuggestions();
     results.pendingCount = pending.length;
 
-    await updateSuggestionStatus(suggestion.id, "dismissed", "temp-test-user-id");
+    if (!supabaseAdmin) throw new Error("no admin client");
+    const { data: anyUser } = await supabaseAdmin.from("user_profiles").select("id").limit(1).single();
+    await updateSuggestionStatus(suggestion.id, "dismissed", anyUser!.id);
     results.suggestionDismissed = true;
 
     await updateCalibrationRun(run.id, {
