@@ -95,17 +95,23 @@ silently folded into an adjacent step.
     local terminal display artifact, not a real bug — no code change
     needed, noted so it isn't re-investigated later.
 
-- [ ] **5a. AI Provider interface extension** *(added beyond the
+- [x] **5a. AI Provider interface extension** (commit `e918886`; temp
+  live-test against the real Gemini API `d94f935`) *(added beyond the
   standard 8 steps — `PLAN.md` calls for this as its own piece of
   Infrastructure work, distinct from the repository/domain layers)*
-  - `lib/ai/ai-provider.ts`: add `JudgeHoldReasonInput`,
+  - `lib/ai/ai-provider.ts`: added `JudgeHoldReasonInput`,
     `JudgeHoldReasonOutput`, `judgeHoldReason()` to the `AIProvider`
-    interface
-  - `lib/ai/gemini-provider.ts`: implement it, same pattern as the
-    existing `summarize`/`classify` methods
-  - `maxTokens` sized per A-5/AUDIT-003 — confirm against a real
-    sample of longest expected reasoning text, don't assume 512 is
-    correct without checking
+    interface, plus a `NoOpProvider` stub
+  - `lib/ai/gemini-provider.ts`: implemented, same pattern as
+    `summarize`/`classify` — extended the shared `callGeminiJSON`
+    helper with an optional `maxOutputTokens` param (existing calls
+    unaffected, no regression — confirmed via full `next build`, not
+    just `tsc`)
+  - `maxTokens` = 512, confirmed sufficient against **real** Gemini
+    output, not assumed: live-tested two real cases (a genuine
+    false-positive — "Revolutionary Guard Corps" — and genuine hype
+    marketing language) — both correctly classified with sensible
+    one-sentence reasoning, well under the token budget
 
 - [ ] **6. API route** — `app/api/admin/hold-gate-calibration/run/route.ts`
   - E-6 five-step exactly as detailed in `PLAN.md`, JSDoc block
