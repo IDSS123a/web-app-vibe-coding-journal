@@ -43,7 +43,12 @@ publishing behavior unilaterally.
 - As the **Director**, I can see this analysis re-run periodically (not
   a one-time report) as new reports accumulate, so the recommendation
   stays current as real publishing history grows — without me having to
-  manually re-derive it each time.
+  manually re-derive it each time. **RESOLVED 2026-09-11:** re-runs both
+  on demand (I trigger it whenever I want) and on a schedule tied to
+  P-11's existing Monthly Self-Audit cadence — not one or the other.
+- As the **Director**, I can view this summary on an admin-only page
+  (the existing admin surface, not a new public-facing one) — **RESOLVED
+  2026-09-11**, not an email digest.
 - As the **Director**, nothing about the hype-word list, hold thresholds,
   or publish behavior changes unless I explicitly apply a suggested
   change — the system never modifies its own gating rules on its own
@@ -56,8 +61,15 @@ publishing behavior unilaterally.
       table (all `held_for_review` and `auto_published` rows, including
       the 51 kept from the 2026-09-10 incident) and produces a
       human-readable summary: which specific hype words/hold reasons
-      fired, how often, and — where derivable — whether the held content
-      looked like genuine hype/marketing or a plausible false positive.
+      fired, how often, and on what kind of content.
+- [ ] **RESOLVED 2026-09-11 (Director):** false-positive judgment (did a
+      hype word fire on content that wasn't actually hype?) is
+      **automated** — the process itself renders a verdict per
+      occurrence, not just raw statistics for the Director to manually
+      assess. `/plan-feature` decides the mechanism (e.g. a second
+      AI-assisted pass judging held content against P-3's editorial
+      rules), but the verdict must actually appear in the summary, not
+      be left as a manual step.
 - [ ] The summary is something the Director can actually act on: it
       names specific candidate changes (e.g. "remove word X from the
       hype list," "loosen/tighten threshold Y") with the evidence behind
@@ -65,6 +77,13 @@ publishing behavior unilaterally.
 - [ ] Re-running this analysis after new reports have been generated
       produces an updated summary reflecting the new data — this is not
       a single one-off report.
+- [ ] **RESOLVED 2026-09-11 (Director):** the analysis can be re-run
+      **both** on demand (Director-triggered) and on a schedule tied to
+      P-11's existing Monthly Self-Audit cadence — not just one of the
+      two.
+- [ ] **RESOLVED 2026-09-11 (Director):** the summary is visible on an
+      **admin-only page** (existing admin surface) — not an email
+      digest, not a new public-facing page.
 - [ ] Applying any suggested change requires an explicit Director action;
       no code path exists where this analysis writes to the hype-word
       list, thresholds, or any other pipeline configuration on its own.
@@ -97,20 +116,20 @@ publishing behavior unilaterally.
 
 ## Open Questions
 
-- How often should the analysis re-run — on demand (Director triggers
-  it), on a schedule (e.g. weekly, tied to P-11's existing Monthly
-  Self-Audit cadence), or both? Not decided here.
-- Where does the Director see this summary — a new admin page/section,
-  an email digest, something else? Left to `/plan-feature`, since this
-  SPEC intentionally excludes UI/implementation choices.
-- Is a "false positive" (hype word fired on content that wasn't actually
-  hype) something the system can judge automatically at all, or does
-  every judgment require the Director's own read of the held content?
-  If the former isn't reliably possible, the acceptance criterion above
-  about "plausible false positive" may need to soften to "here's the
-  held content, you judge" rather than an automated verdict — worth
-  confirming before `/plan-feature` commits to an approach.
-- Should Phase 2+ (other pipeline layers) be scoped now as a roadmap
-  item, or deferred entirely until Phase 1 proves useful? Not decided —
-  Director's own earlier answer only committed to starting with Phase 1,
-  not to a specific sequencing after that.
+- ~~How often should the analysis re-run?~~ **RESOLVED 2026-09-11
+  (Director):** both on demand and on a schedule tied to P-11's Monthly
+  Self-Audit cadence.
+- ~~Where does the Director see this summary?~~ **RESOLVED 2026-09-11
+  (Director):** an admin-only page.
+- ~~Can "false positive" be judged automatically?~~ **RESOLVED 2026-09-11
+  (Director):** yes, automated judgment is required, not merely
+  optional. `/plan-feature` still owns *how* (this SPEC deliberately
+  excludes mechanism), but the acceptance criterion above now requires
+  an actual automated verdict per occurrence, not raw statistics alone.
+- **Still open:** should Phase 2+ (other pipeline layers — source
+  selection, dedup, scoring, classification) be scoped now as a roadmap
+  item, or deferred entirely until Phase 1 proves useful in practice?
+  Director's answer so far only committed to starting with Phase 1, not
+  to a specific sequencing after that — needs an explicit answer before
+  `/plan-feature`, or `/plan-feature` should proceed Phase-1-only and
+  this gets revisited once Phase 1 ships.
