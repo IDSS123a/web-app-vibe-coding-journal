@@ -23,9 +23,13 @@ silently folded into an adjacent step.
     `DONE_CHECKLIST.md`'s unconditional "RLS enabled + deny-by-default
     on EVERY table" requirement (noticed `payment_events`, migration
     006, skipped this — not repeating that gap here).
-  - **NOT YET APPLIED to the live database** — needs the Director to
-    run it via the Supabase Dashboard SQL Editor before Step 4
-    (repository functions) can be live-tested against real tables.
+  - **APPLIED to the live database 2026-09-11** — via the Supabase
+    Management API directly (`SUPABASE_ACCESS_TOKEN`, new capability
+    this session — no more manual Dashboard SQL Editor step needed for
+    this or future migrations). Live-verified: all three tables exist,
+    `relrowsecurity = true` on each, confirmed against
+    `information_schema`/`pg_class`, not assumed from the API call's
+    success alone.
 
 - [ ] **2. TypeScript types** — deliberately **no** separate
   `types/index.ts` or `features/hold-gate-calibration/types.ts` file.
