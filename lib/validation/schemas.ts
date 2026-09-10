@@ -123,3 +123,62 @@ export const paymentEventSchema = z.object({
 });
 
 export type PaymentEvent = z.infer<typeof paymentEventSchema>;
+
+// Hold-gate calibration learning (specs/hold-gate-calibration-learning/) —
+// Phase 1 of the Director's continuous-learning idea, scoped to the P-3/P-6
+// hold gate. One row per analysis run.
+export const holdGateCalibrationRunSchema = z.object({
+  id: z.string().uuid(),
+  triggered_by: z.enum(["manual", "scheduled"]),
+  status: z.enum(["running", "completed", "failed"]),
+  reports_analyzed_count: z.number().int().nonnegative().nullable(),
+  summary_markdown: z.string().nullable(),
+  error_message: z.string().nullable(),
+  created_at: z.string().datetime(),
+  completed_at: z.string().datetime().nullable(),
+});
+
+export type HoldGateCalibrationRun = z.infer<typeof holdGateCalibrationRunSchema>;
+
+// One row per hype-word/hold-reason occurrence actually judged. A
+// report_id already covered here is never re-judged by a later run (the
+// Director's explicit free-only constraint) — this table doubles as the
+// "have we already judged this" record.
+export const holdGateCalibrationFindingSchema = z.object({
+  id: z.string().uuid(),
+  run_id: z.string().uuid(),
+  report_id: z.string().uuid().nullable(),
+  report_date: z.string().date(),
+  hold_reason: z.string().min(1),
+  verdict: z.enum(["genuine_hype", "false_positive", "uncertain"]),
+  ai_reasoning: z.string().min(1),
+  created_at: z.string().datetime(),
+});
+
+export type HoldGateCalibrationFinding = z.infer<typeof holdGateCalibrationFindingSchema>;
+
+// Candidate changes derived from findings. The system never applies one
+// itself — `status` only ever changes via an explicit Director action.
+export const holdGateCalibrationSuggestionSchema = z.object({
+  id: z.string().uuid(),
+  run_id: z.string().uuid(),
+  suggestion_text: z.string().min(1),
+  rationale: z.string().min(1),
+  status: z.enum(["pending", "applied", "dismissed"]),
+  applied_by: z.string().uuid().nullable(),
+  applied_at: z.string().datetime().nullable(),
+  created_at: z.string().datetime(),
+});
+
+export type HoldGateCalibrationSuggestion = z.infer<typeof holdGateCalibrationSuggestionSchema>;
+
+// Validates the AI provider's judgeHoldReason response before it's
+// trusted for anything (E-2: an external API response is a claim, not a
+// fact, until parsed) — an unparseable response is a finding-level
+// failure to log and count, never silently dropped (E-5/AUDIT-003).
+export const judgeHoldReasonOutputSchema = z.object({
+  verdict: z.enum(["genuine_hype", "false_positive", "uncertain"]),
+  reasoning: z.string().min(1),
+});
+
+export type JudgeHoldReasonOutput = z.infer<typeof judgeHoldReasonOutputSchema>;
