@@ -70,7 +70,15 @@ const ASSESS_RELEVANCE_MAX_OUTPUT_TOKENS = 512;
 const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
 const API_BASE = "https://generativelanguage.googleapis.com/v1beta/models";
 
-export type GeminiExhaustionReason = "quota" | "suspected_suspension";
+// "model_deprecated" added 2026-09-11: found live while verifying the P-0
+// relevance-gate fix -- key #3 of 8 returned HTTP 404 NOT_FOUND, body
+// "This model models/gemini-2.5-flash is no longer available to new
+// users. Please update your code to use models/gemini-3.6-flash," while
+// keys #1/#2 were merely rate-limited and #4-#8 still worked. This is a
+// distinct, non-transient failure (a rate limit self-resolves; a
+// deprecated model does not) and needs its own signal to the Director,
+// not to be folded into "quota" or misread as an account suspension.
+export type GeminiExhaustionReason = "quota" | "suspected_suspension" | "model_deprecated";
 
 export class GeminiKeysExhaustedError extends Error {
   reason: GeminiExhaustionReason;
@@ -79,7 +87,9 @@ export class GeminiKeysExhaustedError extends Error {
     const detail =
       reason === "suspected_suspension"
         ? "possible account suspension, not just quota exhaustion"
-        : "rate-limited/quota-exceeded";
+        : reason === "model_deprecated"
+          ? "the configured model is deprecated/unavailable on at least one key's project"
+          : "rate-limited/quota-exceeded";
     super(`All ${keyCount} Gemini API key(s) failed: ${detail}`);
     this.name = "GeminiKeysExhaustedError";
     this.reason = reason;
@@ -123,7 +133,7 @@ interface GeminiErrorBody {
   };
 }
 
-type KeyFailureKind = "rate_limit" | "auth_or_suspended" | null;
+type KeyFailureKind = "rate_limit" | "auth_or_suspended" | "model_unavailable" | null;
 
 /**
  * Pulls ONLY a small allowlist of non-secret diagnostic fields out of a
@@ -175,6 +185,15 @@ function classifyFailure(httpStatus: number, body: GeminiErrorBody | null): KeyF
   ) {
     return "auth_or_suspended";
   }
+  // Found live 2026-09-11: a 404/NOT_FOUND here means THIS key's Google
+  // Cloud project no longer has the configured model available (Google's
+  // own message: "no longer available to new users") -- a per-key/project
+  // config difference, not a malformed request (which would 404/400 the
+  // same way on every key). Rotating to the next key is the right
+  // response, same as a rate limit, rather than aborting the whole call.
+  if (httpStatus === 404 || body?.error?.status === "NOT_FOUND") {
+    return "model_unavailable";
+  }
   return null; // not a per-key-rotatable failure — surfaces immediately
 }
 
@@ -193,6 +212,7 @@ async function callGeminiJSON(
   // exhaustion — track every failure kind seen across the rotation and let
   // the worse interpretation win.
   let sawAuthOrSuspended = false;
+  let sawModelUnavailable = false;
 
   for (let i = 0; i < keys.length; i++) {
     const key = keys[i]!;
@@ -243,11 +263,18 @@ async function callGeminiJSON(
     const failureKind = classifyFailure(response.status, body);
     const quotaInfo = extractSafeQuotaInfo(body);
 
-    if (failureKind === "rate_limit" || failureKind === "auth_or_suspended") {
+    if (failureKind === "rate_limit" || failureKind === "auth_or_suspended" || failureKind === "model_unavailable") {
       if (failureKind === "auth_or_suspended") {
         sawAuthOrSuspended = true;
+      } else if (failureKind === "model_unavailable") {
+        sawModelUnavailable = true;
       }
-      const label = failureKind === "auth_or_suspended" ? "auth/permission failure" : "rate-limited";
+      const label =
+        failureKind === "auth_or_suspended"
+          ? "auth/permission failure"
+          : failureKind === "model_unavailable"
+            ? `model unavailable on this key's project (${GEMINI_MODEL})`
+            : "rate-limited";
       const nextIndex = i + 1;
       if (nextIndex < keys.length) {
         console.warn(`[GEMINI] key ${i + 1} ${label}, trying key ${nextIndex + 1}${quotaInfo}`);
@@ -256,7 +283,7 @@ async function callGeminiJSON(
       console.warn(`[GEMINI] key ${i + 1} ${label}, no more keys configured${quotaInfo}`);
       throw new GeminiKeysExhaustedError(
         keys.length,
-        sawAuthOrSuspended ? "suspected_suspension" : "quota",
+        sawAuthOrSuspended ? "suspected_suspension" : sawModelUnavailable ? "model_deprecated" : "quota",
       );
     }
 
@@ -266,7 +293,10 @@ async function callGeminiJSON(
 
   // Unreachable in practice (loop either returns or throws), but keeps
   // TypeScript control-flow analysis satisfied.
-  throw new GeminiKeysExhaustedError(keys.length, sawAuthOrSuspended ? "suspected_suspension" : "quota");
+  throw new GeminiKeysExhaustedError(
+    keys.length,
+    sawAuthOrSuspended ? "suspected_suspension" : sawModelUnavailable ? "model_deprecated" : "quota",
+  );
 }
 
 const P3_SYSTEM_RULES = `You are writing content for a daily developer intelligence digest.

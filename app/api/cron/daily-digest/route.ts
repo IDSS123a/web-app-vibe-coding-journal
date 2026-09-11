@@ -131,7 +131,9 @@ export async function POST(request: NextRequest) {
     if (qualityResult.aiUnavailableCount > 0) {
       const label = qualityResult.aiSuspectedSuspension
         ? "possible account suspension, not just quota"
-        : "rate-limited/quota";
+        : qualityResult.aiModelDeprecated
+          ? "configured Gemini model deprecated on at least one key's project"
+          : "rate-limited/quota";
       console.warn(
         `[CRON]   ⚠ AI summary unavailable for ${qualityResult.aiUnavailableCount} article(s) (${label})`,
       );
@@ -142,6 +144,7 @@ export async function POST(request: NextRequest) {
     const reportResult = await generateDailyReport(
       qualityResult.aiUnavailableCount,
       qualityResult.aiSuspectedSuspension,
+      qualityResult.aiModelDeprecated,
     );
     console.log(
       `[CRON]   ✓ Report generated: ${reportResult.articleCount} articles, status: ${reportResult.reviewStatus}`,
@@ -183,6 +186,7 @@ export async function POST(request: NextRequest) {
           articlesSummarized: qualityResult.articlesSummarized,
           aiUnavailableCount: qualityResult.aiUnavailableCount,
           aiSuspectedSuspension: qualityResult.aiSuspectedSuspension,
+          aiModelDeprecated: qualityResult.aiModelDeprecated,
           errors: qualityResult.errors,
         },
         dailyReport: {
@@ -274,6 +278,7 @@ async function runQualityEngine(): Promise<{
   articlesSummarized: number;
   aiUnavailableCount: number;
   aiSuspectedSuspension: boolean;
+  aiModelDeprecated: boolean;
   errors: string[];
 }> {
   const errors: string[] = [];
@@ -284,6 +289,11 @@ async function runQualityEngine(): Promise<{
   // PDL-012: worse-case wins across the whole run — one suspected-suspension
   // article is enough to escalate the report-level alert, not averaged away.
   let aiSuspectedSuspension = false;
+  // Found live 2026-09-11 (P-0 fix verification): distinct from both of the
+  // above -- a rate limit self-resolves and a suspension is an account
+  // problem, but a deprecated model needs a code/config change and will
+  // not fix itself no matter how many times the run retries.
+  let aiModelDeprecated = false;
 
   try {
     const articles = await getNonDuplicateArticles();
@@ -389,10 +399,16 @@ async function runQualityEngine(): Promise<{
             aiUnavailableCount++;
             if (summarizeError.reason === "suspected_suspension") {
               aiSuspectedSuspension = true;
+            } else if (summarizeError.reason === "model_deprecated") {
+              aiModelDeprecated = true;
             }
-            console.warn(
-              `[QUALITY]   AI summary unavailable for ${article.id}: ${summarizeError.reason === "suspected_suspension" ? "possible account suspension" : "all keys rate-limited"}`,
-            );
+            const reasonLabel =
+              summarizeError.reason === "suspected_suspension"
+                ? "possible account suspension"
+                : summarizeError.reason === "model_deprecated"
+                  ? "configured Gemini model deprecated on at least one key's project"
+                  : "all keys rate-limited";
+            console.warn(`[QUALITY]   AI summary unavailable for ${article.id}: ${reasonLabel}`);
           } else {
             const msg = summarizeError instanceof Error ? summarizeError.message : String(summarizeError);
             errors.push(`Article ${article.id} summarize: ${msg}`);
@@ -411,6 +427,7 @@ async function runQualityEngine(): Promise<{
       articlesSummarized,
       aiUnavailableCount,
       aiSuspectedSuspension,
+      aiModelDeprecated,
       errors,
     };
   } catch (err) {
@@ -422,6 +439,7 @@ async function runQualityEngine(): Promise<{
       articlesSummarized: 0,
       aiUnavailableCount: 0,
       aiSuspectedSuspension: false,
+      aiModelDeprecated: false,
       errors: [errorMsg],
     };
   }
@@ -434,6 +452,7 @@ async function runQualityEngine(): Promise<{
 async function generateDailyReport(
   aiUnavailableCount: number,
   aiSuspectedSuspension: boolean,
+  aiModelDeprecated: boolean,
 ): Promise<{
   success: boolean;
   date: string;
@@ -469,6 +488,16 @@ async function generateDailyReport(
         urgent = true;
         holdReasons.push(
           `All AI providers unavailable — possible account suspension (not just quota exhaustion). ${aiUnavailableCount} article(s) affected. Verify Gemini account/key status immediately.`,
+        );
+      } else if (aiModelDeprecated) {
+        // Found live 2026-09-11: distinct from both a rate limit (self-
+        // resolves) and a suspension (an account problem) -- Google has
+        // sunset the configured model on at least one key's project ("no
+        // longer available to new users"). No amount of retrying fixes
+        // this; GEMINI_MODEL needs to be updated.
+        urgent = true;
+        holdReasons.push(
+          `AI summary unavailable — the configured Gemini model is deprecated on at least one key's project (${aiUnavailableCount} article(s) affected). Update GEMINI_MODEL; retrying will not resolve this on its own.`,
         );
       } else {
         holdReasons.push(
