@@ -22,6 +22,7 @@ import {
   insertCalibrationRun,
   updateCalibrationRun,
   getReportsNotYetJudged,
+  markReportsAsScanned,
   insertFinding,
   getAllFindings,
   upsertSuggestion,
@@ -131,6 +132,14 @@ export async function POST(request: NextRequest) {
             });
           }
         }
+
+        // Record every scanned report regardless of whether it produced
+        // a finding -- this, not "has a finding," is what actually
+        // excludes it from future runs (migration 008; a report with
+        // zero hype words can never get a finding, so relying on
+        // findings alone meant this set never stopped growing --
+        // confirmed live 2026-09-11).
+        await markReportsAsScanned(reports.map((r) => r.id));
       }
 
       // Domain aggregation over ALL findings to date, not just this

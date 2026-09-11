@@ -63,11 +63,24 @@ const REPORTS_PAGE_SIZE = 5;
 /**
  * Get every daily_reports row (any review_status, per SPEC.md's
  * requirement to cover both held and published history) that has NOT
- * already been covered by a hold_gate_calibration_findings row from a
- * prior run -- the free-only, never-re-judge constraint (PLAN.md,
- * resolved 2026-09-11). Two queries rather than a raw SQL subquery,
- * matching this project's established repository style (no raw SQL in
- * repository functions).
+ * already been SCANNED by a prior run -- the free-only, never-re-judge
+ * constraint (PLAN.md, resolved 2026-09-11). Two queries rather than a
+ * raw SQL subquery, matching this project's established repository
+ * style (no raw SQL in repository functions).
+ *
+ * Excludes based on `hold_gate_calibration_scanned_reports` (migration
+ * 008), NOT on which reports happen to already have a
+ * `hold_gate_calibration_findings` row. A real, confirmed bug found live
+ * 2026-09-11: excluding by "has a finding" meant a report containing
+ * zero hype words NEVER got excluded (it can never produce a finding),
+ * so the "not yet judged" set only grew for the product's entire
+ * lifetime -- confirmed live, a no-op run (zero new findings) already
+ * took 23-28 seconds re-scanning 33 accumulated zero-hype-word reports
+ * on every single call. Migration 008's dedicated scan-tracking table
+ * records that a report was checked independent of whether checking it
+ * found anything, which is what actually bounds this set going forward
+ * (only genuinely new reports since the product's last scan, not an
+ * ever-growing backlog of reports that will never produce a finding).
  *
  * Selects only id/date/markdown -- the fields detectHypeWordsInReport
  * actually needs, not `*` -- AND paginates in small pages via `.range()`
@@ -90,16 +103,15 @@ export async function getReportsNotYetJudged(): Promise<
     throw new Error("Admin client not available");
   }
 
-  const { data: coveredRows, error: coveredError } = await supabaseAdmin
-    .from("hold_gate_calibration_findings")
-    .select("report_id")
-    .not("report_id", "is", null);
+  const { data: scannedRows, error: scannedError } = await supabaseAdmin
+    .from("hold_gate_calibration_scanned_reports")
+    .select("report_id");
 
-  if (coveredError) {
-    throw new Error(`Failed to fetch already-judged report ids: ${coveredError.message}`);
+  if (scannedError) {
+    throw new Error(`Failed to fetch already-scanned report ids: ${scannedError.message}`);
   }
 
-  const coveredIds = [...new Set((coveredRows ?? []).map((r) => r.report_id as string))];
+  const scannedIds = [...new Set((scannedRows ?? []).map((r) => r.report_id as string))];
 
   const allReports: Array<Pick<DailyReport, "id" | "date" | "markdown">> = [];
   let from = 0;
@@ -110,8 +122,8 @@ export async function getReportsNotYetJudged(): Promise<
       .select("id, date, markdown")
       .order("date", { ascending: true })
       .range(from, from + REPORTS_PAGE_SIZE - 1);
-    if (coveredIds.length > 0) {
-      query = query.not("id", "in", `(${coveredIds.join(",")})`);
+    if (scannedIds.length > 0) {
+      query = query.not("id", "in", `(${scannedIds.join(",")})`);
     }
 
     const { data, error } = await query;
@@ -128,6 +140,29 @@ export async function getReportsNotYetJudged(): Promise<
   }
 
   return allReports;
+}
+
+/**
+ * Record that these reports have been scanned -- independent of whether
+ * scanning them found any hype word -- so `getReportsNotYetJudged`
+ * excludes them from every future run regardless (migration 008; see
+ * that function's doc comment for the bug this fixes). Call this for
+ * EVERY report a run actually scanned, not just ones that produced a
+ * finding.
+ */
+export async function markReportsAsScanned(reportIds: string[]): Promise<void> {
+  if (reportIds.length === 0) return;
+  if (!supabaseAdmin) {
+    throw new Error("Admin client not available");
+  }
+
+  const { error } = await supabaseAdmin
+    .from("hold_gate_calibration_scanned_reports")
+    .upsert(reportIds.map((id) => ({ report_id: id })));
+
+  if (error) {
+    throw new Error(`Failed to mark reports as scanned: ${error.message}`);
+  }
 }
 
 /**
