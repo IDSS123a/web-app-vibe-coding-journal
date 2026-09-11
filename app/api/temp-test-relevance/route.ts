@@ -70,6 +70,16 @@ export async function POST(request: NextRequest) {
   ensureAIProviderInitialized();
   const aiProvider = getAIProvider();
 
+  // Diagnostic: is 404 specific to assessRelevance(), or a pipeline-wide
+  // Gemini outage hitting the pre-existing summarize()/classify() too?
+  let summarizeProbe: { ok: boolean; error?: string } = { ok: false };
+  try {
+    await aiProvider.summarize({ text: "Test article for diagnostic probe." });
+    summarizeProbe = { ok: true };
+  } catch (err) {
+    summarizeProbe = { ok: false, error: err instanceof Error ? err.message : String(err) };
+  }
+
   const results = [];
   for (const testCase of TEST_CASES) {
     try {
@@ -95,5 +105,5 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  return NextResponse.json({ results });
+  return NextResponse.json({ summarizeProbe, results });
 }
