@@ -34,6 +34,7 @@ import { sendReviewQueueAlert } from "@/lib/email/resend";
 import { ensureAIProviderInitialized } from "@/lib/ai/init";
 import { getAIProvider } from "@/lib/ai/ai-provider";
 import { GeminiKeysExhaustedError } from "@/lib/ai/gemini-provider";
+import { assessRelevanceOutputSchema } from "@/lib/validation/schemas";
 
 const CRON_SECRET = process.env.CRON_SECRET || "dev-secret-change-in-production";
 
@@ -291,6 +292,57 @@ async function runQualityEngine(): Promise<{
 
     for (const article of articles) {
       try {
+        // P-0 (CRITICAL) relevance gate — must run before scoring/
+        // classification/summarization so an off-topic article never
+        // reaches an AI-costed step. Found live 2026-09-11: aviation,
+        // math, music-theory, NASA-imaging, and cables content had been
+        // publishing alongside real vibe-coding content because nothing
+        // upstream checked topic at all. Fails OPEN (treated as
+        // relevant) on any assessment failure — a bad-AI-day must never
+        // behave worse than today's status quo (M-4); a real Gemini
+        // outage still surfaces via the existing GeminiKeysExhaustedError
+        // handling below, once classify/summarize hit the same exhausted
+        // keys.
+        let isRelevant = true;
+        try {
+          const relevanceRaw = await aiProvider.assessRelevance({
+            title: article.title,
+            summary: article.raw_summary ?? "",
+          });
+          const parsedRelevance = assessRelevanceOutputSchema.safeParse(relevanceRaw);
+          if (parsedRelevance.success) {
+            isRelevant = parsedRelevance.data.isRelevant;
+            if (!isRelevant) {
+              console.log(
+                `[QUALITY]   Off-topic (P-0), excluding ${article.id}: ${parsedRelevance.data.reasoning}`,
+              );
+            }
+          } else {
+            // E-5/AUDIT-003: a successful call is not a successful result --
+            // log and count, but fail open rather than trust a malformed
+            // payload as a reason to hide real content.
+            console.error(
+              `[QUALITY]   Unparseable relevance assessment for ${article.id}: ${parsedRelevance.error.message}`,
+            );
+          }
+        } catch (relevanceError) {
+          const msg = relevanceError instanceof Error ? relevanceError.message : String(relevanceError);
+          console.warn(`[QUALITY]   Relevance assessment failed for ${article.id}, failing open: ${msg}`);
+        }
+
+        if (!isRelevant) {
+          // Sub-CONFIDENCE_THRESHOLD score excludes it via the existing
+          // getArticlesForDailyReport() filter -- deliberately reusing an
+          // existing gate instead of a schema migration, given the
+          // Director's "fix this NOW" urgency. Skips classify/summarize
+          // entirely below, saving Gemini quota (free-only constraint,
+          // PDL-012, same principle as hold-gate-calibration's
+          // never-re-judge rule).
+          await updateArticleConfidence(article.id, 0);
+          articlesScored++;
+          continue;
+        }
+
         // Score confidence (heuristic, unchanged)
         const confidence = scoreArticleConfidence(article);
         await updateArticleConfidence(article.id, confidence);

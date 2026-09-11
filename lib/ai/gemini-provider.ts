@@ -54,6 +54,8 @@ import type {
   ClassifyOutput,
   JudgeHoldReasonInput,
   JudgeHoldReasonOutput,
+  AssessRelevanceInput,
+  AssessRelevanceOutput,
 } from "./ai-provider";
 
 // A-5/AUDIT-003: sized to the longest expected output for this specific
@@ -61,6 +63,9 @@ import type {
 // summarize/classify's outputs, confirmed against real judged output
 // during live verification of this method, not assumed.
 const JUDGE_HOLD_REASON_MAX_OUTPUT_TOKENS = 512;
+
+// Same reasoning as above -- a boolean + one sentence.
+const ASSESS_RELEVANCE_MAX_OUTPUT_TOKENS = 512;
 
 const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
 const API_BASE = "https://generativelanguage.googleapis.com/v1beta/models";
@@ -366,6 +371,24 @@ Use "uncertain" only if the excerpt genuinely doesn't give enough context to dec
 
     return {
       verdict,
+      reasoning: typeof result.reasoning === "string" ? result.reasoning : "",
+    };
+  }
+
+  async assessRelevance(input: AssessRelevanceInput): Promise<AssessRelevanceOutput> {
+    const prompt = `You are the topic gate for "Vibe-Coding Journal," a daily digest STRICTLY for vibe-coders -- people building software with AI coding tools (Bolt, Lovable, Replit, Cursor, Windsurf, Claude Code, GitHub Copilot, v0, and similar). This is NOT a general tech/AI/science news aggregator.
+
+Judge whether this article is directly relevant: would it help someone who builds apps with AI tools make a better decision today? General tech news, general AI research not about coding tools, aviation/aerospace, pure math/physics, hardware nostalgia, music/education, and similar off-topic subjects are NOT relevant, even if they appeared on a tech-adjacent site like Hacker News.
+
+Title: ${input.title}
+Summary: ${input.summary}
+
+Return ONLY a JSON object: { "isRelevant": boolean, "reasoning": string (one sentence) }`;
+
+    const result = await callGeminiJSON(this.keys, prompt, ASSESS_RELEVANCE_MAX_OUTPUT_TOKENS);
+
+    return {
+      isRelevant: typeof result.isRelevant === "boolean" ? result.isRelevant : true,
       reasoning: typeof result.reasoning === "string" ? result.reasoning : "",
     };
   }

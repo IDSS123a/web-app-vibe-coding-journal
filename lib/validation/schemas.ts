@@ -182,3 +182,15 @@ export const judgeHoldReasonOutputSchema = z.object({
 });
 
 export type JudgeHoldReasonOutput = z.infer<typeof judgeHoldReasonOutputSchema>;
+
+// P-0 (🔴 CRITICAL) relevance gate — validates the AI provider's
+// assessRelevance response before it's trusted (E-2). Found live
+// 2026-09-11: nothing in the pipeline previously checked topical
+// relevance at all, letting off-topic content (aviation, math, music
+// theory, NASA imaging, etc.) publish alongside real vibe-coding content.
+export const assessRelevanceOutputSchema = z.object({
+  isRelevant: z.boolean(),
+  reasoning: z.string().min(1),
+});
+
+export type AssessRelevanceOutput = z.infer<typeof assessRelevanceOutputSchema>;

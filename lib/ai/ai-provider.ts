@@ -65,10 +65,32 @@ export interface JudgeHoldReasonOutput {
   reasoning: string;
 }
 
+/**
+ * P-0 (🔴 CRITICAL): "It is not a general AI news aggregator... every
+ * piece of content must pass one test: does this help someone who
+ * builds apps with AI tools make a better decision today?" Found live
+ * 2026-09-11: neither scoreArticleConfidence (generic source/freshness/
+ * length heuristics) nor classifyArticle (genre keyword matching) ever
+ * checked this -- an NTSB aviation report, a Navier-Stokes math post,
+ * music theory, NASA/Mars imaging, and an essay about keeping old
+ * cables all published, none relevant to vibe-coding at all. This gate
+ * is what P-0 actually requires and nothing upstream provided.
+ */
+export interface AssessRelevanceInput {
+  title: string;
+  summary: string;
+}
+
+export interface AssessRelevanceOutput {
+  isRelevant: boolean;
+  reasoning: string;
+}
+
 export interface AIProvider {
   summarize(input: SummarizeInput): Promise<SummarizeOutput>;
   classify(input: ClassifyInput): Promise<ClassifyOutput>;
   judgeHoldReason(input: JudgeHoldReasonInput): Promise<JudgeHoldReasonOutput>;
+  assessRelevance(input: AssessRelevanceInput): Promise<AssessRelevanceOutput>;
   // Additional methods will be added as pipeline stages are implemented
 }
 
@@ -109,6 +131,18 @@ class NoOpProvider implements AIProvider {
   async judgeHoldReason(): Promise<JudgeHoldReasonOutput> {
     return {
       verdict: "uncertain",
+      reasoning: "[AI provider not configured]",
+    };
+  }
+
+  // Fail open (relevant) when no provider is configured -- matches this
+  // stub's existing behavior for every other method (never itself the
+  // reason real content gets excluded); a real provider outage is
+  // handled the same way at the call site (features/pipeline calling
+  // code), not here.
+  async assessRelevance(): Promise<AssessRelevanceOutput> {
+    return {
+      isRelevant: true,
       reasoning: "[AI provider not configured]",
     };
   }
