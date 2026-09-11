@@ -699,4 +699,97 @@ the waiver anticipated.
 
 ---
 
+---
+
+## PDL-020 — Hold-Gate Calibration suggestion-status PATCH now returns real 404s
+
+**Date:** 2026-09-11
+
+**Finding:** `updateSuggestionStatus`
+(`features/hold-gate-calibration/repository.ts`) PATCHing a nonexistent
+suggestion id silently returned `200 {success:true}` instead of `404` --
+diagnosed via a live browser test against a real admin session with a
+deliberately-bogus UUID, before the P-0 relevance-gate emergency
+interrupted this feature's implementation. Supabase's
+`.update().eq("id", suggestionId)` does not error on zero matching
+rows, and neither the function nor the route checked whether a row was
+actually affected.
+
+**Decision:** `.select().maybeSingle()` appended after the update --
+`data` is `null` iff nothing matched, which zero matching rows cannot
+otherwise signal. A new `SuggestionNotFoundError` is thrown in that
+case and translated to a real `404` by the PATCH route
+(`app/api/admin/hold-gate-calibration/suggestions/[id]/route.ts`).
+Re-verified live 2026-09-11 against production: the same bogus UUID now
+returns `404` with a clear message; a disposable test suggestion row
+PATCHed successfully returns `200` and the database genuinely reflects
+the change (checked directly, not assumed from the response body).
+
+**Consequence:** Any future PATCH/DELETE-by-id route in this codebase
+built the same way (`.update().eq(...)` or `.delete().eq(...)` with no
+`.select()` afterward) should be checked for the same class of bug --
+Supabase's client does not treat "zero rows matched" as an error by
+default.
+
+---
+
+## PDL-021 — Hold-Gate Calibration: free-only Gemini call constraint (retroactively logged)
+
+**Date decided:** 2026-09-11 · **Date logged here:** 2026-09-11 (same
+day, but genuinely missed as its own `DECISION_LOG.md` entry when
+`specs/hold-gate-calibration-learning/PLAN.md` was written — found while
+closing out TASKS.md Step 11 during Sprint 11)
+
+**Finding:** Director's instruction on Gemini cost for this feature:
+*"Samo besplatno rješenje dolazi u obzir"* (only a free solution is
+acceptable).
+
+**Decision:** The system never re-judges a hold-reason occurrence
+already judged by a prior run. Each run only calls `judgeHoldReason` for
+occurrences from reports not yet covered by an existing
+`hold_gate_calibration_findings` row (later hardened further by
+migration 008's dedicated scan-tracking table -- see the `getReportsNotYetJudged`
+JSDoc in `features/hold-gate-calibration/repository.ts` for the real bug
+that first version had). A run with nothing new to judge makes zero AI
+calls -- a normal outcome, not an error. This bounds the feature's
+Gemini usage to genuinely new content only, for its entire lifetime,
+satisfying the free-tier constraint by construction rather than by
+monitoring usage after the fact.
+
+**Consequence:** Any future change to this feature that would cause a
+report to be re-judged (e.g. "re-scan everything" as an admin action)
+needs a fresh, explicit decision -- this constraint is load-bearing for
+staying within the free tier, not an incidental detail.
+
+---
+
+## PDL-022 — P-11 "Monthly Self-Audit" does not exist anywhere in this codebase (retroactively logged)
+
+**Date decided:** 2026-09-11 · **Date logged here:** 2026-09-11 (same
+day; see PDL-021's note on why this is retroactive)
+
+**Finding:** While scoping the Hold-Gate Calibration feature's cadence
+(Director wanted it "tied to the existing Monthly Self-Audit cadence"),
+checked the actual codebase: no code anywhere implements P-11 (source
+usage, review-queue volume, engagement signals, monthly cadence). It is
+CONSTITUTION.md text with no implementation -- the same class of gap as
+the dashboard-wiring bug found and fixed earlier the same day (real
+behavior silently not matching what the governing docs describe).
+
+**Decision:** Hold-Gate Calibration does not attempt to build P-11
+broadly -- out of this feature's explicit scope (M-4: don't expand scope
+to fix an unrelated gap discovered along the way). Instead it ships its
+own narrow, independent monthly GitHub Actions trigger
+(`.github/workflows/monthly-hold-gate-calibration.yml`), reusing the
+exact pattern already proven reliable for the daily digest cron.
+
+**Consequence:** If/when P-11 itself is ever built as its own feature,
+this workflow should be folded into it rather than staying a separate
+monthly trigger forever -- noted here so that consolidation isn't
+forgotten. Until then, "P-11 monthly self-audit" in
+`CONSTITUTION.md` should be read as aspirational for everything except
+this one narrow calibration slice.
+
+---
+
 *Vibe-Coding Journal — Project Decision Log — updated as decisions are made.*

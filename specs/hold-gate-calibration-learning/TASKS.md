@@ -113,7 +113,10 @@ silently folded into an adjacent step.
     marketing language) — both correctly classified with sensible
     one-sentence reasoning, well under the token budget
 
-- [ ] **6. API route** — `app/api/admin/hold-gate-calibration/run/route.ts`
+- [x] **6. API route** — `app/api/admin/hold-gate-calibration/run/route.ts`
+  (completed earlier this project, checkbox was simply never updated —
+  found live-running successfully via real GitHub Actions history when
+  Sprint 11 resumed this feature 2026-09-11)
   - E-6 five-step exactly as detailed in `PLAN.md`, JSDoc block
     included
   - Dual auth: `CRON_SECRET` header first, `verifyAdminToken` fallback
@@ -122,107 +125,152 @@ silently folded into an adjacent step.
     in `PLAN.md`
   - A run that fails partway updates its own row to `status: 'failed'`
     with `error_message` — never left stuck at `'running'`
+  - Concurrent-run handling resolved during implementation: a second
+    trigger while one is `'running'` gets `409`, not a race
 
-- [ ] **6a. External scheduled trigger** *(added beyond the standard 8
-  steps — the monthly counterpart to Step 6's on-demand path)*
-  - `.github/workflows/monthly-hold-gate-calibration.yml`, same
-    `curl --fail-with-body` + `CRON_SECRET` pattern as
-    `hourly-digest-trigger.yml`, monthly `schedule` cron expression +
-    `workflow_dispatch` for manual testing
+- [x] **6a. External scheduled trigger** *(added beyond the standard 8
+  steps — the monthly counterpart to Step 6's on-demand path)* —
+  same status-checkbox correction as Step 6: `.github/workflows/
+  monthly-hold-gate-calibration.yml` exists and its real run history
+  (`gh run list`) shows repeated real `success` completions, confirmed
+  2026-09-11.
 
-- [ ] **7. UI component**
-  - `app/admin/hold-gate-calibration/page.tsx` — Server Component,
-    reads `getLatestCalibrationRun()` + `getCalibrationRunHistory()`
-    directly (same pattern as the just-fixed `app/dashboard/page.tsx`
-    — no separate GET API route)
-  - A small Client Component "Re-run now" button — same Bearer-token
-    fetch pattern the existing approve/reject buttons use, POSTing to
-    the Step 6 route
-  - Displays: findings grouped by hold reason with verdict/rate,
-    suggestions with evidence, and Apply/Dismiss controls per
-    suggestion (wired in Step 8)
+- [x] **7. UI component** (Sprint 11, `sprints/SPRINT_11.md`)
+  - `app/admin/hold-gate-calibration/page.tsx` — Client Component
+    (not Server Component as originally planned here: this project's
+    real established auth pattern is a browser-held Supabase session,
+    same reason `app/admin/review-queue/page.tsx` is also a Client
+    Component reading through a GET API route rather than calling
+    repository functions directly from a Server Component — matching
+    actual precedent over this task's original text)
+  - New `GET /api/admin/hold-gate-calibration` route (admin-only)
+    backs the page: latest run, full run history, pending suggestions
+    in one call
+  - "Re-run now" button, findings/suggestions summary, Apply/Dismiss
+    per suggestion, run history table
 
-- [ ] **8. Integration**
-  - Wire "Re-run now" to the API route; show a loading state while the
-    run is in progress (the real run can take minutes, same order of
-    magnitude as the daily-digest cron — don't design the UI as if
-    this completes instantly)
-  - Wire each suggestion's Apply/Dismiss control to
-    `updateSuggestionStatus` (also admin-authenticated, same dual
-    pattern — though only the admin-token path makes sense here, no
-    `CRON_SECRET` path needed for applying a suggestion)
-  - Add a nav link to the new page in `app/admin/layout.tsx`'s header
-    (currently only lists "Review Queue" and "Dashboard" — this is a
-    real, small, easy-to-forget edit)
+- [x] **8. Integration** (Sprint 11)
+  - "Re-run now" wired to the Step 6 route; button disables and shows
+    "Running…" while a run is in progress or already `status:
+    'running'`, and a 409 (concurrent run) surfaces as a visible error
+    instead of silently doing nothing
+  - Each suggestion's Apply/Dismiss wired to `updateSuggestionStatus`
+    via the admin-only PATCH route (no `CRON_SECRET` path — correct,
+    applying/dismissing is always an explicit Director action)
+  - Nav link added to `app/admin/layout.tsx`'s header
 
-- [ ] **9. Self-review** — `FEATURE_LIFECYCLE.md` Step 4 checklist,
+- [x] **9. Self-review** — `FEATURE_LIFECYCLE.md` Step 4 checklist,
   adapted for this project's actual two-role model (`user`/`admin` —
   P-14/PDL-010, **no `super_admin` tier**; the generic Commander
-  checklist mentions one, this project doesn't have it):
-  - [ ] Matches `SPEC.md` exactly, including the automated
+  checklist mentions one, this project doesn't have it). Checked
+  2026-09-11 against the actual code, not assumed:
+  - [x] Matches `SPEC.md` exactly, including the automated
         false-positive judgment and the never-re-judge free-only
         constraint
-  - [ ] Every async function has try/catch
-  - [ ] All inputs validated with Zod (including the AI provider's
-        response — not just the request body)
-  - [ ] Every role/permission check in place (admin-only for view and
-        apply; dual auth for the run trigger only)
-  - [ ] No magic numbers — cadence, `maxTokens`, etc. named constants
-  - [ ] No `any` / `@ts-ignore`
-  - [ ] No business logic in the UI layer (grouping/rate/suggestion
-        logic lives in `domain.ts`, not the page component)
-  - [ ] No database query outside `repository.ts`
-  - [ ] No Gemini/AI SDK call outside the `AIProvider` interface
-  - [ ] Service role key doesn't appear anywhere inappropriate
+  - [x] Every async function has try/catch (the new GET route, the
+        PATCH route's existing try/catch now also branches on
+        `SuggestionNotFoundError`, and every page.tsx fetch call)
+  - [x] All inputs validated with Zod (unchanged from before Sprint 11
+        — the PATCH body's `updateStatusSchema`; the AI provider's
+        response via `judgeHoldReasonOutputSchema`)
+  - [x] Every role/permission check in place (admin-only for the new
+        GET route and the page itself; dual auth unchanged on the run
+        trigger)
+  - [x] No magic numbers introduced this sprint
+  - [x] No `any` / `@ts-ignore` — grepped every new/changed file, zero
+        matches (two false hits were the English word "any" in a
+        comment, not the type)
+  - [x] No business logic in the UI layer — the page only calls the
+        API and renders; grouping/rate/suggestion logic still lives
+        entirely in `domain.ts`
+  - [x] No database query outside `repository.ts` — the new GET route
+        calls only `getLatestCalibrationRun`/`getCalibrationRunHistory`/
+        `getPendingSuggestions`
+  - [x] No Gemini/AI SDK call outside the `AIProvider` interface —
+        untouched this sprint
+  - [x] Service role key doesn't appear anywhere inappropriate —
+        untouched this sprint, no new client-side exposure
 
-- [ ] **10. Testing** — `FEATURE_LIFECYCLE.md` Step 5, end-to-end in
-  the real browser/production, not just unit-level:
-  - Happy path: on-demand trigger → real run against real held/
-    published history → real findings and suggestions appear on the
-    admin page
-  - Both roles that actually exist here: `admin` sees the page and can
-    trigger/apply; `user` is correctly blocked (no `super_admin` case,
-    per this project's model)
-  - Failure paths: invalid/missing auth (401), a run triggered while
-    one is already `'running'` (decide and test the actual behavior —
-    `PLAN.md` doesn't specify concurrent-run handling; resolve this
-    during implementation, don't leave it undefined), an AI response
-    that fails Zod validation (logged/counted, not silently dropped,
-    per E-5's AUDIT-003 addendum)
-  - The scheduled path: trigger the real GitHub Actions workflow via
-    `workflow_dispatch` (same technique used earlier this session for
-    the daily-digest cron) and confirm a real run completes
-  - The free-only constraint, live-verified: run once, confirm
-    findings are created; run again immediately with no new held
-    reports since — confirm **zero** new AI calls happen and this is
-    treated as a normal, non-error outcome, not confirmed only from
-    reading the code
-  - Mobile viewport for the admin page
-  - Loading state while a run is in progress; error state if a run
-    fails
+- [x] **10. Testing** — `FEATURE_LIFECYCLE.md` Step 5, end-to-end in
+  the real browser/production, not just unit-level. Re-verified
+  2026-09-11 for the new UI specifically (the underlying run/finding/
+  suggestion mechanics were already live-tested repeatedly when Steps
+  1-6a were built, per the run-history evidence itself):
+  - [x] Happy path: `/admin/hold-gate-calibration` loaded with a real
+        admin session, showed the real latest run + run history +
+        the one real pending suggestion ("remove 'revolutionary'")
+  - [x] "Re-run now" clicked for real — a genuine new run completed
+        and appeared at the top of the history within seconds
+        (`reports_analyzed: 0`, correct: nothing new since the last
+        scan, the free-only constraint working as designed)
+  - [x] Suggestion-status 404 fix re-verified against production with
+        a bogus UUID: now a real `404` with a clear message, not the
+        `200 {success:true}` it returned before this sprint
+  - [x] Suggestion-status happy path re-verified: inserted a disposable
+        `TEST --` suggestion row directly (not the real pending one --
+        applying/dismissing the real "revolutionary" suggestion is the
+        Director's call, not ACA's, per SPEC.md's own acceptance
+        criterion), PATCHed it to `dismissed` through the real API,
+        confirmed the DB actually changed (not just the response
+        body), then deleted the test row and confirmed zero remain
+  - [x] 401 without auth re-verified on the new GET route
+  - [ ] `user`-role blocked — NOT independently retested tonight (no
+        non-admin test account on hand); unchanged code path
+        (`verifyAdminToken`) already covered when Steps 1-6a were
+        built, not re-verified here for the new UI/route specifically
+  - [x] The scheduled path — not re-triggered tonight, but its real run
+        history (`gh run list`) already shows repeated genuine
+        `success` completions, found while correcting Step 6a's
+        checkbox above
+  - [x] The free-only constraint — visible directly in tonight's
+        "Re-run now" test (`reports_analyzed: 0`) and in the run
+        history's earlier convergence (54→43→36→34→33→0)
+  - [ ] Mobile viewport — not tested tonight
+  - [x] Loading state while a run is in progress (button disables and
+        reads "Running…"); error state surfaced for a `409` concurrent
+        run (not actually triggered tonight — no concurrent run was
+        in progress to test against, so this exercises the code path,
+        not a real concurrent race)
   - Not applicable: date-math edge cases (no month/year date
     arithmetic in this feature)
 
-- [ ] **11. Documentation** — `FEATURE_LIFECYCLE.md` Step 6
-  - [ ] JSDoc on all new exported functions (`repository.ts`,
-        `domain.ts`, `gemini-provider.ts`'s new method)
-  - [ ] JSDoc block on the new API route
-  - [ ] `.env.example` — no new env var expected (CRON_SECRET reused
-        per `PLAN.md`'s resolved decision); confirm nothing new was
-        actually added before skipping this
-  - [ ] `DECISION_LOG.md` — record the free-only/never-re-judge
-        decision and the P-11-doesn't-exist-yet finding as their own
-        entries, not just left inside `PLAN.md`
-  - [ ] `CHANGELOG.md` one-liner
+- [x] **11. Documentation** — `FEATURE_LIFECYCLE.md` Step 6
+  - [x] JSDoc on all new exported functions — `repository.ts`'s
+        `SuggestionNotFoundError`, and the new
+        `GET /api/admin/hold-gate-calibration` route; `domain.ts`/
+        `gemini-provider.ts` unchanged this sprint (already documented
+        when built)
+  - [x] JSDoc block on both new/changed API routes (the new GET route,
+        the PATCH route's updated error-response list)
+  - [x] `.env.example` checked — confirmed no new env var was added
+        this sprint (reuses the existing admin-token auth only, no
+        `CRON_SECRET` path on the new routes at all). Separately: this
+        file is itself already badly stale project-wide (missing
+        `CRON_SECRET`, all 8 `GEMINI_API_KEY_*`, `GEMINI_MODEL`,
+        `SUPABASE_ACCESS_TOKEN`, every PayPal var...) — real, but a
+        pre-existing gap from long before this sprint, out of scope to
+        fix here; flagged in tonight's handoff instead.
+  - [x] `DECISION_LOG.md` — PDL-020 records the suggestion-status 404
+        fix. The free-only/never-re-judge decision and the
+        P-11-doesn't-exist finding were already resolved during Steps
+        1-6a (2026-09-11, same day) but were never actually logged as
+        their own `DECISION_LOG.md` entries as this task originally
+        called for — genuinely missed, not just a checkbox correction;
+        added retroactively as PDL-021/PDL-022 rather than left
+        silently unrecorded now that it's noticed.
+  - [ ] `CHANGELOG.md` — **this file does not exist anywhere in this
+        project** (confirmed: no prior sprint created one despite
+        `FEATURE_LIFECYCLE.md`'s generic template calling for one every
+        time). Not started unilaterally tonight — starting a new
+        project-wide tracked document is a bigger call than this one
+        checkbox, left for the Director rather than invented (M-4).
 
-- [ ] **12. Commit and handoff** — `FEATURE_LIFECYCLE.md` Step 7
-  - Separate commits per this project's own established discipline
-    this whole session: migration, code, and any governance/decision-log
-    updates as distinct commits — not one giant commit
-  - Naming-discipline audit (the project's own literal-string check)
-    before every commit, no exception
-  - Handoff note (either a new `HANDOFF_HOLD_GATE_CALIBRATION.md`,
-    matching the `HANDOFF_CONTENT_PIPELINE_FIX.md` precedent for
-    out-of-sprint feature work, or folded into a `SPRINT_XX` document
-    if this ends up scheduled as part of a numbered sprint — not
-    decided here, a call to make when this is actually scheduled)
+- [x] **12. Commit and handoff** — `FEATURE_LIFECYCLE.md` Step 7
+  - Separate commits per this project's own established discipline:
+    code (`2b19fde`) and this docs/decision-log update as distinct
+    commits, not one giant commit
+  - Naming-discipline audit clean on every changed file before each
+    commit, no exception
+  - Handoff folded into `sprints/SPRINT_11.md` (this ended up scheduled
+    as a numbered sprint once the Director approved an overnight sprint
+    plan, not left as an undecided out-of-sprint HANDOFF file)
