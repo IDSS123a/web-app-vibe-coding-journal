@@ -558,4 +558,107 @@ access — out of scope to resolve unilaterally tonight.
 
 ---
 
+---
+
+## PDL-017 — P-0 relevance gate added to the content pipeline — CRITICAL fix, urgent
+
+**Date:** 2026-09-11
+
+**Finding:** Director reported real published off-topic content (an NTSB
+aviation-accident update, a Navier-Stokes math post, a music-theory essay,
+a NASA/Mars imaging piece, and an essay about keeping old cables) and
+asked directly why it appeared. Investigation confirmed neither
+`scoreArticleConfidence()` nor `classifyArticle()`
+(`features/pipeline/quality-engine.ts`) ever checked topical relevance to
+vibe-coding — the former scores generic source/freshness/length signals,
+the latter classifies genre by keyword, and nothing upstream gated on
+subject matter at all. A direct violation of CONSTITUTION.md P-0
+(🔴 CRITICAL): *"It is not a general AI news aggregator... every piece of
+content must pass one test: does this help someone who builds apps with
+AI tools make a better decision today?"*
+
+**Director directive:** "Pauziraj hold-gate rad, riješi ovo ODMAH kao
+hitno" (pause hold-gate-calibration work, fix this now as urgent) —
+implemented directly given the CRITICAL severity + explicit urgency, not
+via the full specify/plan-feature/tasks ceremony used for the sibling
+hold-gate-calibration feature.
+
+**Decision:** Added `assessRelevance()` to the `AIProvider` interface
+(`lib/ai/ai-provider.ts`, `lib/ai/gemini-provider.ts`), validated via
+`assessRelevanceOutputSchema` (`lib/validation/schemas.ts`, E-2/
+AUDIT-003), and wired into `runQualityEngine()`
+(`app/api/cron/daily-digest/route.ts`) before scoring/classify/summarize
+for each non-duplicate article. A judged-irrelevant article gets
+`confidence_score = 0` — reusing the existing `CONFIDENCE_THRESHOLD`
+filter in `getArticlesForDailyReport()` rather than a schema migration,
+given the urgency — and skips classify/summarize entirely (saves Gemini
+quota, consistent with the free-only principle already established for
+hold-gate-calibration). The gate fails OPEN (treats an article as
+relevant) on any assessment failure or unparseable response: a bad AI
+day must never behave worse than the pre-fix status quo.
+
+**Verification:** Live-tested against production via a temp route
+(`app/api/temp-test-relevance/route.ts`, deleted after use) using the
+Director's own five off-topic examples plus two genuine on-topic
+examples. All seven judged correctly (5/5 off-topic → `isRelevant:
+false`, 2/2 on-topic → `isRelevant: true`) after the key-rotation fix in
+PDL-018 below (verification initially surfaced that unrelated bug, not a
+flaw in this gate itself).
+
+**Consequence:** Any future pipeline stage that scores or filters
+articles must not assume relevance is already covered elsewhere — this
+gate is the only place P-0 topical relevance is actually enforced.
+
+---
+
+## PDL-018 — Gemini key rotation must not abort on a 404 model-not-found key
+
+**Date:** 2026-09-11
+
+**Finding:** Found live while verifying PDL-017: key #3 of the 8
+configured `GEMINI_API_KEY_*` values returns HTTP 404 `NOT_FOUND` for the
+configured model, with Google's own message *"This model
+models/gemini-2.5-flash is no longer available to new users. Please
+update your code to use models/gemini-3.6-flash."* Keys #1/#2 were
+merely rate-limited (expected under the free-tier 20/min cap) and keys
+#4–#8 still worked. `classifyFailure()`
+(`lib/ai/gemini-provider.ts`) only ever rotated past a 429 or an
+401/403/`PERMISSION_DENIED`/`API_KEY_INVALID` response — a 404 fell into
+the "surface immediately, do not rotate" branch, so *any* call whose
+rotation reached key #3 before a working key failed outright, discarding
+five perfectly good remaining keys. This affects every AI-provider call
+(`summarize`, `classify`, `judgeHoldReason`, `assessRelevance`), not just
+the new PDL-017 gate, any time keys #1–#2 happen to be rate-limited
+first — a routine occurrence, not an edge case.
+
+**Decision:** `classifyFailure()` now recognizes 404/`NOT_FOUND` as a
+new `"model_unavailable"` kind (a per-key/project configuration
+difference, not a malformed request — a genuine bad request would 404 or
+400 identically on every key, so rotating past it is the correct
+response, same reasoning already applied to rate limits). Added a third
+`GeminiExhaustionReason`, `"model_deprecated"`, for the case where this
+eventually happens on the *last* remaining key too — distinct from
+`"quota"` (self-resolves by waiting) and `"suspected_suspension"` (an
+account problem): a deprecated model needs a code/config change and will
+not fix itself no matter how many times the run retries. Threaded through
+`runQualityEngine()`/`generateDailyReport()` with its own accurate hold
+reason ("Update GEMINI_MODEL; retrying will not resolve this on its
+own") instead of being folded into the misleading "possible account
+suspension" wording.
+
+**Not decided here:** whether to migrate `GEMINI_MODEL` from
+`gemini-2.5-flash` to `gemini-3.6-flash` (Google's own recommendation in
+the 404 body) — a model/cost decision left for the Director, since it may
+affect quota limits, pricing, or output quality in ways not verifiable
+from inside this fix. Left as an open follow-up, not actioned
+unilaterally.
+
+**Consequence:** If a *different* key index starts returning 404 in the
+future (e.g. a second project also loses access to the model), the same
+rotation logic handles it without another code change — only total
+exhaustion across all 8 keys now surfaces as `model_deprecated`, which
+should be treated as urgent, not "wait for tomorrow's quota reset."
+
+---
+
 *Vibe-Coding Journal — Project Decision Log — updated as decisions are made.*
