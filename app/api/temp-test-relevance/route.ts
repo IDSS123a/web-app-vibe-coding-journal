@@ -1,0 +1,89 @@
+/**
+ * TEMP verification route for the P-0 relevance gate fix (2026-09-11).
+ * Exercises the real assessRelevance() -> Gemini -> Zod-validation path
+ * against the exact off-topic examples the Director reported, plus a
+ * genuine on-topic example, to prove the fix judges correctly before
+ * trusting it in the real pipeline. Delete immediately after use.
+ */
+import { NextRequest, NextResponse } from "next/server";
+import { ensureAIProviderInitialized } from "@/lib/ai/init";
+import { getAIProvider } from "@/lib/ai/ai-provider";
+import { assessRelevanceOutputSchema } from "@/lib/validation/schemas";
+
+const CRON_SECRET = process.env.CRON_SECRET || "dev-secret-change-in-production";
+
+const TEST_CASES = [
+  {
+    label: "off-topic: NTSB aviation report",
+    title: "NTSB Issues Investigative Update on B-767 Runway Excursion Accident in Miami",
+    summary: "The National Transportation Safety Board released an update on its investigation into a Boeing 767 runway excursion accident in Miami.",
+  },
+  {
+    label: "off-topic: Navier-Stokes math",
+    title: "The part of Navier-Stokes no one is talking about",
+    summary: "A deep dive into an overlooked aspect of the Navier-Stokes equations in fluid dynamics.",
+  },
+  {
+    label: "off-topic: music theory",
+    title: "Music Theory for the 21st-Century Classroom",
+    summary: "An essay on modernizing how music theory is taught to students today.",
+  },
+  {
+    label: "off-topic: NASA/Mars imaging",
+    title: "NASA Color Trick Was Meant for Mars. Now It's Unveiling Rock Art on Earth",
+    summary: "A false-color imaging technique developed for Mars rovers is now being used to reveal ancient rock art on Earth.",
+  },
+  {
+    label: "off-topic: cables essay",
+    title: "Don't let anyone take away your big box of cables",
+    summary: "A personal essay in defense of keeping a large collection of old cables and adapters.",
+  },
+  {
+    label: "on-topic: real vibe-coding tool release",
+    title: "Cursor 2.0 ships a new agent mode with multi-file editing",
+    summary: "Cursor's latest release adds an autonomous agent mode that can plan and edit across multiple files in a codebase, aimed at AI-assisted developers.",
+  },
+  {
+    label: "on-topic: prompt engineering for coding agents",
+    title: "How to write better prompts for Claude Code and Cursor",
+    summary: "A practical guide to structuring prompts and context so AI coding agents produce more reliable code changes.",
+  },
+];
+
+export async function POST(request: NextRequest) {
+  const authHeader = request.headers.get("authorization");
+  const [scheme, token] = (authHeader ?? "").split(" ");
+  if (scheme !== "Bearer" || token !== CRON_SECRET) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  ensureAIProviderInitialized();
+  const aiProvider = getAIProvider();
+
+  const results = [];
+  for (const testCase of TEST_CASES) {
+    try {
+      const raw = await aiProvider.assessRelevance({
+        title: testCase.title,
+        summary: testCase.summary,
+      });
+      const parsed = assessRelevanceOutputSchema.safeParse(raw);
+      results.push({
+        label: testCase.label,
+        title: testCase.title,
+        parsedOk: parsed.success,
+        isRelevant: parsed.success ? parsed.data.isRelevant : null,
+        reasoning: parsed.success ? parsed.data.reasoning : null,
+        parseError: parsed.success ? null : parsed.error.message,
+      });
+    } catch (err) {
+      results.push({
+        label: testCase.label,
+        title: testCase.title,
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
+  }
+
+  return NextResponse.json({ results });
+}
