@@ -1,0 +1,48 @@
+name: CI
+
+# Sprint 13: this project had no CI beyond project-guard.yml's forbidden-
+# file-pattern scan before this -- confirmed live 2026-09-11 (no workflow
+# ran typecheck, build, or tests on push/PR; Vercel's own build step was
+# the only thing that would ever catch a real break, and only at deploy
+# time, not before a merge). Runs the exact same three checks this
+# project's own established discipline already runs by hand before every
+# commit, so a future push made outside that discipline (e.g. GitHub's
+# web "Add files via upload", the same gap project-guard.yml's own header
+# comment names) gets the same coverage automatically.
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Test
+        run: npm run test:run
+
+      - name: Build
+        run: npm run build
+        env:
+          # Build-time env vars the app reads at module load (e.g.
+          # lib/db/client.ts) -- dummy values are fine here, this job
+          # never runs the app or talks to a real Supabase project, it
+          # only needs `next build` to complete without throwing on a
+          # missing env var. Real secrets stay in Vercel's own build,
+          # never here.
+          NEXT_PUBLIC_SUPABASE_URL: "https://ci-placeholder.supabase.co"
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: "ci-placeholder-anon-key"
