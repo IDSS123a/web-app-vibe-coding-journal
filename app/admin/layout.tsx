@@ -24,6 +24,12 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
                 Review Queue
               </a>
               <a
+                href="/admin/hold-gate-calibration"
+                className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-50"
+              >
+                Hold-Gate Calibration
+              </a>
+              <a
                 href="/dashboard"
                 className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-50"
               >

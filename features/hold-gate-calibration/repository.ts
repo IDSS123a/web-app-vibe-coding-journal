@@ -295,6 +295,21 @@ export async function upsertSuggestion(
 }
 
 /**
+ * Thrown by updateSuggestionStatus when no row matched suggestionId.
+ * Found live 2026-09-11 (browser test against a real admin session,
+ * deliberately-bogus UUID): Supabase's `.update().eq(...)` does not
+ * error on zero matching rows, and the route was trusting a bare
+ * `{success:true}` as proof the update actually happened -- a PATCH on
+ * a nonexistent suggestion silently returned 200 instead of 404.
+ */
+export class SuggestionNotFoundError extends Error {
+  constructor(suggestionId: string) {
+    super(`No calibration suggestion found with id ${suggestionId}`);
+    this.name = "SuggestionNotFoundError";
+  }
+}
+
+/**
  * Apply or dismiss a suggestion -- the only way a suggestion's status
  * ever changes is this explicit Director action (SPEC.md acceptance
  * criterion: the system never applies a change on its own authority).
@@ -308,17 +323,25 @@ export async function updateSuggestionStatus(
     throw new Error("Admin client not available");
   }
 
-  const { error } = await supabaseAdmin
+  // .select().maybeSingle() (not a bare .update()) so an update matching
+  // zero rows is actually distinguishable from one that succeeded --
+  // Supabase does not error on zero-row matches either way.
+  const { data, error } = await supabaseAdmin
     .from("hold_gate_calibration_suggestions")
     .update({
       status,
       applied_by: appliedBy,
       applied_at: new Date().toISOString(),
     })
-    .eq("id", suggestionId);
+    .eq("id", suggestionId)
+    .select()
+    .maybeSingle();
 
   if (error) {
     throw new Error(`Failed to update calibration suggestion: ${error.message}`);
+  }
+  if (!data) {
+    throw new SuggestionNotFoundError(suggestionId);
   }
 }
 
