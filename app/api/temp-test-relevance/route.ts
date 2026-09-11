@@ -81,25 +81,25 @@ export async function POST(request: NextRequest) {
   }
 
   // Raw diagnostic, bypassing callGeminiJSON's generic "HTTP 404" message,
-  // to see Google's actual error body -- never logs/returns the key itself.
-  let rawDiagnostic: unknown = null;
-  const key1 = process.env.GEMINI_API_KEY_1;
+  // to see Google's actual error body per key index -- never logs/returns
+  // any key value itself, only which numbered slot produced which status.
   const model = process.env.GEMINI_MODEL || "gemini-2.5-flash";
-  if (key1) {
+  const rawDiagnostic: Array<{ keyIndex: number; status?: number; bodyText?: string; error?: string }> = [];
+  for (let i = 1; i <= 8; i++) {
+    const key = process.env[`GEMINI_API_KEY_${i}`];
+    if (!key) continue;
     try {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key1}`;
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
       const resp = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ contents: [{ parts: [{ text: "Say hello." }] }] }),
       });
       const bodyText = await resp.text();
-      rawDiagnostic = { status: resp.status, model, bodyText: bodyText.slice(0, 500) };
+      rawDiagnostic.push({ keyIndex: i, status: resp.status, bodyText: bodyText.slice(0, 300) });
     } catch (err) {
-      rawDiagnostic = { error: err instanceof Error ? err.message : String(err) };
+      rawDiagnostic.push({ keyIndex: i, error: err instanceof Error ? err.message : String(err) });
     }
-  } else {
-    rawDiagnostic = { error: "GEMINI_API_KEY_1 not set" };
   }
 
   const results = [];
