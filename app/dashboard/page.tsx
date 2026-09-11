@@ -1,9 +1,11 @@
-import type { DailyReport } from "@/lib/validation/schemas";
+import type { Article, DailyReport } from "@/lib/validation/schemas";
 import { formatPublicTimestamp } from "@/lib/time/format-public-timestamp";
 import {
   getTodaysDailyReport,
   getMostRecentPublishedDailyReport,
 } from "@/features/daily-report/repository";
+import { getArticlesForReport } from "@/features/archive/repository";
+import { ArticleListWithBookmarks } from "@/components/ArticleListWithBookmarks";
 
 /**
  * Dashboard — real Daily Report page.
@@ -79,6 +81,11 @@ async function getDisplayReport(): Promise<{ report: DailyReport; isEmptyState: 
 
 export default async function DashboardPage() {
   const { report, isEmptyState } = await getDisplayReport();
+  // Sprint 10: individually-listed, bookmarkable articles -- empty for
+  // the empty-state placeholder and for any report generated before
+  // migration 009 shipped (see that migration's comment); the raw
+  // markdown below still renders either way, so nothing is lost.
+  const articles: Article[] = isEmptyState ? [] : await getArticlesForReport(report.id);
 
   return (
     <div className="min-h-screen bg-gray-50 px-4 py-12">
@@ -127,10 +134,16 @@ export default async function DashboardPage() {
             </div>
           )}
 
-          {/* Raw markdown (for display) */}
-          <div className="mt-6 whitespace-pre-wrap rounded bg-gray-100 p-4 font-mono text-sm text-gray-700">
-            {report.markdown}
-          </div>
+          {/* Sprint 10: structured, bookmarkable article list when available
+              (migration 009); raw markdown as the fallback for reports
+              generated before that shipped, or if linking ever fails. */}
+          {articles.length > 0 ? (
+            <ArticleListWithBookmarks articles={articles} />
+          ) : (
+            <div className="mt-6 whitespace-pre-wrap rounded bg-gray-100 p-4 font-mono text-sm text-gray-700">
+              {report.markdown}
+            </div>
+          )}
 
           {/* Sections */}
           <div className="mt-6 border-t border-gray-200 pt-6">
@@ -149,12 +162,16 @@ export default async function DashboardPage() {
         </div>
 
         {/* Navigation */}
-        <div className="mt-8 space-y-2 text-center">
-          <p className="text-sm text-gray-600">
-            <a href="/" className="text-blue-600 hover:text-blue-800">
-              ← Home
-            </a>
-          </p>
+        <div className="mt-8 flex justify-center gap-4 text-sm text-gray-600">
+          <a href="/" className="text-blue-600 hover:text-blue-800">
+            ← Home
+          </a>
+          <a href="/archive" className="text-blue-600 hover:text-blue-800">
+            Archive
+          </a>
+          <a href="/bookmarks" className="text-blue-600 hover:text-blue-800">
+            My Bookmarks
+          </a>
         </div>
       </div>
     </div>

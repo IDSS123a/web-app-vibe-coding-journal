@@ -106,6 +106,26 @@ export const bookmarkSchema = z.object({
 
 export type Bookmark = z.infer<typeof bookmarkSchema>;
 
+// Sprint 10: create-bookmark request body (E-2 boundary validation)
+export const createBookmarkInputSchema = z.object({
+  article_id: z.string().uuid(),
+});
+
+export type CreateBookmarkInput = z.infer<typeof createBookmarkInputSchema>;
+
+// Sprint 10: links a daily_reports row to the articles rendered into it
+// (migration 009) -- see that migration's comment for why this didn't
+// exist before and what it now makes possible (per-article Archive/
+// Bookmarks UI instead of only a single markdown blob per report).
+export const dailyReportArticleSchema = z.object({
+  id: z.string().uuid(),
+  report_id: z.string().uuid(),
+  article_id: z.string().uuid(),
+  created_at: z.string().datetime(),
+});
+
+export type DailyReportArticle = z.infer<typeof dailyReportArticleSchema>;
+
 // Payment events (Sprint 08, P-16) — idempotency + audit log for PayPal
 // webhook deliveries. `status` distinguishes a successfully-activated
 // subscription from an ambiguous state needing manual review (P-1) from

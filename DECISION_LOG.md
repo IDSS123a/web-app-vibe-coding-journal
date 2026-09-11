@@ -661,4 +661,42 @@ should be treated as urgent, not "wait for tomorrow's quota reset."
 
 ---
 
+---
+
+## PDL-019 — Batch-approved overnight sprint run, human sign-off gate explicitly waived by the Director
+
+**Date:** 2026-09-11
+
+**Context:** `corrections/SPRINT_04_LESSONS.md` finding #15 established a
+standing project rule: *"Each sprint requires an independent review gate
+before the next sprint may begin: a real-data (not synthetic) exercise
+of the sprint's primary path, and a sign-off distinct from the
+implementation pass. Multiple sprints MUST NOT be approved in a single
+batch."* Tonight, after a backend quality audit, the Director approved
+an entire sprint plan and full autonomous implementation in one
+instruction, going to sleep: *"napravi plan sprintova i kreni sa
+implementacijom... ja idem da spavam a ti sve slobodno završi u
+pozadini. Dajem ti odobrenje."*
+
+**Decision:** Proceed, but keep the half of the gate that doesn't
+require the Director present: a genuine real-data verification of each
+sprint's primary path before the next sprint begins (not synthetic/
+mocked checks, not just `tsc`/`build`). The other half — an independent
+human sign-off between sprints — is knowingly unavailable while the
+Director sleeps, and is being skipped by the Director's own explicit,
+informed choice, not silently dropped by ACA. Each sprint doc
+(`sprints/SPRINT_10.md` onward, tonight) records this explicitly rather
+than presenting a batch of sprints as if each had passed a normal gate.
+
+**Consequence:** Every sprint completed under this waiver should be
+treated as provisionally done until the Director actually reviews it
+awake — same as the original finding #15 rationale ("DONE is
+provisional until the gate passes on real inputs"), just with the human
+half of that review deferred to morning instead of skipped forever. If
+a real defect is found in Director review, treat it as this gate finally
+running, not as a process failure — the process is doing exactly what
+the waiver anticipated.
+
+---
+
 *Vibe-Coding Journal — Project Decision Log — updated as decisions are made.*

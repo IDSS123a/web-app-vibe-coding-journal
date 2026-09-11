@@ -2,6 +2,35 @@ import { supabaseAdmin } from "@/lib/db/client";
 import type { DailyReport } from "@/lib/validation/schemas";
 
 /**
+ * Sprint 10 / migration 009: records which article rows were actually
+ * rendered into a report, at generation time -- see that migration's
+ * comment for why this is needed (per-article Archive/Bookmarks UI).
+ * Called once per report generation, right after the report itself is
+ * upserted (app/api/cron/daily-digest/route.ts generateDailyReport()).
+ * Best-effort: a failure here must never fail report generation itself
+ * (the report and its markdown are already saved and correct without
+ * this) -- logged and swallowed, not thrown, by the caller.
+ */
+export async function linkArticlesToReport(reportId: string, articleIds: string[]): Promise<void> {
+  if (!supabaseAdmin) {
+    throw new Error("Admin client not available");
+  }
+  if (articleIds.length === 0) {
+    return;
+  }
+
+  const rows = articleIds.map((articleId) => ({ report_id: reportId, article_id: articleId }));
+
+  const { error } = await supabaseAdmin
+    .from("daily_report_articles")
+    .upsert(rows, { onConflict: "report_id,article_id", ignoreDuplicates: true });
+
+  if (error) {
+    throw new Error(`Failed to link articles to report ${reportId}: ${error.message}`);
+  }
+}
+
+/**
  * Create or update Daily Report for today
  */
 export async function upsertDailyReport(

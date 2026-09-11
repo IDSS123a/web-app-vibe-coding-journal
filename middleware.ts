@@ -1,9 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 
 // Middleware for protecting dashboard and admin routes
-export function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
-
+export function middleware(_request: NextRequest) {
   // NOTE on /admin: the Supabase session lives in the browser (localStorage via
   // supabase-js), so this server middleware cannot read it without migrating to
   // cookie-based SSR sessions. The admin area is therefore guarded at two layers
@@ -13,10 +11,20 @@ export function middleware(request: NextRequest) {
   //   2. API: every /api/admin/* route re-verifies the admin role server-side.
   // If we later adopt @supabase/ssr cookie sessions, add the redirect here too.
 
-  // Dashboard routes require authentication (enforced by RLS + page-level session
-  // checks today; see the SSR note above for a future middleware-level guard).
-  const protectedRoutes = ["/dashboard", "/archive", "/bookmarks"];
-  void protectedRoutes.some((route) => pathname.startsWith(route));
+  // /dashboard and /archive are intentionally PUBLIC today, same content
+  // to every visitor whether signed in or not -- there is no paywall
+  // enforcement anywhere in the app despite P-13's subscription/trial
+  // data model existing at the DB layer (found live 2026-09-11; this
+  // array used to list them as "protected" while doing nothing about
+  // it -- `void protectedRoutes.some(...)`, dead code, removed). Whether
+  // that's intentional (public content as a growth/marketing choice) or
+  // an oversight is a product decision for the Director, not inferred
+  // here (M-4) -- see DECISION_LOG.md / the corresponding HANDOFF note.
+  //
+  // /bookmarks IS effectively gated, but at the page/API level, not
+  // here: the page (app/bookmarks/page.tsx) and every /api/bookmarks/*
+  // route independently require a valid session (per-user data has no
+  // meaningful anonymous view), the same two-layer pattern /admin uses.
 
   return NextResponse.next();
 }

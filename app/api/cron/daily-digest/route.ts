@@ -22,7 +22,7 @@ import {
   updateArticleSummary,
   getArticlesForDailyReport,
 } from "@/features/pipeline/repository";
-import { upsertDailyReport, getDailyReportByDate } from "@/features/daily-report/repository";
+import { upsertDailyReport, getDailyReportByDate, linkArticlesToReport } from "@/features/daily-report/repository";
 import { isTargetOperationsHour, isPastCatchUpDeadline } from "@/lib/cron/schedule-gate";
 import {
   scoreArticleConfidence,
@@ -521,13 +521,31 @@ ${a.summary || a.raw_summary || ""}
     const reviewStatus: "auto_published" | "held_for_review" = holdReasons.length > 0 ? "held_for_review" : "auto_published";
 
     // Upsert report
-    await upsertDailyReport(date, {
+    const savedReport = await upsertDailyReport(date, {
       markdown: markdown ?? "",
       article_count: articles.length,
       reading_time_minutes: Math.ceil(articles.length * 2),
       sections: ["Summary", "Articles"],
       review_status: reviewStatus,
     });
+
+    // Sprint 10 / migration 009: record which articles went into this
+    // report, for per-article Archive/Bookmarks UI. Best-effort -- the
+    // report itself is already saved and correct without this, so a
+    // failure here is logged, not allowed to fail report generation.
+    try {
+      await linkArticlesToReport(
+        savedReport.id,
+        articles.map((a) => a.id),
+      );
+    } catch (linkError) {
+      // Deliberately NOT pushed to `errors` -- that would flip
+      // `success: errors.length === 0` to false for a report that
+      // published/held correctly and just lost the per-article Archive/
+      // Bookmarks metadata, which is a real but much smaller problem.
+      const msg = linkError instanceof Error ? linkError.message : String(linkError);
+      console.error(`[REPORT]   Failed to link articles to report ${savedReport.id}: ${msg}`);
+    }
 
     return {
       success: errors.length === 0,
