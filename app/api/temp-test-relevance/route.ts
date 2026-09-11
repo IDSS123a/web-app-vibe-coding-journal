@@ -9,8 +9,16 @@ import { NextRequest, NextResponse } from "next/server";
 import { ensureAIProviderInitialized } from "@/lib/ai/init";
 import { getAIProvider } from "@/lib/ai/ai-provider";
 import { assessRelevanceOutputSchema } from "@/lib/validation/schemas";
+import { verifyAdminToken } from "@/lib/auth/verify-token";
 
 const CRON_SECRET = process.env.CRON_SECRET || "dev-secret-change-in-production";
+
+function validateCronAuth(request: NextRequest): boolean {
+  const authHeader = request.headers.get("authorization");
+  if (!authHeader) return false;
+  const [scheme, token] = authHeader.split(" ");
+  return scheme === "Bearer" && token === CRON_SECRET;
+}
 
 const TEST_CASES = [
   {
@@ -51,10 +59,12 @@ const TEST_CASES = [
 ];
 
 export async function POST(request: NextRequest) {
-  const authHeader = request.headers.get("authorization");
-  const [scheme, token] = (authHeader ?? "").split(" ");
-  if (scheme !== "Bearer" || token !== CRON_SECRET) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const isCronRequest = validateCronAuth(request);
+  if (!isCronRequest) {
+    const verified = await verifyAdminToken(request.headers.get("authorization"));
+    if (!verified) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
   }
 
   ensureAIProviderInitialized();
