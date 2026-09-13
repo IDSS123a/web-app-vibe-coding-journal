@@ -1,0 +1,47 @@
+# CHANGELOG — Vibe-Coding Journal
+
+Started 2026-09-13 (project began 2026-07-18; earlier work is fully
+recorded in `sprints/`, `DECISION_LOG.md`, and `corrections/`, not
+reconstructed here retroactively — this file covers from its own start
+date forward). One entry per user-visible or operationally significant
+change, newest first.
+
+## 2026-09-13
+
+- **Sources:** grew active content sources from 2 to 14 — added Reddit
+  (r/ChatGPTCoding, r/LocalLLaMA, r/artificial), OpenAI News, Google AI
+  Blog, Vercel Blog, four targeted Hacker News queries (Claude Code,
+  GitHub Copilot, Windsurf, Cursor AI), and Lobsters' AI tag. Re-enabled
+  a properly-targeted Hacker News source that had been silently
+  disabled since July. Fixed a real bug where an RSS fetch with no
+  User-Agent header got rate-limited by Reddit.
+- **Fix:** the daily digest no longer publishes an empty "0 articles"
+  report when source collection fails entirely (e.g. a Supabase
+  timeout) — it now skips and lets the next hourly run retry instead.
+- **Planning:** reconciled a large "Intelligence Engine" proposal
+  against two standing decisions (no chatbot RAG/knowledge-graph;
+  free-only AI cost) — see `specs/vibe-coding-intelligence-engine/ROADMAP.md`.
+
+## 2026-09-11
+
+- **Critical fix:** the content pipeline never checked whether an
+  article was actually about vibe-coding at all — added a relevance
+  gate (P-0) that does.
+- **Fix:** Gemini API key rotation aborted the whole call when one key
+  hit a deprecated-model error instead of trying the rest.
+- **Security:** patched a CRITICAL unauthenticated RCE in Next.js
+  (15.5.20 → 15.5.25).
+- **New:** Bookmarks and Archive, end-to-end (previously empty stub
+  files with no UI or API).
+- **New:** Hold-Gate Calibration admin page; fixed a bug where applying/
+  dismissing a nonexistent suggestion silently returned success instead
+  of a 404.
+- **New:** this project's first automated test suite (64 tests) and its
+  first CI pipeline (typecheck/test/build on every push).
+
+## 2026-09-09 and earlier
+
+See `sprints/SPRINT_01.md` through `SPRINT_09.md`, `DECISION_LOG.md`,
+and `corrections/` for the complete history — registration/auth,
+the content pipeline, the admin review queue, Gemini-powered
+summarization, subscription/trial data model, and PayPal checkout.
