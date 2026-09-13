@@ -72,12 +72,10 @@ export async function collectArticlesFromAllSources(): Promise<{
 
     for (const source of sources) {
       sourcesProcessed++;
-      console.log(`[COLLECT-DEBUG] (${sourcesProcessed}/${sources.length}) starting "${source.name}"`);
 
       try {
         // Step 1: Health check (P-7: reachability)
         const isReachable = await checkSourceReachability(source.url);
-        console.log(`[COLLECT-DEBUG]   reachability check done: ${isReachable}`);
 
         if (!isReachable) {
           // Source is down — increment failure count
@@ -106,7 +104,6 @@ export async function collectArticlesFromAllSources(): Promise<{
 
         // Step 2: Parse feed
         const articles = await parseFeed(source.url, source.type);
-        console.log(`[COLLECT-DEBUG]   parseFeed done: ${articles.length} articles`);
 
         if (articles.length === 0) {
           errors.push({
@@ -150,7 +147,6 @@ export async function collectArticlesFromAllSources(): Promise<{
 
           articlesAdded++;
         }
-        console.log(`[COLLECT-DEBUG]   stored ${articles.length} articles for "${source.name}"`);
 
         // Step 4: Update source metadata (success)
         await updateSource(source.id, {
@@ -158,7 +154,6 @@ export async function collectArticlesFromAllSources(): Promise<{
           last_success: new Date().toISOString(),
           failure_count: 0, // Reset on success
         });
-        console.log(`[COLLECT-DEBUG]   updateSource (success) done for "${source.name}"`);
       } catch (sourceError) {
         // Source-level error — log and continue with next source
         const errorMsg =
@@ -189,7 +184,6 @@ export async function collectArticlesFromAllSources(): Promise<{
       if (sourcesProcessed < sources.length) {
         await sleep(INTER_SOURCE_DELAY_MS);
       }
-      console.log(`[COLLECT-DEBUG] (${sourcesProcessed}/${sources.length}) finished "${source.name}"`);
     }
 
     return {
