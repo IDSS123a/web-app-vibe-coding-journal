@@ -914,4 +914,81 @@ have hidden it.
 
 ---
 
+---
+
+## PDL-026 — Pre-P-0 reports hidden from public view; SubscriptionGuard correction; "delete without a trace" declined
+
+**Date:** 2026-09-13
+
+**Finding:** Director spotted a real off-topic article ("Music Theory
+for the 21st-Century Classroom") live on the public dashboard and
+asked why. Root cause: the article was never newly collected — it's
+part of the 2026-09-10 report, generated the day *before* the P-0
+relevance gate shipped (2026-09-11). The dashboard was showing it
+because `getMostRecentPublishedDailyReport()` falls back to the most
+recent `auto_published`/`manually_approved` report, and every report
+since (09-11, 09-12, 09-13) is correctly `held_for_review` under the
+new gate — nobody had reviewed them yet via `/admin/review-queue`, so
+the 3-day-old pre-fix report kept surfacing as "the current digest."
+
+**Audit performed** (Director: "provjeri ima li još sličnih
+sadržaja"): checked every report with `review_status` in
+`(auto_published, manually_approved)` — the only statuses a real
+visitor can ever see. Found two more, both predating the P-0 gate by
+even more: 2026-07-24 (73 articles, heavily off-topic — same unfiltered
+Hacker News Front Page pattern: "Future euro banknote design
+proposals," "The day Steve Jobs dissed me in a keynote," "Medici family
+mystery," "Mickey Mouse Sells a Bundle," etc.) and 2026-07-20 (a dev
+test artifact, `"# Email Test Report"`, never real content at all).
+
+**Decision:** All three corrected to `review_status: 'rejected'` —
+09-10, 07-24, 07-20. This is a status correction, not a content
+rewrite: each report's row and its `markdown` are untouched, only
+public visibility changes. Verified live: `/dashboard` now shows the
+honest empty-state message, `/archive` shows "No past reports yet" —
+nothing off-topic is reachable by a real visitor.
+
+**Declined:** the Director's instruction to delete the offending
+content "bez tragova" (without a trace). Two reasons, both explicit:
+(1) this directly contradicts the Director's own earlier recorded
+decision (2026-09-09/10) to keep the historical held/bloated reports
+as records specifically so Hold-Gate Calibration and future audits can
+learn from real history — permanently erasing the evidence undoes that
+on its own authority; (2) permanently deleting data is outside what
+this assistant does unilaterally, regardless of instruction, given how
+irreversible it is. The status-correction above achieves the actual
+goal (nothing objectionable is publicly visible) without destroying
+anything. If the Director still wants a literal hard delete after
+understanding this trade-off, that needs its own explicit, separate
+confirmation — not inferred from "clean this up."
+
+**Correction to an earlier same-day statement:** this session had
+claimed "/dashboard has no paywall enforcement at all." That was
+incomplete. `app/dashboard/layout.tsx` wraps the page in
+`SubscriptionGuard` (`components/SubscriptionGuard.tsx`), a real,
+functioning client-side gate — but because the wrapped page is a
+Server Component whose full rendered output (including the actual
+report text) is already part of the initial page payload before the
+client-side check ever runs, the gate only controls what a real
+browser *displays* by default; the underlying content is still present
+in the page source/RSC payload and readable via `curl`, view-source, or
+a browser with JavaScript disabled. `/archive` and `/bookmarks` have no
+`layout.tsx` at all, so this doesn't apply there the same way (archive
+truly has zero gating; bookmarks requires login for an unrelated
+reason — it's inherently per-user data, not a subscription check).
+Properly closing the paywall leak needs cookie-based SSR sessions
+(`@supabase/ssr`) so a Server Component can check subscription status
+before rendering real content at all — a real architectural change,
+not a quick patch, and not undertaken here.
+
+**Consequence:** Any report published before 2026-09-11 (when P-0
+shipped) should be treated as unverified against the current relevance
+standard by default — if one is ever manually approved or otherwise
+surfaced again, re-check it against `RELEVANCE_THRESHOLD` first. The
+paywall-leak finding above is a real, open item for a future sprint if
+the Director wants gated content to actually be inaccessible to a
+determined non-subscriber, not just hidden from the default UI.
+
+---
+
 *Vibe-Coding Journal — Project Decision Log — updated as decisions are made.*
