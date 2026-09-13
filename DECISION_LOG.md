@@ -792,4 +792,50 @@ this one narrow calibration slice.
 
 ---
 
+---
+
+## PDL-023 — "Vibe-Coding Intelligence & Knowledge Engine" mandate reconciled against P-19/PDL-021
+
+**Date:** 2026-09-13
+
+**Finding:** Director pasted a 50-section mandate proposing to evolve
+the Journal into a trust-scored, evidence-classified knowledge engine
+feeding a chatbot with 100+ sources. Checked against this project's own
+recorded state before planning anything (M-4): the mandate's Phase 13/
+24-29 assume a chatbot querying a live knowledge base at runtime, and
+propose 100+ sources with per-claim evidence cross-checking.
+
+Two direct conflicts with already-recorded decisions:
+1. `CONSTITUTION.md` P-19 (2026-07-23, the Director's own decision): no
+   RAG, no vector database, the not-yet-built chatbot receives verified
+   content only via system-prompt injection, never live retrieval.
+2. PDL-021 (free-only Gemini constraint) is already under real strain
+   at 14 sources — one of 8 rotating keys lost model access this week
+   (PDL-018). 100+ sources with per-claim AI verification would need
+   materially more AI call volume than the free tier has room for.
+
+**Decision (Director, 2026-09-13, asked directly rather than assumed):**
+- P-19's no-RAG decision stands. The chatbot remains a separate, later,
+  dedicated sprint — this mandate's ideas are applied to the Journal
+  itself (better sources, evidence framing, event clustering, a
+  restructured report format), not to a knowledge-graph/retrieval layer.
+- Stay free-only. Grow the source directory gradually and individually
+  verified, not as a 100+ bulk addition. No fixed source-count target
+  is set.
+
+**Resulting plan:** `specs/vibe-coding-intelligence-engine/ROADMAP.md`
+— five phased sprints (Source Directory & Trust Score, Relevance Score
+Upgrade, Evidence Framing, Event Deduplication, Daily/Weekly
+Intelligence Format), each independently real-data-verified per
+`corrections/SPRINT_04_LESSONS.md` finding #15. Knowledge-graph
+entities, chatbot retrieval, cross-source AI verification, and an
+alerts system are explicitly parked, not silently dropped.
+
+**Consequence:** Any future proposal that reintroduces RAG/knowledge-
+graph retrieval or a large source-count jump must explicitly revisit
+this PDL and P-19/PDL-021, not treat either standing constraint as
+already lifted.
+
+---
+
 *Vibe-Coding Journal — Project Decision Log — updated as decisions are made.*
