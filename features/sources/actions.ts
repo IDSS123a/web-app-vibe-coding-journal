@@ -21,6 +21,30 @@ import { supabaseAdmin } from "@/lib/db/client";
 // hand-written Atom code path is needed.
 const rssParser = new Parser();
 
+// Found live 2026-09-13 while adding Reddit as a source: plain `fetch(url)`
+// with no headers gets rate-limited (HTTP 429) by Reddit noticeably more
+// aggressively than a request carrying a real, identifying User-Agent --
+// several feed hosts (Reddit included) treat an empty/generic UA as a
+// signal to throttle harder. A descriptive UA naming the project and its
+// URL is also just correct etiquette for an automated feed reader, not
+// merely a workaround.
+const FEED_FETCH_USER_AGENT =
+  "VibeCodingJournalBot/1.0 (+https://web-app-vibe-coding-journal.vercel.app)";
+
+// Same finding as above: several sources (Reddit confirmed directly) rate-
+// limit a burst of back-to-back requests from the same IP even with a good
+// User-Agent -- the collection loop below processes sources strictly one
+// at a time already, but with no gap between them at all. A short pause
+// between sources costs nothing against the hourly cron's real time
+// budget and avoids re-creating the exact failure pattern already found
+// and fixed once this session (a source silently auto-disabling after a
+// few failed runs, unnoticed for months).
+const INTER_SOURCE_DELAY_MS = 1500;
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 interface ParsedArticle {
   title: string;
   url: string;
@@ -153,6 +177,13 @@ export async function collectArticlesFromAllSources(): Promise<{
           error: errorMsg,
         });
       }
+
+      // Politeness delay before the next source -- see
+      // INTER_SOURCE_DELAY_MS's comment above. Skipped after the very
+      // last source; nothing follows it to wait for.
+      if (sourcesProcessed < sources.length) {
+        await sleep(INTER_SOURCE_DELAY_MS);
+      }
     }
 
     return {
@@ -184,6 +215,7 @@ async function checkSourceReachability(url: string): Promise<boolean> {
     const response = await fetch(url, {
       method: "HEAD",
       signal: controller.signal,
+      headers: { "User-Agent": FEED_FETCH_USER_AGENT },
     });
 
     clearTimeout(timeout);
@@ -206,7 +238,7 @@ async function parseFeed(
 ): Promise<ParsedArticle[]> {
   let response: Response;
   try {
-    response = await fetch(url);
+    response = await fetch(url, { headers: { "User-Agent": FEED_FETCH_USER_AGENT } });
   } catch (err) {
     const errorMsg = err instanceof Error ? err.message : String(err);
     throw new Error(`Feed fetch error: ${errorMsg}`);
