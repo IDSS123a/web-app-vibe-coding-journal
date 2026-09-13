@@ -32,6 +32,7 @@ import {
   ARTICLE_CATEGORIES,
   RELEVANCE_THRESHOLD,
 } from "@/features/pipeline/quality-engine";
+import { clusterDuplicateEvents } from "@/features/pipeline/domain";
 import { sendReviewQueueAlert } from "@/lib/email/resend";
 import { ensureAIProviderInitialized } from "@/lib/ai/init";
 import { getAIProvider } from "@/lib/ai/ai-provider";
@@ -255,6 +256,20 @@ export async function POST(request: NextRequest) {
 
 /**
  * Phase 2: Deduplicate articles
+ *
+ * Two passes:
+ * 1. Exact-hash duplicates (unchanged — a perfect republish/re-poll of
+ *    the same URL+title).
+ * 2. Phase 4 (specs/vibe-coding-intelligence-engine/ROADMAP.md, Event
+ *    Deduplication/Clustering): among the articles that survive pass
+ *    1, cluster the ones covering the same underlying event (different
+ *    source, similar title/summary — see clusterDuplicateEvents(),
+ *    features/pipeline/domain.ts) so the report shows one entry per
+ *    event, not one per source. Bounded to THIS run's newly-collected
+ *    batch only (getNonDuplicateArticles(), typically tens of items) —
+ *    never an all-time comparison, per the unbounded-growth lesson
+ *    already learned once this project (getArticlesForDailyReport,
+ *    fixed 2026-09-10).
  */
 async function deduplicateArticles(): Promise<{
   success: boolean;
@@ -269,17 +284,40 @@ async function deduplicateArticles(): Promise<{
     const newArticles = await getNonDuplicateArticles();
     console.log(`[DEDUP] Processing ${newArticles.length} new articles for duplicates`);
 
+    const remaining: typeof newArticles = [];
+
     for (const article of newArticles) {
       try {
         const existingByHash = await getArticleByHash(article.hash, article.id);
         if (existingByHash) {
           await markArticleAsDuplicate(article.id, existingByHash.id);
           duplicatesFound++;
+        } else {
+          remaining.push(article);
         }
       } catch (articleError) {
         const errorMsg = articleError instanceof Error ? articleError.message : String(articleError);
         errors.push(`Article ${article.id}: ${errorMsg}`);
       }
+    }
+
+    // Phase 4: event clustering over whatever survived exact-hash dedup.
+    const clusters = clusterDuplicateEvents(remaining);
+    for (const cluster of clusters) {
+      for (const duplicateId of cluster.duplicateIds) {
+        try {
+          await markArticleAsDuplicate(duplicateId, cluster.canonicalId);
+          duplicatesFound++;
+        } catch (clusterError) {
+          const errorMsg = clusterError instanceof Error ? clusterError.message : String(clusterError);
+          errors.push(`Article ${duplicateId} (event cluster): ${errorMsg}`);
+        }
+      }
+    }
+    if (clusters.some((c) => c.duplicateIds.length > 0)) {
+      console.log(
+        `[DEDUP]   Event clustering: ${clusters.filter((c) => c.duplicateIds.length > 0).length} event(s) with coverage from multiple sources`,
+      );
     }
 
     return {

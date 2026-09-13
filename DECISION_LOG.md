@@ -870,4 +870,48 @@ express in one pass.
 
 ---
 
+---
+
+## PDL-025 — Event Deduplication built on a dormant Sprint 02 engine, not from scratch
+
+**Date:** 2026-09-13
+
+**Finding:** Scoping Phase 4 (Event Deduplication/Clustering,
+`specs/vibe-coding-intelligence-engine/ROADMAP.md`), found
+`features/pipeline/domain.ts` already contained a complete
+similarity-based duplicate-detection engine (`isDuplicate()`,
+`cosineSimilarity()`, `SIMILARITY_THRESHOLD` with its own PDL-003 from
+Sprint 02, 2026-07-18) — but `app/api/cron/daily-digest/route.ts`'s
+`deduplicateArticles()` only ever called exact-hash matching
+(`getArticleByHash`), never this engine. It had been dormant, unused,
+since Sprint 02. A second dormant/broken function,
+`findArticlesByTextSimilarity()` (`features/pipeline/repository.ts`),
+took a `_text` parameter it never used — a stub that returned "recent
+articles with a summary," not actual similarity-filtered results —
+also never called anywhere.
+
+**Decision:** Extended the existing engine rather than building a
+parallel one (M-4 / this project's "adapt to existing architecture"
+principle): `isDuplicate()` now also compares titles
+(`TITLE_SIMILARITY_THRESHOLD = 0.5`, more lenient than the existing
+summary threshold — titles are short, so a genuine cross-source match
+on the same proper nouns rarely reaches 0.85 Jaccard overlap the way
+near-identical summaries do). New `clusterDuplicateEvents()` groups a
+batch of articles into events, canonical = earliest published. Wired
+into `deduplicateArticles()` as a second pass after exact-hash dedup,
+bounded to one cron run's newly-collected batch only (never an all-time
+comparison — the unbounded-growth lesson from
+`getArticlesForDailyReport`, fixed 2026-09-10, applied deliberately
+here). The dead `findArticlesByTextSimilarity()` was deleted as part of
+this same change — it is now genuinely superseded, not just unused.
+
+**Consequence:** `duplicate_of` now means "same event," not only
+"byte-identical republish." Report/dashboard/archive rendering shows
+"Also covered by: X, Y" for a canonical article with clustered
+duplicates (`getRelatedSourcesForArticles()`), so multi-source coverage
+is surfaced, not silently hidden the way pure exact-hash dedup would
+have hidden it.
+
+---
+
 *Vibe-Coding Journal — Project Decision Log — updated as decisions are made.*

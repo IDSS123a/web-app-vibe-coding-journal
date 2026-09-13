@@ -5,6 +5,7 @@ import {
   getMostRecentPublishedDailyReport,
 } from "@/features/daily-report/repository";
 import { getArticlesForReport } from "@/features/archive/repository";
+import { getRelatedSourcesForArticles } from "@/features/pipeline/repository";
 import { ArticleListWithBookmarks } from "@/components/ArticleListWithBookmarks";
 
 /**
@@ -86,6 +87,13 @@ export default async function DashboardPage() {
   // migration 009 shipped (see that migration's comment); the raw
   // markdown below still renders either way, so nothing is lost.
   const articles: Article[] = isEmptyState ? [] : await getArticlesForReport(report.id);
+  // Phase 4 (specs/vibe-coding-intelligence-engine/ROADMAP.md): which
+  // other sources covered the same event as each of these articles.
+  const relatedSourcesMap =
+    articles.length > 0
+      ? await getRelatedSourcesForArticles(articles.map((a) => a.id))
+      : new Map<string, string[]>();
+  const relatedSources = Object.fromEntries(relatedSourcesMap);
 
   return (
     <div className="min-h-screen bg-gray-50 px-4 py-12">
@@ -138,7 +146,7 @@ export default async function DashboardPage() {
               (migration 009); raw markdown as the fallback for reports
               generated before that shipped, or if linking ever fails. */}
           {articles.length > 0 ? (
-            <ArticleListWithBookmarks articles={articles} />
+            <ArticleListWithBookmarks articles={articles} relatedSources={relatedSources} />
           ) : (
             <div className="mt-6 whitespace-pre-wrap rounded bg-gray-100 p-4 font-mono text-sm text-gray-700">
               {report.markdown}

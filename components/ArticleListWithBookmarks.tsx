@@ -13,13 +13,27 @@
  * itself stays public/unauthenticated (matching the existing dashboard
  * precedent, see HANDOFF note on the P-13 paywall not being enforced
  * here), only the bookmark action itself requires a session.
+ *
+ * relatedSources (Phase 4, specs/vibe-coding-intelligence-engine/
+ * ROADMAP.md): when the pipeline's event clustering
+ * (features/pipeline/domain.ts clusterDuplicateEvents) has found other
+ * sources covering the same event as a given article, their names are
+ * shown as "Also covered by" instead of the coverage being silently
+ * hidden -- fetched via features/pipeline/repository.ts
+ * getRelatedSourcesForArticles() by the page, not this component.
  */
 
 import { useEffect, useState } from "react";
 import { useSession } from "@/lib/auth/use-session";
 import type { Article } from "@/lib/validation/schemas";
 
-export function ArticleListWithBookmarks({ articles }: { articles: Article[] }) {
+export function ArticleListWithBookmarks({
+  articles,
+  relatedSources,
+}: {
+  articles: Article[];
+  relatedSources?: Record<string, string[]>;
+}) {
   const { token, loading } = useSession();
   const [bookmarked, setBookmarked] = useState<Set<string>>(new Set());
   const [bookmarksLoaded, setBookmarksLoaded] = useState(false);
@@ -131,6 +145,11 @@ export function ArticleListWithBookmarks({ articles }: { articles: Article[] }) 
                 <span className="rounded-full bg-gray-100 px-2 py-0.5 dark:bg-gray-800">{article.source}</span>
               )}
             </div>
+            {relatedSources?.[article.id] && relatedSources[article.id]!.length > 0 && (
+              <p className="mt-2 text-xs italic text-gray-400 dark:text-gray-600">
+                Also covered by: {relatedSources[article.id]!.join(", ")}
+              </p>
+            )}
           </div>
         );
       })}

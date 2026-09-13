@@ -33,32 +33,41 @@ export async function getArticleByHash(
 }
 
 /**
- * Find all articles with summary similar to given text
- * Returns candidates for fuzzy duplicate detection
- * Production: Use embedding search (pgvector) for better performance
+ * Phase 4 (specs/vibe-coding-intelligence-engine/ROADMAP.md, Event
+ * Deduplication/Clustering): for a set of canonical (non-duplicate)
+ * article ids, returns the sources of any OTHER articles clustered as
+ * the same event (duplicate_of pointing to that canonical id) — what
+ * the report actually needs to render "Also covered by: X, Y" instead
+ * of silently hiding that other sources ran the same story. The
+ * duplicate articles' own rows are otherwise never shown.
  */
-export async function findArticlesByTextSimilarity(
-  _text: string,
-  limit: number = 10,
-): Promise<Article[]> {
-  if (!supabaseAdmin) {
-    throw new Error("Admin client not available");
+export async function getRelatedSourcesForArticles(
+  canonicalIds: string[],
+): Promise<Map<string, string[]>> {
+  const result = new Map<string, string[]>();
+  if (canonicalIds.length === 0 || !supabaseAdmin) {
+    return result;
   }
 
-  // Simple approach: get recent articles with some summary text
-  // Production would use pgvector or similar vector DB
   const { data, error } = await supabaseAdmin
     .from("articles")
-    .select("*")
-    .not("raw_summary", "is", null)
-    .order("published_at", { ascending: false })
-    .limit(limit);
+    .select("duplicate_of, source")
+    .in("duplicate_of", canonicalIds);
 
   if (error) {
-    throw new Error(`Failed to find similar articles: ${error.message}`);
+    throw new Error(`Failed to fetch related sources: ${error.message}`);
   }
 
-  return data as Article[];
+  for (const row of data ?? []) {
+    const canonicalId = row.duplicate_of as string;
+    const list = result.get(canonicalId) ?? [];
+    if (row.source && !list.includes(row.source)) {
+      list.push(row.source);
+    }
+    result.set(canonicalId, list);
+  }
+
+  return result;
 }
 
 /**
