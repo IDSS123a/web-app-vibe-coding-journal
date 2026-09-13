@@ -96,6 +96,9 @@ export async function updateSource(
     last_success: string;
     failure_count: number;
     enabled: boolean;
+    source_class: Source["source_class"];
+    trust_score: Source["trust_score"];
+    topics: string[];
   }>,
 ): Promise<Source> {
   if (!supabaseAdmin) {
