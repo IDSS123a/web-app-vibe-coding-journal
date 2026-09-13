@@ -84,7 +84,18 @@ export type CreateSourceInput = z.infer<typeof createSourceSchema>;
 export const SOURCE_HEALTH_CONFIG = {
   MAX_FAILURES: 3, // Auto-disable after 3 consecutive failures
   EXPECTED_CADENCE_HOURS: 24, // Warn if last_polled > 24 hours ago
-  HTTP_TIMEOUT_MS: 10000, // 10 second timeout for reachability check
+  // Used TWICE per source now (checkSourceReachability's HEAD check, and
+  // -- since 2026-09-13 -- parseFeed's actual GET, see
+  // features/sources/actions.ts) plus a 1.5s inter-source delay
+  // (INTER_SOURCE_DELAY_MS, same file). With 14 sources as of this
+  // date, the worst case (every source timing out on both checks) is
+  // 14 * (2*HTTP_TIMEOUT_MS + 1.5s) -- at the previous 10s this was
+  // ~301s, uncomfortably at/over Vercel's function duration budget for
+  // a single cron invocation. Lowered to keep that worst case
+  // comfortably under it (14 * 11.5s = 161s) -- 5s is still generous
+  // for a real feed host; the sources actually configured today all
+  // respond in well under 1s in normal operation.
+  HTTP_TIMEOUT_MS: 5000,
 };
 
 export interface SourceHealthStatus {
