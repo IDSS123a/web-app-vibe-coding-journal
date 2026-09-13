@@ -59,13 +59,24 @@ import type {
 } from "./ai-provider";
 
 // A-5/AUDIT-003: sized to the longest expected output for this specific
-// call (a verdict + a short sentence of reasoning) -- far shorter than
-// summarize/classify's outputs, confirmed against real judged output
-// during live verification of this method, not assumed.
-const JUDGE_HOLD_REASON_MAX_OUTPUT_TOKENS = 512;
+// call. Originally set to 512 assuming only the visible output (a
+// verdict/score + a short sentence) counted against this budget --
+// WRONG, found live 2026-09-13 while calibrating assessRelevance()'s
+// upgraded prompt: gemini-2.5-flash is a "thinking" model whose internal
+// reasoning tokens (`thoughtsTokenCount` in the API response, observed
+// 379-488 in direct testing against this exact prompt) are deducted
+// from maxOutputTokens BEFORE the visible text -- with a 512 budget, a
+// harder judgment call could leave as little as ~20 tokens for the
+// actual JSON, truncating it mid-string ("Unterminated string in JSON",
+// intermittent -- present exactly when the model happened to think
+// longer, absent when it didn't, which is why earlier live verification
+// of judgeHoldReason() didn't catch this on a smaller sample). Both
+// constants raised well above the largest observed thoughtsTokenCount
+// plus the actual response, not just the visible text's own size.
+const JUDGE_HOLD_REASON_MAX_OUTPUT_TOKENS = 2048;
 
-// Same reasoning as above -- a boolean + one sentence.
-const ASSESS_RELEVANCE_MAX_OUTPUT_TOKENS = 512;
+// Same reasoning as above.
+const ASSESS_RELEVANCE_MAX_OUTPUT_TOKENS = 2048;
 
 const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
 const API_BASE = "https://generativelanguage.googleapis.com/v1beta/models";
@@ -243,11 +254,25 @@ async function callGeminiJSON(
 
     if (response.ok) {
       const data = await response.json();
+      const finishReason = data?.candidates?.[0]?.finishReason;
       const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
       if (typeof text !== "string") {
         throw new Error("Gemini response missing expected text content");
       }
-      return JSON.parse(text) as Record<string, unknown>;
+      try {
+        return JSON.parse(text) as Record<string, unknown>;
+      } catch (parseErr) {
+        // Found live 2026-09-13: a JSON.parse failure here almost always
+        // means the response was truncated by maxOutputTokens (see this
+        // file's MAX_OUTPUT_TOKENS constants' comment on gemini-2.5-
+        // flash's internal "thinking" tokens eating the same budget) --
+        // surfacing finishReason turns a cryptic "Unterminated string in
+        // JSON" into an immediately diagnosable signal instead of a
+        // repeat investigation.
+        const parseMsg = parseErr instanceof Error ? parseErr.message : String(parseErr);
+        const hint = finishReason === "MAX_TOKENS" ? " (finishReason: MAX_TOKENS -- response was truncated, raise the caller's maxOutputTokens)" : "";
+        throw new Error(`Gemini response was not valid JSON: ${parseMsg}${hint}`);
+      }
     }
 
     // Parse the error body to classify the failure and pull safe diagnostic
