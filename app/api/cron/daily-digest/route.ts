@@ -18,6 +18,7 @@ import {
   markArticleAsDuplicate,
   getNonDuplicateArticles,
   updateArticleConfidence,
+  updateArticleRelevance,
   updateArticleCategory,
   updateArticleSummary,
   getArticlesForDailyReport,
@@ -29,6 +30,7 @@ import {
   classifyArticle,
   evaluateReportHold,
   ARTICLE_CATEGORIES,
+  RELEVANCE_THRESHOLD,
 } from "@/features/pipeline/quality-engine";
 import { sendReviewQueueAlert } from "@/lib/email/resend";
 import { ensureAIProviderInitialized } from "@/lib/ai/init";
@@ -344,12 +346,19 @@ async function runQualityEngine(): Promise<{
         // math, music-theory, NASA-imaging, and cables content had been
         // publishing alongside real vibe-coding content because nothing
         // upstream checked topic at all. Fails OPEN (treated as
-        // relevant) on any assessment failure — a bad-AI-day must never
-        // behave worse than today's status quo (M-4); a real Gemini
-        // outage still surfaces via the existing GeminiKeysExhaustedError
-        // handling below, once classify/summarize hit the same exhausted
-        // keys.
-        let isRelevant = true;
+        // relevant, score 100) on any assessment failure — a bad-AI-day
+        // must never behave worse than today's status quo (M-4); a real
+        // Gemini outage still surfaces via the existing
+        // GeminiKeysExhaustedError handling below, once classify/
+        // summarize hit the same exhausted keys.
+        //
+        // Phase 2 (specs/vibe-coding-intelligence-engine/ROADMAP.md,
+        // 2026-09-13): graded 0-100 relevanceScore, not a boolean — see
+        // RELEVANCE_THRESHOLD (features/pipeline/quality-engine.ts) for
+        // the cutoff and its rationale. The score itself is persisted
+        // (migration 011) for every article, not just excluded ones,
+        // supporting future calibration.
+        let relevanceScore = 100;
         try {
           const relevanceRaw = await aiProvider.assessRelevance({
             title: article.title,
@@ -357,10 +366,11 @@ async function runQualityEngine(): Promise<{
           });
           const parsedRelevance = assessRelevanceOutputSchema.safeParse(relevanceRaw);
           if (parsedRelevance.success) {
-            isRelevant = parsedRelevance.data.isRelevant;
-            if (!isRelevant) {
+            relevanceScore = parsedRelevance.data.relevanceScore;
+            await updateArticleRelevance(article.id, relevanceScore);
+            if (relevanceScore < RELEVANCE_THRESHOLD) {
               console.log(
-                `[QUALITY]   Off-topic (P-0), excluding ${article.id}: ${parsedRelevance.data.reasoning}`,
+                `[QUALITY]   Off-topic (P-0, score ${relevanceScore}/100), excluding ${article.id}: ${parsedRelevance.data.reasoning}`,
               );
             }
           } else {
@@ -376,14 +386,14 @@ async function runQualityEngine(): Promise<{
           console.warn(`[QUALITY]   Relevance assessment failed for ${article.id}, failing open: ${msg}`);
         }
 
-        if (!isRelevant) {
+        if (relevanceScore < RELEVANCE_THRESHOLD) {
           // Sub-CONFIDENCE_THRESHOLD score excludes it via the existing
           // getArticlesForDailyReport() filter -- deliberately reusing an
           // existing gate instead of a schema migration, given the
-          // Director's "fix this NOW" urgency. Skips classify/summarize
-          // entirely below, saving Gemini quota (free-only constraint,
-          // PDL-012, same principle as hold-gate-calibration's
-          // never-re-judge rule).
+          // Director's "fix this NOW" urgency (2026-09-11). Skips
+          // classify/summarize entirely below, saving Gemini quota
+          // (free-only constraint, PDL-012/PDL-021, same principle as
+          // hold-gate-calibration's never-re-judge rule).
           await updateArticleConfidence(article.id, 0);
           articlesScored++;
           continue;

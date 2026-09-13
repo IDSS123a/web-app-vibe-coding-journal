@@ -134,6 +134,34 @@ export async function updateArticleConfidence(
 }
 
 /**
+ * Update article relevance score (P-0 gate, Phase 2 --
+ * specs/vibe-coding-intelligence-engine/ROADMAP.md). Distinct from
+ * confidence_score (a content-quality heuristic, unrelated to topical
+ * relevance) -- kept as its own column/function rather than folded in,
+ * matching this file's existing one-field-per-function style.
+ */
+export async function updateArticleRelevance(
+  articleId: string,
+  relevanceScore: number,
+): Promise<void> {
+  if (!supabaseAdmin) {
+    throw new Error("Admin client not available");
+  }
+
+  const { error } = await supabaseAdmin
+    .from("articles")
+    .update({
+      relevance_score: relevanceScore,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", articleId);
+
+  if (error) {
+    throw new Error(`Failed to update relevance score: ${error.message}`);
+  }
+}
+
+/**
  * Update article with AI-generated summary fields (Sprint 05: GeminiProvider.summarize())
  * P-3: why_it_matters / who_it_affects / worth_trying are the required
  * actionable-judgment fields; summary is the editorial-voice text.

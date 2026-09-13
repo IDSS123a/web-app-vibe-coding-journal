@@ -75,6 +75,13 @@ export interface JudgeHoldReasonOutput {
  * music theory, NASA/Mars imaging, and an essay about keeping old
  * cables all published, none relevant to vibe-coding at all. This gate
  * is what P-0 actually requires and nothing upstream provided.
+ *
+ * Phase 2 (specs/vibe-coding-intelligence-engine/ROADMAP.md,
+ * 2026-09-13): relevanceScore replaces the original boolean isRelevant
+ * with a graded 0-100 judgment (RELEVANCE_THRESHOLD in
+ * features/pipeline/quality-engine.ts decides the exclude/include
+ * cutoff) -- the score itself is now persisted (migration 011,
+ * articles.relevance_score) instead of being discarded after the call.
  */
 export interface AssessRelevanceInput {
   title: string;
@@ -82,7 +89,7 @@ export interface AssessRelevanceInput {
 }
 
 export interface AssessRelevanceOutput {
-  isRelevant: boolean;
+  relevanceScore: number;
   reasoning: string;
 }
 
@@ -135,14 +142,14 @@ class NoOpProvider implements AIProvider {
     };
   }
 
-  // Fail open (relevant) when no provider is configured -- matches this
-  // stub's existing behavior for every other method (never itself the
-  // reason real content gets excluded); a real provider outage is
-  // handled the same way at the call site (features/pipeline calling
-  // code), not here.
+  // Fail open (maximally relevant) when no provider is configured --
+  // matches this stub's existing behavior for every other method (never
+  // itself the reason real content gets excluded); a real provider
+  // outage is handled the same way at the call site (features/pipeline
+  // calling code), not here.
   async assessRelevance(): Promise<AssessRelevanceOutput> {
     return {
-      isRelevant: true,
+      relevanceScore: 100,
       reasoning: "[AI provider not configured]",
     };
   }

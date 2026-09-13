@@ -32,6 +32,7 @@ function makeArticle(overrides: Partial<Article> = {}): Article {
     category: null,
     quality_flag: null,
     confidence_score: null,
+    relevance_score: null,
     duplicate_of: null,
     hash: "abc123",
     created_at: new Date().toISOString(),

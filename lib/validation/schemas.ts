@@ -69,6 +69,11 @@ export const articleSchema = z.object({
     ] as const)
     .nullable(),
   confidence_score: z.number().min(0).max(1).nullable(),
+  // Phase 2 (specs/vibe-coding-intelligence-engine/ROADMAP.md): the P-0
+  // relevance gate's graded judgment (migration 011) -- distinct from
+  // confidence_score, which is a general content-quality heuristic
+  // (scoreArticleConfidence) unrelated to topical relevance.
+  relevance_score: z.number().int().min(0).max(100).nullable(),
   duplicate_of: z.string().uuid().nullable(),
   hash: z.string(),
   created_at: z.string().datetime(),
@@ -208,8 +213,15 @@ export type JudgeHoldReasonOutput = z.infer<typeof judgeHoldReasonOutputSchema>;
 // 2026-09-11: nothing in the pipeline previously checked topical
 // relevance at all, letting off-topic content (aviation, math, music
 // theory, NASA imaging, etc.) publish alongside real vibe-coding content.
+//
+// Phase 2 (specs/vibe-coding-intelligence-engine/ROADMAP.md, 2026-09-13):
+// upgraded from a boolean isRelevant to a graded 0-100 relevanceScore --
+// still the same underlying judgment call, but a graded score is kept
+// (migration 011, articles.relevance_score) rather than discarded after
+// the request, supporting future calibration the way Hold-Gate
+// Calibration already does for the hype-word gate.
 export const assessRelevanceOutputSchema = z.object({
-  isRelevant: z.boolean(),
+  relevanceScore: z.number().int().min(0).max(100),
   reasoning: z.string().min(1),
 });
 

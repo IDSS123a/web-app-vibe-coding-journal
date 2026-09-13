@@ -406,19 +406,39 @@ Use "uncertain" only if the excerpt genuinely doesn't give enough context to dec
   }
 
   async assessRelevance(input: AssessRelevanceInput): Promise<AssessRelevanceOutput> {
-    const prompt = `You are the topic gate for "Vibe-Coding Journal," a daily digest STRICTLY for vibe-coders -- people building software with AI coding tools (Bolt, Lovable, Replit, Cursor, Windsurf, Claude Code, GitHub Copilot, v0, and similar). This is NOT a general tech/AI/science news aggregator.
+    // Phase 2 (specs/vibe-coding-intelligence-engine/ROADMAP.md,
+    // 2026-09-13): 0-100 graded score, not a boolean -- and the
+    // relevance definition itself expanded to the Director's explicit,
+    // strict list (vibe coding, AI coding agents, agentic software
+    // engineering, AI-native IDEs, MCP, context engineering, AI
+    // testing/debugging/code review/security, and similar), reinforcing
+    // the original P-0 framing rather than replacing it.
+    const prompt = `You are the topic gate for "Vibe-Coding Journal," a daily digest STRICTLY for vibe-coders -- people building software with AI coding tools. This is NOT a general tech/AI/science news aggregator.
 
-Judge whether this article is directly relevant: would it help someone who builds apps with AI tools make a better decision today? General tech news, general AI research not about coding tools, aviation/aerospace, pure math/physics, hardware nostalgia, music/education, and similar off-topic subjects are NOT relevant, even if they appeared on a tech-adjacent site like Hacker News.
+Score how directly relevant this article is, 0-100, to ANY of: vibe coding, AI-assisted coding, AI coding agents, agentic software engineering, AI-native IDEs, AI app builders (Bolt, Lovable, Replit, v0, Cursor, Windsurf, Claude Code, GitHub Copilot and similar), AI-generated code/UI/applications, prompt-driven development, AI code testing/debugging/review/quality/security, MCP, tool use, context engineering, AI coding benchmarks and productivity/reliability, or the future of software engineering under AI.
+
+Calibration:
+- 81-100: directly and specifically about one of the above
+- 61-80: clearly relevant, meaningful practical connection
+- 41-60: tangentially related, a stretch to call directly useful
+- 21-40: peripheral, only loosely tech-adjacent
+- 0-20: unrelated (general tech/AI/science news, aviation/aerospace, pure math/physics, hardware nostalgia, music/education, business/industry not about AI coding, etc.), even if it appeared on a tech-adjacent site like Hacker News
 
 Title: ${input.title}
 Summary: ${input.summary}
 
-Return ONLY a JSON object: { "isRelevant": boolean, "reasoning": string (one sentence) }`;
+Return ONLY a JSON object: { "relevanceScore": integer 0-100, "reasoning": string (one sentence) }`;
 
     const result = await callGeminiJSON(this.keys, prompt, ASSESS_RELEVANCE_MAX_OUTPUT_TOKENS);
 
+    const rawScore = result.relevanceScore;
+    const relevanceScore =
+      typeof rawScore === "number" && Number.isFinite(rawScore)
+        ? Math.max(0, Math.min(100, Math.round(rawScore)))
+        : 100; // fail open -- an unparseable score must never itself exclude real content
+
     return {
-      isRelevant: typeof result.isRelevant === "boolean" ? result.isRelevant : true,
+      relevanceScore,
       reasoning: typeof result.reasoning === "string" ? result.reasoning : "",
     };
   }

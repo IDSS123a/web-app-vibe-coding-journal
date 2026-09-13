@@ -19,6 +19,32 @@ import type { Article } from "@/lib/validation/schemas";
 export const CONFIDENCE_THRESHOLD = 0.6;
 
 /**
+ * P-0 (🔴 CRITICAL) Relevance Threshold — minimum assessRelevance()
+ * score (0-100) to be treated as on-topic for vibe-coding.
+ * Decision: 60 (Phase 2, specs/vibe-coding-intelligence-engine/ROADMAP.md)
+ * Date: 2026-09-13
+ * Rationale:
+ *   - The Director's own repeated, explicit framing is strict ("bilo
+ *     koji tekst koji nije 100% usmjeren... strogo zabranjen") — this
+ *     sets the cutoff at the boundary between the AI judge's own
+ *     "tangentially related" (41-60) and "clearly relevant" (61-80)
+ *     bands, so anything merely tangential is excluded, not just
+ *     anything clearly off-topic.
+ *   - Below 60: excluded (confidence_score forced to 0, same mechanism
+ *     as before this score was graded — see app/api/cron/daily-digest/
+ *     route.ts).
+ *   - Not set higher (e.g. 80) because that would also exclude
+ *     genuinely useful but narrowly-scoped coverage (e.g. a specific
+ *     tool update the AI judge scores 65-75 for being real but not
+ *     maximally central) — over-filtering has its own cost (P-1.1: a
+ *     digest with nothing in it is also a failure).
+ * Tuning: If off-topic content still slips through, raise. If clearly
+ * relevant content is being excluded, lower — check relevance_score on
+ * excluded articles first to see which direction the errors lean.
+ */
+export const RELEVANCE_THRESHOLD = 60;
+
+/**
  * Hype-word list (P-3: Editorial Voice)
  * These words are banned unless directly quoting a named source
  */
