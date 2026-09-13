@@ -117,6 +117,42 @@ export async function POST(request: NextRequest) {
       console.warn(`[CRON]   ⚠ ${collectResult.errors.length} source errors (see details below)`);
     }
 
+    // P-1.1 (fail loudly, no unattended incorrectness): a total collection
+    // failure -- collectArticlesFromAllSources() couldn't even list the
+    // enabled sources at all (tagged sourceId: "system", distinct from a
+    // per-source fetch/parse error) -- must never fall through to
+    // publishing an empty "0 articles" report. Found live 2026-09-13: a
+    // transient Supabase Gateway Timeout on getEnabledSources() cascaded
+    // through every downstream phase (0 to dedupe, 0 to score, 0 to
+    // report) and generateDailyReport() happily auto-published a
+    // genuinely empty report anyway, because an empty article list
+    // trivially passes evaluateReportHold (nothing to hold on). The
+    // existing "fail loudly" pattern already used for AI-unavailable
+    // (aiUnavailableCount -> held + urgent alert, below) was never
+    // extended to cover this case. Deliberately does NOT write a
+    // daily_reports row here (unlike the AI-unavailable case, there is no
+    // partial report worth holding for manual review -- zero articles is
+    // nothing to review) -- the idempotency check earlier in this
+    // function only skips a day once a report row exists, so the next
+    // hourly invocation retries automatically, which is the correct
+    // response to a transient infrastructure blip.
+    const sourceCollectionTotallyFailed = collectResult.errors.some((e) => e.sourceId === "system");
+    if (sourceCollectionTotallyFailed) {
+      const message = collectResult.errors.map((e) => e.error).join("; ");
+      console.error(`[CRON]   ✗ Source collection failed entirely, not publishing an empty report: ${message}`);
+      return NextResponse.json(
+        {
+          success: false,
+          skipped: true,
+          reason: "source_collection_failed",
+          detail: message,
+          timestamp: new Date().toISOString(),
+          durationMs: Date.now() - startTime,
+        },
+        { status: 200 },
+      );
+    }
+
     // Phase 2: Duplicate Engine
     console.log("[CRON] Phase 2: Duplicate Engine (deduplication)");
     const dedupeResult = await deduplicateArticles();
