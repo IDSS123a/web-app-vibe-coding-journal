@@ -236,12 +236,30 @@ async function parseFeed(
   url: string,
   type: "rss" | "api",
 ): Promise<ParsedArticle[]> {
+  // Found live 2026-09-13 while verifying Phase 4 (Event Deduplication):
+  // this fetch had no timeout at all, unlike checkSourceReachability()'s
+  // HEAD check -- a single slow/hanging source (passing the reachability
+  // check, which only proves the server responds to SOME request, not
+  // that this specific feed request will complete promptly) could stall
+  // collectArticlesFromAllSources() indefinitely, and with it the whole
+  // hourly cron run, up to Vercel's own platform-level function timeout.
+  // Reuses the same HTTP_TIMEOUT_MS as the reachability check for
+  // consistency -- one source being slow shouldn't cost more time than
+  // the health check already budgets for "is this source responsive."
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), SOURCE_HEALTH_CONFIG.HTTP_TIMEOUT_MS);
+
   let response: Response;
   try {
-    response = await fetch(url, { headers: { "User-Agent": FEED_FETCH_USER_AGENT } });
+    response = await fetch(url, {
+      headers: { "User-Agent": FEED_FETCH_USER_AGENT },
+      signal: controller.signal,
+    });
   } catch (err) {
     const errorMsg = err instanceof Error ? err.message : String(err);
     throw new Error(`Feed fetch error: ${errorMsg}`);
+  } finally {
+    clearTimeout(timeout);
   }
 
   if (!response.ok) {
