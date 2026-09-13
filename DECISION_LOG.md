@@ -838,4 +838,36 @@ already lifted.
 
 ---
 
+---
+
+## PDL-024 — Evidence framing added to P-3 editorial voice
+
+**Date:** 2026-09-13
+
+**Context:** Phase 3 of `specs/vibe-coding-intelligence-engine/ROADMAP.md`
+("No marketing as fact," from the reconciled Intelligence Engine
+mandate, PDL-023). The existing hype-word ban (P-3) blocks specific
+banned phrases ("revolutionary," etc.) but does nothing about a vendor
+stating an unverified benefit claim in plain, non-hype language (e.g.
+"our new agent makes developers 5x faster") — P-3 as written would let
+that through as stated fact.
+
+**Decision:** `CONSTITUTION.md` P-3 extended with an evidence-framing
+rule: a vendor's own unverified claim about their product's
+performance/productivity/capability/benchmarks must be attributed
+("The company reports...", "X claims...") rather than restated as
+established fact. Applies only to the vendor's own evaluative claims
+about impact — a factual report that a release shipped needs no hedge.
+Implemented by extending the existing `summarize()` prompt's
+`P3_SYSTEM_RULES` block (`lib/ai/gemini-provider.ts`) — no new AI call,
+per the roadmap's explicit "folded into the existing summarize() call"
+design.
+
+**Consequence:** Any future editorial-voice rule addition should follow
+the same pattern (extend `P3_SYSTEM_RULES`, not a separate AI call)
+unless a genuinely new judgment is needed that summarize() can't
+express in one pass.
+
+---
+
 *Vibe-Coding Journal — Project Decision Log — updated as decisions are made.*

@@ -137,6 +137,17 @@ Every generated summary (single article or Daily Report) must obey:
   the news concerns a tool that has direct competitors (per project
   brief P-2, point 2: "Tool Comparison" is a standing value driver,
   not a one-off feature).
+- **Evidence framing** (added 2026-09-13, Phase 3 of
+  `specs/vibe-coding-intelligence-engine/ROADMAP.md`): a vendor's
+  unverified claim about their own product — a performance,
+  productivity, capability, or benchmark claim the article does not
+  independently verify — must be attributed as their claim ("The
+  company reports...", "X claims..."), never restated as established
+  fact. Example: a vendor says "our new agent makes developers 5x
+  faster" → write "The company reports a 5x productivity improvement,"
+  never "Developers are 5x faster." This applies only to the vendor's
+  own evaluative claims about impact — that a release shipped or a
+  feature launched is a fact and needs no hedge.
 
 ---
 

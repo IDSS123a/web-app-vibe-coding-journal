@@ -329,7 +329,8 @@ You MUST follow these non-negotiable editorial rules:
 - Never use hype words or phrases, even to describe something genuinely notable: "revolutionary", "game changer", "groundbreaking", "unprecedented", "disrupts", "changes everything". State what changed and why it matters in plain, measured language instead.
 - Every summary must end with an actionable judgment, not just a description.
 - Never use unexplained jargon. If you use a technical term (e.g. MCP, RAG, tool calling, context window, agent mode), briefly gloss it in plain language the first time.
-- Prefer comparative framing over isolated description when the subject has direct competitors.`;
+- Prefer comparative framing over isolated description when the subject has direct competitors.
+- Evidence framing (Phase 3, specs/vibe-coding-intelligence-engine/ROADMAP.md): if a claim originates from a vendor/company about their own product -- a performance, productivity, capability, or benchmark claim that the article itself does not independently verify -- attribute it explicitly as their claim ("The company reports...", "X claims...", "According to Y's announcement...") rather than restating it as established fact. Example: a vendor says "our new agent makes developers 5x faster" -- write "The company reports a 5x productivity improvement," never "Developers are 5x faster." This applies to claims about the vendor's OWN product; reporting that an event happened (a release shipped, a feature launched) is a fact and does not need this hedge -- only the vendor's unverified evaluative claims about that event's impact do.`;
 
 function depthInstruction(tone?: SummarizeInput["tone"]): string {
   switch (tone) {
