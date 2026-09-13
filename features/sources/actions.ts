@@ -243,33 +243,55 @@ async function parseFeed(
   // that this specific feed request will complete promptly) could stall
   // collectArticlesFromAllSources() indefinitely, and with it the whole
   // hourly cron run, up to Vercel's own platform-level function timeout.
-  // Reuses the same HTTP_TIMEOUT_MS as the reachability check for
-  // consistency -- one source being slow shouldn't cost more time than
-  // the health check already budgets for "is this source responsive."
+  //
+  // First attempt at this fix (same day) only wrapped the fetch() call
+  // itself and cleared the timeout in a `finally` right after it
+  // resolved -- WRONG, and confirmed live: fetch() resolves once
+  // response HEADERS arrive, not once the body is fully received, so a
+  // server that answers promptly but then stalls mid-body-transfer
+  // sailed straight through that "fix" and hung indefinitely inside
+  // response.text() below, which had no timeout of its own at all. A
+  // live re-test after that first fix still hung for 240s+ with zero
+  // progress logged, proving the fetch()-only guard did nothing for
+  // this failure mode. Reuses SOURCE_HEALTH_CONFIG.HTTP_TIMEOUT_MS for
+  // consistency with the reachability check's own budget.
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), SOURCE_HEALTH_CONFIG.HTTP_TIMEOUT_MS);
 
-  let response: Response;
   try {
-    response = await fetch(url, {
-      headers: { "User-Agent": FEED_FETCH_USER_AGENT },
-      signal: controller.signal,
-    });
+    let response: Response;
+    try {
+      response = await fetch(url, {
+        headers: { "User-Agent": FEED_FETCH_USER_AGENT },
+        signal: controller.signal,
+      });
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : String(err);
+      throw new Error(`Feed fetch error: ${errorMsg}`);
+    }
+
+    if (!response.ok) {
+      throw new Error(`Feed fetch error: HTTP ${response.status}`);
+    }
+
+    // The abort signal stays armed through the body read/parse below --
+    // clearing it only in the outer `finally`, after this all completes
+    // (or fails) -- so a stalled body transfer is caught too, not just
+    // a stalled initial connection.
+    if (type === "rss") {
+      return await parseRSSFeed(response);
+    } else {
+      return await parseAPIFeed(response);
+    }
   } catch (err) {
-    const errorMsg = err instanceof Error ? err.message : String(err);
-    throw new Error(`Feed fetch error: ${errorMsg}`);
+    if (controller.signal.aborted) {
+      throw new Error(
+        `Feed fetch error: timed out after ${SOURCE_HEALTH_CONFIG.HTTP_TIMEOUT_MS}ms (response body never completed)`,
+      );
+    }
+    throw err;
   } finally {
     clearTimeout(timeout);
-  }
-
-  if (!response.ok) {
-    throw new Error(`Feed fetch error: HTTP ${response.status}`);
-  }
-
-  if (type === "rss") {
-    return await parseRSSFeed(response);
-  } else {
-    return await parseAPIFeed(response);
   }
 }
 
