@@ -1068,6 +1068,30 @@ conservative first values to revisit upward once several consecutive
 runs are confirmed completing well under budget — do not raise either
 without live evidence, per this incident's own repeated lesson.
 
+**Same-day follow-up (still 2026-09-14):** realized the endpoint's own
+idempotency gate means it runs once per *calendar day*, not once per
+hour — the "hourly" triggers above mostly just find the correct target
+hour and then skip. At 5/day, the real 2786-article backlog would take
+roughly a year and a half to clear. Raised `MAX_ARTICLES_PER_QUALITY_RUN`
+5→40, sized against a live-confirmed Gemini daily quota
+(`GenerateRequestsPerDayPerProjectPerModel-FreeTier`, quotaValue=20 per
+key × 8 keys ≈ 160/day ceiling) rather than guessed — full reasoning in
+the code comment. This one could **not** be verified same-day: the
+endpoint won't run again until tomorrow, and a separate manual test run
+today would spend today's already-partly-used Gemini quota without
+actually helping the backlog. First real proof is tomorrow's natural
+run — check it before assuming 40 holds, same discipline as every other
+number in this incident. Also asked the Director directly whether the
+missing GitHub→Vercel auto-deploy (found above) was intentional;
+Director asked to connect it — attempted via `vercel git connect`,
+which reports the repo as already linked, yet two real pushes still
+produced zero auto-deploys. Likely cause: the Vercel GitHub App is
+installed but not granted access to this specific repository (GitHub's
+own webhook list for the repo is empty). This needs the Director's own
+login to fix (via vercel.com/.../settings/git or
+github.com/settings/installations) — outside what this assistant can
+complete without credentials.
+
 ---
 
 *Vibe-Coding Journal — Project Decision Log — updated as decisions are made.*
