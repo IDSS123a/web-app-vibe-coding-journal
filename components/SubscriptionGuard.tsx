@@ -19,6 +19,7 @@
  */
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useRouter } from "next/navigation";
 import { useSession } from "@/lib/auth/use-session";
 
 type GuardState = "checking" | "anon" | "blocked" | "ok";
@@ -132,6 +133,7 @@ function PayPalTierButton({
 }
 
 export function SubscriptionGuard({ children }: { children: ReactNode }) {
+  const router = useRouter();
   const { token, loading } = useSession();
   const [state, setState] = useState<GuardState>("checking");
   const [accessReason, setAccessReason] = useState<string>("");
@@ -181,6 +183,12 @@ export function SubscriptionGuard({ children }: { children: ReactNode }) {
             setState("ok");
             setAwaitingWebhook(false);
             clearInterval(interval);
+            // 2026-09-14, Director's request: a new subscriber sees a
+            // concise one-page guide exactly once, right after payment
+            // -- this branch only fires while awaitingWebhook is true
+            // (a payment just happened in THIS session), never on a
+            // normal page load by an already-active subscriber.
+            router.push("/welcome");
           } else if (attempts >= 8) {
             // ~16s elapsed — stop polling, leave the user a manual next step.
             clearInterval(interval);
