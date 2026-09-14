@@ -1225,4 +1225,40 @@ are the explicit next wave, not forgotten scope.
 
 ---
 
+## PDL-031 — English-only scope broadened to the ENTIRE app (supersedes PDL-007's narrower scope); admin role granted to a second account
+
+**Date:** 2026-09-14
+
+**Decision:** PDL-007 (2026-07-18) confirmed English for Daily Report
+*content* only (AI-generated summaries, `why_it_matters`, hype-word
+list). The Director has now stated explicitly and emphatically: the
+**entire web app** is English-only — every UI string, fixture, and
+fallback, not just AI-generated editorial content. This is a real
+broadening, not a restatement.
+
+**Found and fixed the same day**: a Bosnian-language leftover in
+`app/dashboard/page.tsx`'s `EMPTY_STATE_REPORT` fixture (Najvažnije/
+Trendovi/Novi alati/Šta testirati danas — present since Sprint 1,
+predating this rule's existence) and in the gamification celebration
+copy shipped hours earlier the same day (Sprint 19/PDL-030's own
+"Dosegao si novi nivo" / "Vibe Coina", written in Bosnian per the
+Director's own brief wording at the time — now superseded by this
+broader rule). Both translated to English.
+
+**Consequence for future work:** any new UI copy, fixture, seed data,
+or fallback text must be written in English from the start — this is
+now a standing, whole-app rule, not scoped to editorial pipeline output
+only. Check for this explicitly in review, the same way the naming-
+discipline grep (`grep -ni 'sarajevo\|bosnia'`) is already a standing
+per-commit check.
+
+**Also this session:** granted the `admin` role to a second account
+(`mulalic.davor@outlook.com`, created by the Director through the
+normal signup flow after this assistant declined to set a password
+pasted in chat — see Sprint 19's handoff note). Per P-14, `admin` is
+the only elevated role this system has — there is no separate
+superadmin tier to grant beyond it.
+
+---
+
 *Vibe-Coding Journal — Project Decision Log — updated as decisions are made.*
