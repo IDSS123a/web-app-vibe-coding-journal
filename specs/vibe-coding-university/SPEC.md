@@ -1,10 +1,9 @@
 # SPEC — Vibe-Coding University (+ Vibe-Coding Dictionary)
 
-**Status: DRAFT — not yet confirmed by the Director.** Written per
-Commander's FEATURE_LIFECYCLE Step 1 (`/specify`) before any code, given
-the size of this request (2026-09-14). Do not implement against this
-document until the open questions below are resolved and the Director
-confirms the shape.
+**Status: CONFIRMED 2026-09-14 — proceeding to `/plan-feature`.** Written
+per Commander's FEATURE_LIFECYCLE Step 1 (`/specify`) before any code,
+given the size of this request. All open questions below resolved with
+the Director the same day.
 
 ## Purpose
 
@@ -29,9 +28,9 @@ learning path, not another feed.
 - As a **Premium subscriber**, I can look up an unfamiliar term in the
   Dictionary while reading any article or lesson, so that jargon never
   blocks understanding.
-- As a **Basic subscriber**, [ACCESS LEVEL NOT YET CONFIRMED — see Open
-  Questions] — does Basic get the Dictionary but not the University, or
-  neither?
+- As a **Basic subscriber**, I do NOT have access to either the
+  University or the Dictionary — both are Premium-exclusive (confirmed
+  2026-09-14), a clear tier line and an upgrade incentive.
 - As the **Director/admin**, I can see how the curriculum is structured
   and what "self-improves" actually means before it ships, so a vague
   promise doesn't become an uncontrolled AI-content-generation cost.
@@ -55,30 +54,34 @@ learning path, not another feed.
 - The chatbot (P-19) answering curriculum questions directly — P-19 is
   its own separately-scoped future sprint; not assumed folded in here
 
-## Open Questions — must be resolved before `/plan-feature`
+## Open Questions — all resolved 2026-09-14
 
-1. **What does "self-improving" mean, mechanically?** Two very
-   different systems, very different cost/risk:
-   - (a) An AI pipeline periodically GENERATES new lesson content from
-     newly-ingested articles (real, ongoing Gemini cost on top of the
-     existing daily pipeline's already-strained free-tier budget,
-     P-18/PDL-021 — the daily quota is already the active bottleneck,
-     see DECISION_LOG.md PDL-027).
-   - (b) The curriculum stays hand-authored/curated (by the Director,
-     or drafted once by an ACA and refined), and "improves" only in the
-     sense that individual lessons LINK OUT to relevant recent articles
-     as supplementary reading — no new AI generation cost, much
-     smaller build.
-2. **Term source for the Dictionary** — AI-extracted from article text
-   automatically, or a starting list the Director provides/approves?
-3. **Access tier** — University + Dictionary both Premium-only, or does
-   Basic get the Dictionary (lighter-weight) while University stays
-   Premium-only?
-4. **Curriculum authorship** — does the Director want to provide the
-   actual syllabus/topic list, or is drafting a first-pass curriculum
-   outline (topics, ordering, beginner→expert progression) part of what
-   this assistant should propose?
-5. **Relationship to gamification** — should XP/levels earned INSIDE
-   the University be the SAME coin/level system as the rest of the app
-   (Sprint 19), or a separate "course progress" track that's related
-   but distinct (e.g. "Level 3 course progress" vs. "Level 3 overall")?
+1. **Self-improvement mechanism**: a real AI pipeline periodically
+   GENERATES new lesson content from newly-ingested articles. This is a
+   real, ongoing Gemini cost on top of the existing daily pipeline's
+   already-strained free-tier budget (P-18/PDL-021; the daily quota is
+   already the active bottleneck, see DECISION_LOG.md PDL-027 — that
+   outage was caused in part by underestimating exactly this kind of
+   AI-call volume). `/plan-feature` MUST size this against the
+   confirmed ~160/day theoretical ceiling (8 keys × 20/day) and decide
+   a generation cadence that leaves headroom for the main pipeline —
+   the single highest-risk part of this feature, needs its own explicit
+   budget line, not an assumption.
+2. **Dictionary term source**: not asked directly, but AI-extraction
+   from article/lesson text is the consistent default given decision 1
+   (the same generation pipeline can reasonably emit both a lesson and
+   the terms it introduces) — flagged here explicitly so it can be
+   corrected if that assumption is wrong, rather than silently baked
+   into `/plan-feature`.
+3. **Access tier**: both University and Dictionary are Premium-only —
+   a clear tier line, no Dictionary access for Basic.
+4. **Curriculum authorship**: this assistant drafts a first-pass
+   curriculum outline (levels, topics, ordering) from the existing
+   article corpus; the Director reviews and corrects before it's
+   treated as final — not invented unilaterally and shipped without
+   review (M-4).
+5. **Gamification relationship**: University progress is a **separate
+   "course progress" track** (e.g. Beginner/Intermediate/Expert), not
+   folded into the app-wide Vibe Coins/level balance from Sprint 19.
+   Two distinct progress systems, related in spirit but independent in
+   data model and UI.
