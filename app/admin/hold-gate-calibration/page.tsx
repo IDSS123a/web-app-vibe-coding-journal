@@ -11,6 +11,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useSession } from "@/lib/auth/use-session";
+import { MarkdownContent } from "@/components/MarkdownContent";
 import type {
   HoldGateCalibrationRun,
   HoldGateCalibrationSuggestion,
@@ -176,9 +177,9 @@ export default function HoldGateCalibrationPage() {
               <p className="text-red-700 dark:text-red-300">Error: {latest.error_message}</p>
             )}
             {latest.summary_markdown && (
-              <pre className="mt-2 whitespace-pre-wrap rounded bg-gray-100 p-3 text-xs text-gray-700 dark:bg-gray-900 dark:text-gray-300">
-                {latest.summary_markdown}
-              </pre>
+              <div className="mt-2 rounded bg-gray-100 p-3 text-xs text-gray-700 dark:bg-gray-900 dark:text-gray-300">
+                <MarkdownContent>{latest.summary_markdown}</MarkdownContent>
+              </div>
             )}
           </div>
         )}

@@ -8,6 +8,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { useSession } from "@/lib/auth/use-session";
 import { PremiumGuard } from "@/components/PremiumGuard";
+import { MarkdownContent } from "@/components/MarkdownContent";
 import type { Course, Lesson } from "@/lib/validation/schemas";
 
 function LessonReader() {
@@ -80,7 +81,7 @@ function LessonReader() {
         <h1 className="mt-2 text-4xl font-black uppercase tracking-tighter text-black">
           {data.lesson.title}
         </h1>
-        <div className="mt-8 whitespace-pre-wrap text-sm leading-relaxed text-black">{data.lesson.body}</div>
+        <MarkdownContent className="mt-8">{data.lesson.body ?? ""}</MarkdownContent>
 
         <button
           type="button"

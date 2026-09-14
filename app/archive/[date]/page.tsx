@@ -3,6 +3,7 @@ import { getPublishedReportByDate, getArticlesForReport } from "@/features/archi
 import { getRelatedSourcesForArticles } from "@/features/pipeline/repository";
 import { formatPublicTimestamp } from "@/lib/time/format-public-timestamp";
 import { ArticleListWithBookmarks } from "@/components/ArticleListWithBookmarks";
+import { MarkdownContent } from "@/components/MarkdownContent";
 
 /**
  * A single historical Daily Report (Sprint 10). P-6: 404s rather than
@@ -66,8 +67,8 @@ export default async function ArchiveDatePage({
           {articles.length > 0 ? (
             <ArticleListWithBookmarks articles={articles} relatedSources={relatedSources} />
           ) : (
-            <div className="swiss-grid-pattern mt-6 whitespace-pre-wrap border-2 border-black bg-[#F2F2F2] p-6 font-mono text-sm text-black">
-              {report.markdown}
+            <div className="swiss-grid-pattern mt-6 border-2 border-black bg-[#F2F2F2] p-6">
+              <MarkdownContent>{report.markdown}</MarkdownContent>
             </div>
           )}
         </div>

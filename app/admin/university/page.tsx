@@ -8,6 +8,7 @@
 
 import { useEffect, useState } from "react";
 import { useSession } from "@/lib/auth/use-session";
+import { MarkdownContent } from "@/components/MarkdownContent";
 import type { Lesson } from "@/lib/validation/schemas";
 
 export default function AdminUniversityPage() {
@@ -80,8 +81,8 @@ export default function AdminUniversityPage() {
         {lessons.map((lesson) => (
           <div key={lesson.id} className="border-4 border-black p-8">
             <h3 className="text-2xl font-black uppercase tracking-tight text-black">{lesson.title}</h3>
-            <div className="swiss-grid-pattern mt-4 max-h-96 overflow-y-auto border-2 border-black bg-[#F2F2F2] p-4 text-sm text-black">
-              <pre className="whitespace-pre-wrap font-sans">{lesson.body}</pre>
+            <div className="swiss-grid-pattern mt-4 max-h-96 overflow-y-auto border-2 border-black bg-[#F2F2F2] p-4 text-black">
+              <MarkdownContent>{lesson.body ?? ""}</MarkdownContent>
             </div>
             {lesson.candidate_terms.length > 0 && (
               <div className="mt-4">
