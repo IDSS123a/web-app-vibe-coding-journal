@@ -1261,4 +1261,35 @@ superadmin tier to grant beyond it.
 
 ---
 
+## PDL-032 — Vibe-Coding University + Dictionary shipped, first version
+
+**Date:** 2026-09-14/15
+
+**Decision:** Full FEATURE_LIFECYCLE followed for this feature given its
+scale — `specs/vibe-coding-university/SPEC.md` (open questions resolved
+with the Director the same day: AI-generated self-improving curriculum,
+weekly not daily cadence, both Premium-only, this assistant drafts the
+curriculum outline for Director review, course progress kept separate
+from Sprint 19's coin/level system) then `PLAN.md` (architecture, AI
+cost budget) before any code. Shipped: full data model, weekly
+generation pipeline with its own GitHub Actions trigger
+(`university-generate-trigger.yml`), admin review queue mirroring
+`/admin/review-queue`'s pattern, public University + Dictionary UI,
+all Premium-gated and Swiss-styled (P-20) from the start. See
+`sprints/SPRINT_20.md` for the full account, including a real bug
+caught before shipping (candidate Dictionary terms could have leaked
+into the public dictionary from a lesson that was later rejected —
+fixed via migration 015 before any real traffic hit it).
+
+**Open, not closed:** the curriculum outline
+(`CURRICULUM_DRAFT.md`) is this assistant's proposal, confirmed only at
+the shape level (3 levels, 15 slots) — the Director has not yet
+reviewed each individual lesson title in detail. The weekly generation
+cron has a trigger now but has not fired yet against real data. Both
+should be checked before treating this feature as fully proven, same
+discipline as every other "shipped but not yet observed live" item
+this project tracks explicitly rather than assumes.
+
+---
+
 *Vibe-Coding Journal — Project Decision Log — updated as decisions are made.*

@@ -1,0 +1,30 @@
+name: University Generate Trigger
+
+# Weekly Vibe-Coding University lesson generation (specs/vibe-coding-
+# university/PLAN.md, DECISION_LOG.md PDL-032). Unlike the daily
+# digest's hourly-digest-trigger.yml, this endpoint is idempotent per
+# ISO WEEK (features/university/domain.ts getIsoWeekString), not per
+# local target hour -- a single weekly firing is enough; no
+# hourly-poke/target-hour-gate pattern needed here. A missed firing
+# just means the next lesson generates a bit later, not a functional
+# problem the way a fully-missed daily digest would be.
+
+on:
+  schedule:
+    # Monday 06:00 UTC -- arbitrary, low-traffic timing; not
+    # coordinated with the daily digest's own (deliberately private,
+    # see lib/cron/schedule-gate.ts) target hour, since the two crons
+    # already have separate Gemini key budgets and don't need to avoid
+    # each other.
+    - cron: "0 6 * * 1"
+  workflow_dispatch: {}
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call university-generate endpoint
+        run: |
+          curl --fail-with-body -sS -X POST \
+            "${{ secrets.DIGEST_ENDPOINT_URL }}/api/cron/university-generate" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
