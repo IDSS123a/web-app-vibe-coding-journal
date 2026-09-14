@@ -41,8 +41,55 @@ const FEED_FETCH_USER_AGENT =
 // few failed runs, unnoticed for months).
 const INTER_SOURCE_DELAY_MS = 1500;
 
+// Found live 2026-09-14: a REAL production outage, not just a slow test
+// route -- the actual hourly cron started hitting Vercel's own
+// FUNCTION_INVOCATION_TIMEOUT (killed after 300s) with the very last
+// log line being "Phase 1: Source Collector", for three consecutive
+// hourly runs, after the per-request fetch timeouts (checkSourceReachability,
+// parseFeed) had already shipped and should have bounded every external
+// HTTP call to 5s each. Those fetch-level timeouts do NOT cover every
+// operation in a single source's processing -- specifically the
+// Supabase calls (updateSource, the per-article upsert loop in the
+// caller below), which have no timeout anywhere in this codebase. Any
+// one of those hanging (a transient Supabase slowdown, a connection
+// pool issue, anything) would stall the per-source loop indefinitely
+// with no per-request timeout to catch it, exactly matching the
+// observed symptom (stuck in Phase 1, no further progress, no error).
+//
+// Rather than hunt down and individually time-bind every Supabase call
+// (a bigger, slower change under active-outage time pressure), this
+// puts a hard ceiling on the ENTIRE per-source operation (reachability
+// + fetch + parse + every DB write) via Promise.race — whatever is
+// actually stuck, the loop moves on after this budget instead of
+// taking the whole cron run down with it. This does not cancel the
+// underlying stuck operation (Promise.race has no way to do that for
+// an already-in-flight Supabase call) -- it only prevents it from
+// blocking further progress. A future, more surgical fix would thread
+// real cancellation through every Supabase call individually; this is
+// the fast, safe stopgap for an active outage.
+const SOURCE_PROCESSING_BUDGET_MS = 10000;
+
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(
+      () => reject(new Error(`${label} timed out after ${ms}ms`)),
+      ms,
+    );
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (err) => {
+        clearTimeout(timer);
+        reject(err);
+      },
+    );
+  });
 }
 
 interface ParsedArticle {
@@ -67,98 +114,25 @@ export async function collectArticlesFromAllSources(): Promise<{
   let articlesAdded = 0;
   let sourcesProcessed = 0;
 
-  try {
-    const sources = await getEnabledSources();
+  // Extracted so the whole thing (every step, every Supabase call) can be
+  // raced against SOURCE_PROCESSING_BUDGET_MS below -- see that
+  // constant's comment for why. Mutates errors/articlesAdded via closure,
+  // unchanged from before this was a separate function. Uses `return`
+  // instead of the original code's `continue` for its two early-exit
+  // cases (unreachable / zero articles) -- now that this is its own
+  // function, `return` is the equivalent for "nothing more to do for
+  // this source." One small, deliberate behavior simplification: the
+  // inter-source delay is now applied unconditionally after every
+  // source (including these early-exit cases), not skipped for them --
+  // simpler, and if anything more conservative about not bursting a
+  // host, never less.
+  async function processSource(source: Awaited<ReturnType<typeof getEnabledSources>>[number]): Promise<void> {
+    try {
+      // Step 1: Health check (P-7: reachability)
+      const isReachable = await checkSourceReachability(source.url);
 
-    for (const source of sources) {
-      sourcesProcessed++;
-
-      try {
-        // Step 1: Health check (P-7: reachability)
-        const isReachable = await checkSourceReachability(source.url);
-
-        if (!isReachable) {
-          // Source is down — increment failure count
-          const newFailureCount = source.failure_count + 1;
-          const shouldDisable = shouldAutoDisableSource(newFailureCount);
-
-          await updateSource(source.id, {
-            failure_count: newFailureCount,
-            enabled: !shouldDisable,
-          });
-
-          if (shouldDisable) {
-            errors.push({
-              sourceId: source.id,
-              error: `Source auto-disabled after ${newFailureCount} consecutive failures`,
-            });
-          } else {
-            errors.push({
-              sourceId: source.id,
-              error: `Source unreachable (failure ${newFailureCount}/${SOURCE_HEALTH_CONFIG.MAX_FAILURES})`,
-            });
-          }
-
-          continue;
-        }
-
-        // Step 2: Parse feed
-        const articles = await parseFeed(source.url, source.type);
-
-        if (articles.length === 0) {
-          errors.push({
-            sourceId: source.id,
-            error: "Source parsed but returned zero articles",
-          });
-          // Reset failure count — source is healthy, just no new articles
-          await updateSource(source.id, {
-            last_polled: new Date().toISOString(),
-            failure_count: 0,
-          });
-          continue;
-        }
-
-        // Step 3: Store articles with source_id
-        for (const article of articles) {
-          const hash = generateArticleHash(article.title, article.url);
-
-          if (!supabaseAdmin) {
-            throw new Error("Admin client not available");
-          }
-
-          const { error } = await supabaseAdmin
-            .from("articles")
-            .upsert(
-              {
-                title: article.title,
-                url: article.url,
-                source_id: source.id,
-                source: source.name,
-                published_at: article.published_at,
-                raw_summary: article.summary,
-                hash,
-              },
-              { onConflict: "hash" }, // Don't re-insert if hash already exists (duplicate)
-            );
-
-          if (error) {
-            throw new Error(`Failed to store article: ${error.message}`);
-          }
-
-          articlesAdded++;
-        }
-
-        // Step 4: Update source metadata (success)
-        await updateSource(source.id, {
-          last_polled: new Date().toISOString(),
-          last_success: new Date().toISOString(),
-          failure_count: 0, // Reset on success
-        });
-      } catch (sourceError) {
-        // Source-level error — log and continue with next source
-        const errorMsg =
-          sourceError instanceof Error ? sourceError.message : String(sourceError);
-
+      if (!isReachable) {
+        // Source is down — increment failure count
         const newFailureCount = source.failure_count + 1;
         const shouldDisable = shouldAutoDisableSource(newFailureCount);
 
@@ -167,15 +141,119 @@ export async function collectArticlesFromAllSources(): Promise<{
           enabled: !shouldDisable,
         });
 
-        // P-7: errorMsg is already self-describing (e.g. "Feed fetch error:
-        // ..." for a transient reachability-adjacent failure vs "Feed parse
-        // error: ..." for a genuine parse failure, or "Failed to store
-        // article: ..." for a storage issue) — no blanket "Parse error:"
-        // prefix here, that used to conflate all three into one category.
+        if (shouldDisable) {
+          errors.push({
+            sourceId: source.id,
+            error: `Source auto-disabled after ${newFailureCount} consecutive failures`,
+          });
+        } else {
+          errors.push({
+            sourceId: source.id,
+            error: `Source unreachable (failure ${newFailureCount}/${SOURCE_HEALTH_CONFIG.MAX_FAILURES})`,
+          });
+        }
+
+        return;
+      }
+
+      // Step 2: Parse feed
+      const articles = await parseFeed(source.url, source.type);
+
+      if (articles.length === 0) {
         errors.push({
           sourceId: source.id,
-          error: errorMsg,
+          error: "Source parsed but returned zero articles",
         });
+        // Reset failure count — source is healthy, just no new articles
+        await updateSource(source.id, {
+          last_polled: new Date().toISOString(),
+          failure_count: 0,
+        });
+        return;
+      }
+
+      // Step 3: Store articles with source_id
+      for (const article of articles) {
+        const hash = generateArticleHash(article.title, article.url);
+
+        if (!supabaseAdmin) {
+          throw new Error("Admin client not available");
+        }
+
+        const { error } = await supabaseAdmin
+          .from("articles")
+          .upsert(
+            {
+              title: article.title,
+              url: article.url,
+              source_id: source.id,
+              source: source.name,
+              published_at: article.published_at,
+              raw_summary: article.summary,
+              hash,
+            },
+            { onConflict: "hash" }, // Don't re-insert if hash already exists (duplicate)
+          );
+
+        if (error) {
+          throw new Error(`Failed to store article: ${error.message}`);
+        }
+
+        articlesAdded++;
+      }
+
+      // Step 4: Update source metadata (success)
+      await updateSource(source.id, {
+        last_polled: new Date().toISOString(),
+        last_success: new Date().toISOString(),
+        failure_count: 0, // Reset on success
+      });
+    } catch (sourceError) {
+      // Source-level error — log and continue with next source
+      const errorMsg =
+        sourceError instanceof Error ? sourceError.message : String(sourceError);
+
+      const newFailureCount = source.failure_count + 1;
+      const shouldDisable = shouldAutoDisableSource(newFailureCount);
+
+      await updateSource(source.id, {
+        failure_count: newFailureCount,
+        enabled: !shouldDisable,
+      });
+
+      // P-7: errorMsg is already self-describing (e.g. "Feed fetch error:
+      // ..." for a transient reachability-adjacent failure vs "Feed parse
+      // error: ..." for a genuine parse failure, or "Failed to store
+      // article: ..." for a storage issue) — no blanket "Parse error:"
+      // prefix here, that used to conflate all three into one category.
+      errors.push({
+        sourceId: source.id,
+        error: errorMsg,
+      });
+    }
+  }
+
+  try {
+    const sources = await getEnabledSources();
+
+    for (const source of sources) {
+      sourcesProcessed++;
+
+      try {
+        await withTimeout(processSource(source), SOURCE_PROCESSING_BUDGET_MS, source.name);
+      } catch (raceError) {
+        // Only reachable if processSource() itself somehow throws past
+        // its own catch (shouldn't happen — defensive), or the
+        // SOURCE_PROCESSING_BUDGET_MS ceiling won the race. In the
+        // timeout case specifically: deliberately does NOT attempt
+        // another Supabase write here to record the failure — the same
+        // class of call already timed out inside processSource(), and
+        // retrying immediately risks hanging again right here. The
+        // in-memory error below is still recorded either way; next
+        // hour's run re-tries this source's health from scratch.
+        const msg = raceError instanceof Error ? raceError.message : String(raceError);
+        console.error(`[COLLECT] "${source.name}" did not complete within ${SOURCE_PROCESSING_BUDGET_MS}ms: ${msg}`);
+        errors.push({ sourceId: source.id, error: `Processing exceeded time budget: ${msg}` });
       }
 
       // Politeness delay before the next source -- see
