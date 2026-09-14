@@ -378,12 +378,31 @@ async function deduplicateArticles(): Promise<{
 // RESOURCE_EXHAUSTED and rotated through multiple of the 8 keys before
 // succeeding, and that real per-call latency (plus Gemini 2.5 Flash's
 // own "thinking" tokens, see DECISION_LOG.md's Phase-2 finding) added
-// up well past the remaining budget. Lowered to 5 -- much slower
-// backlog drain per run, but reliably finishes within budget even
-// under heavy rate-limiting, which matters far more than speed while
-// recovering from an active outage. Revisit upward once the backlog is
-// actually cleared and this is back to processing normal daily volume.
-const MAX_ARTICLES_PER_QUALITY_RUN = 5;
+// up well past the remaining budget. Lowered to 5 to survive the
+// active outage (PDL-027).
+//
+// Raised 5 -> 40 the same day, PDL-027 follow-up: this endpoint only
+// runs once per calendar day (the idempotency check earlier in this
+// file skips every subsequent trigger once today's report exists), not
+// once per hour -- at 5/day, the real 2786-article backlog measured
+// live during the outage would take roughly a year and a half to
+// drain. 5 was sized for a crash that turned out to have two OTHER
+// causes (gemini-provider.ts's missing fetch timeout, and this file's
+// own uncapped Dedup phase -- both fixed same day, see PDL-027); it was
+// never actually validated as the right steady-state throughput once
+// those were gone. 40 is chosen against Gemini's own confirmed daily
+// quota (a live rate-limit error during the outage surfaced
+// quotaId=GenerateRequestsPerDayPerProjectPerModel-FreeTier,
+// quotaValue=20 per key -- 8 keys is a ~160/day theoretical ceiling),
+// leaving comfortable headroom for classify/summarize's extra calls on
+// articles that pass P-0, and matching the very first value this
+// constant was ever intended to hold before the outage forced it down.
+// Cannot be re-verified same-day (the once-daily cadence above, plus
+// spending today's already-partially-used Gemini quota on a duplicate
+// test run instead of real backlog would waste it) -- the first real
+// proof is tomorrow's natural daily run. Revisit again (up or down)
+// once that's confirmed, rather than assuming this number is final.
+const MAX_ARTICLES_PER_QUALITY_RUN = 40;
 
 /**
  * Phase 3: Quality Engine & Classifier & AI Summary
