@@ -4,10 +4,14 @@ export default function HomePage() {
       <div className="w-full max-w-2xl text-center">
         <h1 className="mb-4 text-5xl font-bold">Vibe-Coding Journal</h1>
         <p className="mb-2 text-xl text-gray-600">
-          Automated daily intelligence digest for vibe-coders
+          Your daily edge in the AI coding revolution.
         </p>
         <p className="mb-8 text-gray-600">
-          Stay updated with news, tools, and insights relevant to AI-powered software development.
+          The AI development landscape changes every day. New models. New
+          tools. New agents. New workflows. New possibilities. Vibe-Coding
+          Journal watches the landscape for you — filters the noise,
+          connects the dots, and delivers the intelligence you need to
+          build better and faster.
         </p>
 
         <div className="space-y-4">
@@ -15,7 +19,7 @@ export default function HomePage() {
             href="/register"
             className="inline-block rounded-lg bg-blue-600 px-8 py-3 text-white hover:bg-blue-700"
           >
-            Get Started
+            Enter the Journal
           </a>
           <p className="text-sm text-gray-600">
             Already a member?{" "}
@@ -25,14 +29,25 @@ export default function HomePage() {
           </p>
         </div>
 
-        <div className="mt-12 grid grid-cols-1 gap-6 md:grid-cols-3">
+        <h2 className="mt-12 text-2xl font-bold">10 Minutes. Every Day. Stay Ahead.</h2>
+        <p className="mt-2 text-sm text-gray-600">
+          A daily intelligence briefing built to keep you informed without overwhelming you.
+        </p>
+
+        <div className="mt-8 grid grid-cols-1 gap-6 md:grid-cols-3">
           <div>
-            <h3 className="mb-2 font-semibold">Daily Digest</h3>
-            <p className="text-sm text-gray-600">One curated page per day, readable in under 10 minutes</p>
+            <h3 className="mb-2 font-semibold">Curated for Vibe-Coders</h3>
+            <p className="text-sm text-gray-600">
+              AI coding agents, platforms, models, tools, workflows, techniques, and the
+              developments that actually affect how you build.
+            </p>
           </div>
           <div>
-            <h3 className="mb-2 font-semibold">Vibe-Coder Focused</h3>
-            <p className="text-sm text-gray-600">News and tools specifically relevant to AI-assisted development</p>
+            <h3 className="mb-2 font-semibold">Know. Test. Decide.</h3>
+            <p className="text-sm text-gray-600">
+              Every insight goes beyond the headline: what happened, why it matters, and what
+              you should do next.
+            </p>
           </div>
           <div>
             <h3 className="mb-2 font-semibold">Actionable</h3>
