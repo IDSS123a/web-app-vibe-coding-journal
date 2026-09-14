@@ -96,20 +96,42 @@ export async function markArticleAsDuplicate(
 }
 
 /**
- * Get all articles that are not marked as duplicates
- * Used by downstream pipeline stages (Quality Engine, etc.)
+ * Get articles that are not marked as duplicates and not yet scored.
+ * Used by both the Duplicate Engine (uncapped — cheap, no AI calls) and
+ * the Quality Engine (capped via `limit` — see that call site).
+ *
+ * Found live 2026-09-14, active outage: this query was completely
+ * unbounded, the same class of bug already found and fixed once this
+ * project (getArticlesForDailyReport, 2026-09-10). A run that fails
+ * partway through Quality Engine (real AI calls per article) leaves its
+ * articles unscored; the NEXT run's call to this same function picks up
+ * ALL historically-unscored articles, not just its own new ones — after
+ * three consecutive Phase-1 timeouts the same day, this had grown to
+ * 1000 unscored articles, and Quality Engine trying to AI-score all
+ * 1000 in one run is itself what then exceeded the 300s function
+ * budget (a second, different bottleneck than the one that started the
+ * outage). `limit` lets a caller bound how many rows it takes on in one
+ * run, capping the whole run's incurred time regardless of backlog size,
+ * and letting the backlog drain safely across multiple runs instead of
+ * one run trying to consume it entirely.
  */
-export async function getNonDuplicateArticles(): Promise<Article[]> {
+export async function getNonDuplicateArticles(limit?: number): Promise<Article[]> {
   if (!supabaseAdmin) {
     throw new Error("Admin client not available");
   }
 
-  const { data, error } = await supabaseAdmin
+  let query = supabaseAdmin
     .from("articles")
     .select("*")
     .is("duplicate_of", null)
     .is("confidence_score", null) // Articles not yet processed by Quality Engine
     .order("published_at", { ascending: false });
+
+  if (limit !== undefined) {
+    query = query.limit(limit);
+  }
+
+  const { data, error } = await query;
 
   if (error) {
     throw new Error(`Failed to fetch non-duplicate articles: ${error.message}`);

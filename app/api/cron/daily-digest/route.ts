@@ -337,6 +337,27 @@ async function deduplicateArticles(): Promise<{
   }
 }
 
+// Found live 2026-09-14, active outage: getNonDuplicateArticles() with
+// no limit meant a backlog left by earlier failed runs (1000 unscored
+// articles, after three consecutive Phase-1 timeouts the same day) made
+// THIS phase itself exceed the function's 300s budget trying to
+// AI-score all of them in one run — see that function's own doc
+// comment (features/pipeline/repository.ts) for the full incident.
+// Capping this phase to a bounded chunk per run guarantees a single
+// run's Quality Engine work can never itself exceed the time budget,
+// regardless of how large the backlog gets; the rest is naturally
+// picked up by the next hourly run. Sized conservatively: each article
+// can need up to 2-3 sequential Gemini calls (assessRelevance,
+// summarize, occasionally classify), and Gemini 2.5 Flash's own
+// "thinking" tokens (see DECISION_LOG.md's Phase-2 finding) mean a
+// single call can genuinely take several seconds -- 20 articles
+// leaves real margin against the 300s total budget after Phases
+// 1/2/4 also take their share, rather than cutting it close. At a
+// once-per-hour cadence this still drains a large backlog within a
+// day or so, and keeps pace with normal (non-backlog) daily volume,
+// which has historically been well under 20*24.
+const MAX_ARTICLES_PER_QUALITY_RUN = 20;
+
 /**
  * Phase 3: Quality Engine & Classifier & AI Summary
  * Scores all articles, assigns categories, and generates P-3-compliant
@@ -372,7 +393,7 @@ async function runQualityEngine(): Promise<{
   let aiModelDeprecated = false;
 
   try {
-    const articles = await getNonDuplicateArticles();
+    const articles = await getNonDuplicateArticles(MAX_ARTICLES_PER_QUALITY_RUN);
     console.log(`[QUALITY] Processing ${articles.length} articles`);
     const aiProvider = getAIProvider();
 
