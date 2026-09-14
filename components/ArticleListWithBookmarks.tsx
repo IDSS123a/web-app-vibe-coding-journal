@@ -21,6 +21,16 @@
  * shown as "Also covered by" instead of the coverage being silently
  * hidden -- fetched via features/pipeline/repository.ts
  * getRelatedSourcesForArticles() by the page, not this component.
+ *
+ * Phase 5 (Daily/Weekly Intelligence Format): this is the PRIMARY
+ * user-facing rendering (the report's raw `markdown` is only a fallback
+ * for pre-Sprint-10 reports with no linked articles, see
+ * app/dashboard/page.tsx), so it needs the same WHAT HAPPENED / WHY IT
+ * MATTERS / EVIDENCE / CONFIDENCE / WHAT TO WATCH fields as
+ * formatDigestEntry() (app/api/cron/daily-digest/route.ts) -- found
+ * live while building that function that who_it_affects/worth_trying
+ * were already being collected by summarize() but never actually shown
+ * anywhere, in the markdown OR here.
  */
 
 import { useEffect, useState } from "react";
@@ -135,6 +145,13 @@ export function ArticleListWithBookmarks({
               <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
                 <span className="font-medium">Why it matters: </span>
                 {article.why_it_matters}
+                {article.who_it_affects ? ` (${article.who_it_affects})` : ""}
+              </p>
+            )}
+            {article.what_to_watch && (
+              <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+                <span className="font-medium">What to watch: </span>
+                {article.what_to_watch}
               </p>
             )}
             <div className="mt-3 flex flex-wrap gap-2 text-xs text-gray-500 dark:text-gray-500">
@@ -143,6 +160,24 @@ export function ArticleListWithBookmarks({
               )}
               {article.source && (
                 <span className="rounded-full bg-gray-100 px-2 py-0.5 dark:bg-gray-800">{article.source}</span>
+              )}
+              {article.confidence_score != null && (
+                <span className="rounded-full bg-gray-100 px-2 py-0.5 dark:bg-gray-800">
+                  {Math.round(article.confidence_score * 100)}% confidence
+                </span>
+              )}
+              {article.worth_trying && (
+                <span
+                  className={`rounded-full px-2 py-0.5 ${
+                    article.worth_trying === "yes"
+                      ? "bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300"
+                      : article.worth_trying === "no"
+                        ? "bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300"
+                        : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"
+                  }`}
+                >
+                  Worth trying: {article.worth_trying === "yes" ? "Yes" : article.worth_trying === "no" ? "No" : "Maybe"}
+                </span>
               )}
             </div>
             {relatedSources?.[article.id] && relatedSources[article.id]!.length > 0 && (

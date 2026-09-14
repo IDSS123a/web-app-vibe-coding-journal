@@ -28,6 +28,7 @@ function makeArticle(overrides: Partial<Article> = {}): Article {
     why_it_matters: null,
     who_it_affects: null,
     worth_trying: null,
+    what_to_watch: null,
     importance_score: null,
     category: null,
     quality_flag: null,

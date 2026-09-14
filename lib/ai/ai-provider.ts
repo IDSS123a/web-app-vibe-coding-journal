@@ -35,6 +35,12 @@ export interface SummarizeOutput {
   who_it_affects: string;
   worth_trying: "yes" | "no" | "maybe";
   confidence: number; // 0-1
+  // Phase 5 (specs/vibe-coding-intelligence-engine/ROADMAP.md, Daily/
+  // Weekly Intelligence Format, migration 012): a forward-looking note
+  // -- what to look for next on this story (a follow-up release, a
+  // stability signal, a metric to watch) -- folded into this same call,
+  // not a new one, same principle as Phase 3's Evidence Framing.
+  what_to_watch: string;
 }
 
 export interface ClassifyInput {
@@ -125,6 +131,7 @@ class NoOpProvider implements AIProvider {
       who_it_affects: "",
       worth_trying: "maybe",
       confidence: 0,
+      what_to_watch: "",
     };
   }
 

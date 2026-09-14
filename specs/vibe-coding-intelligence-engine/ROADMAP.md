@@ -104,6 +104,14 @@ MATTERS / EVIDENCE / CONFIDENCE / WHAT TO WATCH shape for the
 highest-impact items, with a weekly rollup (major shifts, reality
 check, tools to watch) as a new, lower-frequency report type.
 
+**Status 2026-09-14: daily half shipped** — every digest entry (both
+the report markdown and the primary `/dashboard`+`/archive` UI) now
+uses the five-part format; `what_to_watch` (migration 012) is the only
+new field, folded into the existing `summarize()` call. **Weekly
+rollup not started** — deliberately deferred as its own follow-up
+(real architectural surface area: schedule, data model, UI), not
+bundled into the same sprint. See `sprints/SPRINT_18.md`.
+
 ### Not phased yet — explicitly parked
 Chatbot + knowledge graph + alerts: real ideas, correctly out of scope
 until (a) the Director opens P-19's dedicated chatbot sprint, and (b)

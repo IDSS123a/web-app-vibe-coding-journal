@@ -54,6 +54,11 @@ export const articleSchema = z.object({
   why_it_matters: z.string().nullable(),
   who_it_affects: z.string().nullable(),
   worth_trying: z.enum(["yes", "no", "maybe"] as const).nullable(),
+  // Phase 5 (specs/vibe-coding-intelligence-engine/ROADMAP.md, migration
+  // 012): forward-looking "what to look for next" note, part of the
+  // WHAT HAPPENED/WHY IT MATTERS/EVIDENCE/CONFIDENCE/WHAT TO WATCH
+  // digest format.
+  what_to_watch: z.string().nullable(),
   importance_score: z.number().int().min(1).max(10).nullable(),
   category: z.string().nullable(), // enum per project brief §5
   quality_flag: z

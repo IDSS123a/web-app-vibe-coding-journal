@@ -22,6 +22,7 @@ import {
   updateArticleCategory,
   updateArticleSummary,
   getArticlesForDailyReport,
+  getRelatedSourcesForArticles,
 } from "@/features/pipeline/repository";
 import { upsertDailyReport, getDailyReportByDate, linkArticlesToReport } from "@/features/daily-report/repository";
 import { isTargetOperationsHour, isPastCatchUpDeadline } from "@/lib/cron/schedule-gate";
@@ -37,7 +38,7 @@ import { sendReviewQueueAlert } from "@/lib/email/resend";
 import { ensureAIProviderInitialized } from "@/lib/ai/init";
 import { getAIProvider } from "@/lib/ai/ai-provider";
 import { GeminiKeysExhaustedError } from "@/lib/ai/gemini-provider";
-import { assessRelevanceOutputSchema } from "@/lib/validation/schemas";
+import { assessRelevanceOutputSchema, type Article } from "@/lib/validation/schemas";
 
 const CRON_SECRET = process.env.CRON_SECRET || "dev-secret-change-in-production";
 
@@ -542,6 +543,7 @@ async function runQualityEngine(): Promise<{
             why_it_matters: summary.why_it_matters,
             who_it_affects: summary.who_it_affects,
             worth_trying: summary.worth_trying,
+            what_to_watch: summary.what_to_watch,
           });
           articlesSummarized++;
         } catch (summarizeError) {
@@ -594,6 +596,48 @@ async function runQualityEngine(): Promise<{
       errors: [errorMsg],
     };
   }
+}
+
+/**
+ * Phase 5 (specs/vibe-coding-intelligence-engine/ROADMAP.md, Daily/
+ * Weekly Intelligence Format): restructures each digest entry into the
+ * mandate's WHAT HAPPENED / WHY IT MATTERS / EVIDENCE / CONFIDENCE /
+ * WHAT TO WATCH shape, replacing the original "simple aggregation for
+ * MVP" markdown (which only ever rendered summary/Source/Category/Why
+ * it matters -- who_it_affects and worth_trying were collected by
+ * summarize() this whole time but never actually shown to a reader).
+ * Every field here already existed except what_to_watch (migration
+ * 012, folded into the existing summarize() call, no new AI cost).
+ * `alsoCoveredBy` comes from getRelatedSourcesForArticles() (Phase 4,
+ * Sprint 17) -- multi-source coverage is real corroborating evidence,
+ * not just a UI nicety, so it belongs in the EVIDENCE line here too,
+ * not only in the dashboard/archive components that already show it.
+ */
+function formatDigestEntry(article: Article, alsoCoveredBy: string[]): string {
+  const confidencePct =
+    article.confidence_score != null ? `${Math.round(article.confidence_score * 100)}%` : "—";
+  const relevance = article.relevance_score != null ? `${article.relevance_score}/100` : "—";
+  const evidence = [
+    `Reported by ${article.source || "Unknown"}`,
+    alsoCoveredBy.length > 0 ? `also covered by ${alsoCoveredBy.join(", ")}` : null,
+    `relevance ${relevance}`,
+  ]
+    .filter((part): part is string => part !== null)
+    .join(", ");
+  const worthTrying =
+    article.worth_trying === "yes" ? "Yes" : article.worth_trying === "no" ? "No" : "Maybe";
+
+  return `## ${article.title}
+
+**What happened:** ${article.summary || article.raw_summary || "TBD"}
+
+**Why it matters:** ${article.why_it_matters || "TBD"}${article.who_it_affects ? ` (${article.who_it_affects})` : ""}
+
+**Evidence:** ${evidence}
+
+**Confidence:** ${confidencePct} — **Worth trying:** ${worthTrying}
+
+**What to watch:** ${article.what_to_watch || "—"}`;
 }
 
 /**
@@ -657,15 +701,11 @@ async function generateDailyReport(
       }
     }
 
-    // Generate markdown (simple aggregation for MVP)
+    // Phase 5: WHAT HAPPENED / WHY IT MATTERS / EVIDENCE / CONFIDENCE /
+    // WHAT TO WATCH format — see formatDigestEntry() above.
+    const relatedSources = await getRelatedSourcesForArticles(articles.map((a) => a.id));
     const markdown = articles
-      .map(
-        (a) => `## ${a.title}
-${a.summary || a.raw_summary || ""}
-- Source: ${a.source || "Unknown"}
-- Category: ${a.category || "Uncategorized"}
-- Why it matters: ${a.why_it_matters || "TBD"}`,
-      )
+      .map((a) => formatDigestEntry(a, relatedSources.get(a.id) ?? []))
       .join("\n\n");
 
     // Determine review status

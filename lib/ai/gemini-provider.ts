@@ -388,7 +388,8 @@ Summarize the following article content for the digest. Return ONLY a JSON objec
   "why_it_matters": string,        // one to two sentences
   "who_it_affects": string,        // who should care, one sentence
   "worth_trying": "yes" | "no" | "maybe",  // fold your one-sentence justification into why_it_matters, do not add a separate field
-  "confidence": number             // your confidence 0-1 that this summary is accurate and complete
+  "confidence": number,            // your confidence 0-1 that this summary is accurate and complete
+  "what_to_watch": string          // one sentence, forward-looking: what to look for NEXT on this story (a promised follow-up, a stability/adoption signal, a metric that would confirm or undercut the vendor's claim) -- not a restatement of why_it_matters
 }
 
 Article content:
@@ -407,6 +408,7 @@ ${input.text.slice(0, input.maxLength ?? 4000)}
           ? result.worth_trying
           : "maybe",
       confidence: typeof result.confidence === "number" ? result.confidence : 0.5,
+      what_to_watch: typeof result.what_to_watch === "string" ? result.what_to_watch : "",
     };
   }
 

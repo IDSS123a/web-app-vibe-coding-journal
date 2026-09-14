@@ -196,6 +196,8 @@ export async function updateArticleRelevance(
  * Update article with AI-generated summary fields (Sprint 05: GeminiProvider.summarize())
  * P-3: why_it_matters / who_it_affects / worth_trying are the required
  * actionable-judgment fields; summary is the editorial-voice text.
+ * Phase 5 (specs/vibe-coding-intelligence-engine/ROADMAP.md, migration
+ * 012): what_to_watch is the format's forward-looking note.
  */
 export async function updateArticleSummary(
   articleId: string,
@@ -204,6 +206,7 @@ export async function updateArticleSummary(
     why_it_matters: string;
     who_it_affects: string;
     worth_trying: "yes" | "no" | "maybe";
+    what_to_watch: string;
   },
 ): Promise<void> {
   if (!supabaseAdmin) {
