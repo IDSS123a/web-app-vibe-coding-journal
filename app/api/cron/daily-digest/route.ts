@@ -254,6 +254,28 @@ export async function POST(request: NextRequest) {
   }
 }
 
+// Found live 2026-09-14, active outage (discovered AFTER the Quality Engine
+// cap below already shipped and the run STILL timed out at 300s with no
+// rate-limiting involved): this phase's comment claimed the batch was
+// "typically tens of items" but getNonDuplicateArticles() was called here
+// with NO limit at all. That claim was true only as long as the backlog
+// stayed small -- once it grew past PostgREST's own default 1000-row cap
+// (confirmed live via a direct count query: 2786 real unscored articles,
+// not the 1000 the logs seemed to show), clusterDuplicateEvents() started
+// receiving up to 1000 articles per run despite its own doc comment
+// (features/pipeline/domain.ts) explicitly warning it must never run
+// against an all-time set -- an O(n²) similarity comparison over 1000
+// items is the exact cost that comment warned about, and matches what was
+// observed live: a run with only 5 Quality Engine articles and zero
+// rate-limit rotations still burned the full 300s budget. Same fix
+// pattern as MAX_ARTICLES_PER_QUALITY_RUN below: cap this phase too, so a
+// single run's clustering cost is bounded regardless of backlog size, and
+// let the backlog drain across multiple runs. 200 is a conservative first
+// value (this phase does no AI calls, so headroom is generous versus the
+// Quality Engine's per-article Gemini cost) -- revisit upward with live
+// evidence once the backlog is confirmed shrinking.
+const MAX_ARTICLES_PER_DEDUP_RUN = 200;
+
 /**
  * Phase 2: Deduplicate articles
  *
@@ -265,11 +287,11 @@ export async function POST(request: NextRequest) {
  *    1, cluster the ones covering the same underlying event (different
  *    source, similar title/summary — see clusterDuplicateEvents(),
  *    features/pipeline/domain.ts) so the report shows one entry per
- *    event, not one per source. Bounded to THIS run's newly-collected
- *    batch only (getNonDuplicateArticles(), typically tens of items) —
- *    never an all-time comparison, per the unbounded-growth lesson
- *    already learned once this project (getArticlesForDailyReport,
- *    fixed 2026-09-10).
+ *    event, not one per source. Bounded to THIS run's own batch via
+ *    MAX_ARTICLES_PER_DEDUP_RUN — never an all-time comparison, per the
+ *    unbounded-growth lesson already learned twice this project
+ *    (getArticlesForDailyReport, fixed 2026-09-10; this same function's
+ *    Quality Engine caller, fixed earlier the same day as this comment).
  */
 async function deduplicateArticles(): Promise<{
   success: boolean;
@@ -281,7 +303,7 @@ async function deduplicateArticles(): Promise<{
   let duplicatesFound = 0;
 
   try {
-    const newArticles = await getNonDuplicateArticles();
+    const newArticles = await getNonDuplicateArticles(MAX_ARTICLES_PER_DEDUP_RUN);
     console.log(`[DEDUP] Processing ${newArticles.length} new articles for duplicates`);
 
     const remaining: typeof newArticles = [];
