@@ -1,3 +1,15 @@
+/**
+ * Found live 2026-09-14 (DECISION_LOG.md PDL-029): this file was the
+ * ONLY CSS this project ever actually shipped -- every component's
+ * Tailwind `className` (used since Sprint 1) compiled to nothing,
+ * because tailwindcss/postcss were never installed. This import is
+ * the fix; postcss.config.mjs wires it into the build. The
+ * hand-written rules below are kept as-is for now (not yet the Swiss
+ * International retrofit, P-20 -- that is its own follow-up change)
+ * so nothing regresses before that pass lands.
+ */
+@import "tailwindcss";
+
 * {
   margin: 0;
   padding: 0;
