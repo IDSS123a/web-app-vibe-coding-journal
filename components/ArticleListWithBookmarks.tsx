@@ -31,11 +31,22 @@
  * live while building that function that who_it_affects/worth_trying
  * were already being collected by summarize() but never actually shown
  * anywhere, in the markdown OR here.
+ *
+ * Gamification (DECISION_LOG.md PDL-030): bookmarking an article is
+ * this wave's one real reward trigger ("+15 Vibe Coina" per the
+ * Director's own brief example) -- only on ADDING a bookmark, not
+ * removing one (removing isn't a "did something" moment worth
+ * celebrating, and the idempotency key means re-adding the same
+ * article later would not pay out again anyway).
  */
 
 import { useEffect, useState } from "react";
 import { useSession } from "@/lib/auth/use-session";
 import type { Article } from "@/lib/validation/schemas";
+import { useRewardCelebration } from "@/components/rewards/use-reward-celebration";
+import { CoinToast } from "@/components/rewards/CoinToast";
+import { CelebrationOverlay } from "@/components/rewards/CelebrationOverlay";
+import { ConfettiSystem } from "@/components/rewards/ConfettiSystem";
 
 export function ArticleListWithBookmarks({
   articles,
@@ -47,6 +58,15 @@ export function ArticleListWithBookmarks({
   const { token, loading } = useSession();
   const [bookmarked, setBookmarked] = useState<Set<string>>(new Set());
   const [bookmarksLoaded, setBookmarksLoaded] = useState(false);
+  const {
+    award,
+    toastCoins,
+    clearToast,
+    celebration,
+    dismissCelebration,
+    confettiActive,
+    stopConfetti,
+  } = useRewardCelebration(token);
 
   useEffect(() => {
     if (loading || !token) return;
@@ -89,6 +109,10 @@ export function ArticleListWithBookmarks({
             body: JSON.stringify({ article_id: articleId }),
           });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      if (!isBookmarked) {
+        // Only on ADD, not remove -- see this component's header comment.
+        void award("bookmark_article", articleId);
+      }
     } catch {
       // Revert the optimistic update on failure.
       setBookmarked((prev) => {
@@ -103,6 +127,7 @@ export function ArticleListWithBookmarks({
   if (articles.length === 0) return null;
 
   return (
+    <>
     <div className="mt-6 space-y-0">
       {articles.map((article, i) => {
         const isBookmarked = bookmarked.has(article.id);
@@ -187,5 +212,17 @@ export function ArticleListWithBookmarks({
         );
       })}
     </div>
+    {toastCoins != null && <CoinToast coins={toastCoins} onDone={clearToast} />}
+    <ConfettiSystem active={confettiActive} onDone={stopConfetti} />
+    {celebration && (
+      <CelebrationOverlay
+        open={true}
+        title={celebration.title}
+        subtitle={celebration.subtitle}
+        coins={celebration.coins}
+        onDismiss={dismissCelebration}
+      />
+    )}
+    </>
   );
 }

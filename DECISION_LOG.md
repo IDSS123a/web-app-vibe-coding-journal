@@ -1174,4 +1174,55 @@ differently-sized, differently-risked changes, not one.
 
 ---
 
+## PDL-030 — Gamification layer approved (Phase 0 complete); illustrated mascot is a deliberate deviation from pure Swiss geometric abstraction
+
+**Date:** 2026-09-14
+
+**Decision:** Director approved the gamification "juice" layer proposed
+2026-09-14 (coin rewards, celebration screens, streaks, levels) on top
+of the Swiss International system (P-20). Phase 0 analysis (this
+entry) precedes any implementation, per the Director's own brief
+instruction to wait for approval before large code changes.
+
+**Architecture, no new dependencies:** `features/rewards/` (domain +
+repository) and `components/rewards/`. Confetti and light rays are
+pure CSS/SVG, not `canvas-confetti` — that library's particles are
+round, which would violate P-20's `radius: 0` rule; a hand-built
+rectangular-particle system stays consistent instead. `framer-motion`
+also deliberately not used — its default spring/elastic easing
+contradicts the Swiss spec's own animation rule (mechanical,
+`duration-150–300ms ease-out`, never spring).
+
+**Data model (new, not existing):** `user_profiles` extended with
+`coin_balance`, `current_streak`, `longest_streak`, `level`,
+`last_active_date`; new append-only `reward_events` table (audit trail,
+prevents double-awarding the same action).
+
+**Streak day boundary: `OPERATIONS_TIMEZONE`** (the same timezone the
+project already uses for the daily report's target-hour gate,
+`lib/cron/schedule-gate.ts`) — not per-visitor browser timezone, which
+would need new infrastructure this project doesn't have.
+
+**Explicit deviation, logged per M-16: the Director chose a real
+illustrated mascot character over a geometric token-symbol**, against
+this session's own recommendation. DESIGN_NOTES.md's Swiss spec
+explicitly states "Objectivity over Subjectivity... personal
+ornamentation is eliminated" and favors "Geometric Abstraction" over
+character illustration — a mascot is a conscious, acknowledged
+departure from that principle, not an oversight. Mitigated by keeping
+the mascot itself minimal and geometrically constructed (solid fill,
+no gradients/shadows, simple shape-based construction) so it reads as
+close to the system's visual language as an illustrated character can,
+rather than importing an unrelated cartoon style.
+
+**Scope of first wave (this session):** Phase 1 (foundation components
++ data model) plus ONE real integration point (bookmark action) as a
+working proof, not all seven trigger points or all four reward
+screens at once — matching this incident-history's repeated lesson
+(`corrections/SPRINT_04_LESSONS.md` finding #15) against batching
+differently-sized changes. Remaining trigger points and reward screens
+are the explicit next wave, not forgotten scope.
+
+---
+
 *Vibe-Coding Journal — Project Decision Log — updated as decisions are made.*

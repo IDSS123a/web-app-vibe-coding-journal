@@ -36,6 +36,12 @@ export const userProfileSchema = z.object({
   trial_ends_at: z.string().datetime().nullable(),
   subscription_expires_at: z.string().datetime().nullable(),
   subscription_tier: z.enum(["basic", "premium"]),
+  // Gamification (DECISION_LOG.md PDL-030, migration 013)
+  coin_balance: z.number().int().min(0).default(0),
+  current_streak: z.number().int().min(0).default(0),
+  longest_streak: z.number().int().min(0).default(0),
+  level: z.number().int().min(1).default(1),
+  last_active_date: z.string().nullable().default(null),
   created_at: z.string().datetime(),
   updated_at: z.string().datetime(),
 });
@@ -122,6 +128,23 @@ export const createBookmarkInputSchema = z.object({
 });
 
 export type CreateBookmarkInput = z.infer<typeof createBookmarkInputSchema>;
+
+// Gamification (DECISION_LOG.md PDL-030): award-coins request body.
+// dedupeKey scopes idempotency (see features/rewards/repository.ts
+// awardCoins) -- optional because some event types are naturally
+// at-most-once-per-day rather than keyed to a specific entity.
+export const awardCoinsInputSchema = z.object({
+  eventType: z.enum([
+    "bookmark_article",
+    "open_daily_report",
+    "streak_milestone",
+    "level_up",
+    "onboarding_complete",
+  ] as const),
+  dedupeKey: z.string().min(1).nullable().optional(),
+});
+
+export type AwardCoinsInput = z.infer<typeof awardCoinsInputSchema>;
 
 // Sprint 10: links a daily_reports row to the articles rendered into it
 // (migration 009) -- see that migration's comment for why this didn't
