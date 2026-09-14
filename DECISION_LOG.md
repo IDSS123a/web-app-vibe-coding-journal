@@ -991,4 +991,83 @@ determined non-subscriber, not just hidden from the default UI.
 
 ---
 
+## PDL-027 — Active production outage: five layered root causes, all fixed and live-verified
+
+**Date:** 2026-09-14
+
+**Finding:** `FUNCTION_INVOCATION_TIMEOUT` (300s) on the cron endpoint
+(`/api/cron/daily-digest`), confirmed via 3+ consecutive real failed
+runs in both `vercel logs` and `gh run view --log`. Not a single bug —
+each fix uncovered the next bottleneck only after deploying and
+re-testing live, in strict order:
+
+1. `assessRelevance()`/`judgeHoldReason()` truncated by
+   gemini-2.5-flash's internal "thinking" tokens eating
+   `maxOutputTokens` before visible output — raised 512→2048.
+2. `getNonDuplicateArticles()` (Quality Engine caller) had no `.limit()`
+   — a backlog left by earlier failed runs made Quality Engine try to
+   AI-score far more than one run could afford. Capped via
+   `MAX_ARTICLES_PER_QUALITY_RUN` (tried 20, still timed out under
+   Gemini's per-minute free-tier rate limit; lowered to 5, confirmed
+   holding).
+3. `features/sources/actions.ts`'s `parseFeed()` had a timeout that was
+   cleared right after `fetch()` resolved (headers-only), not after the
+   body was fully read — a single stalled source could hang Phase 1
+   indefinitely. Fixed: `AbortController` stays armed through
+   `response.text()`, plus a hard `withTimeout()`/`Promise.race` ceiling
+   per source (`SOURCE_PROCESSING_BUDGET_MS=10000`).
+4. `lib/ai/gemini-provider.ts`'s `callGeminiJSON()` had **no timeout at
+   all** on its `fetch()` to Gemini — the exact same bug class as #3,
+   just never fixed here. A single stalled Gemini response could burn
+   the entire remaining budget regardless of how small the Quality
+   Engine cap was. Confirmed live: a run capped to 5 articles still hit
+   exactly 300s, its last log line a bare key-rotation warning with
+   nothing after it. Fixed: 25s `AbortController` timeout, armed through
+   the response body read, same lesson as #3.
+5. **The actual dominant cost**, found only after #4 shipped and a run
+   *still* timed out with zero rate-limiting involved:
+   `deduplicateArticles()` called `getNonDuplicateArticles()` with no
+   limit at all, despite its own comment claiming the batch was
+   "typically tens of items." That was true only while the backlog
+   stayed small. A direct count query (via a temporary authenticated
+   diagnostic route, deleted immediately after use) found the *real*
+   backlog was **2786 unscored articles**, not the 1000 the Dedup
+   phase's own log line suggested — that number was just
+   Supabase/PostgREST's default per-request row cap silently masking
+   the true size. `clusterDuplicateEvents()` (`features/pipeline/
+   domain.ts`) is O(n²) and its own doc comment explicitly warns it
+   must never run against an all-time article set — it was receiving up
+   to 1000 per run anyway. Fixed: `MAX_ARTICLES_PER_DEDUP_RUN=200`, same
+   bounded-batch pattern as #2.
+
+**Verified live, not assumed:** after all five fixes, a fresh triggered
+run completed the full pipeline (`Pipeline completed in 114138ms`) —
+Phase 1 collected 372 articles, Phase 2 deduped 200 (capped, working),
+Phase 3 scored 5, Phase 4 generated a real report (20 articles,
+`held_for_review` — correctly held on confidence, not a bug) and sent
+the review-queue email. `gh run view` on the triggering workflow shows
+`conclusion: success`.
+
+**Process gap found while verifying:** this project has **no GitHub →
+Vercel auto-deploy integration** — pushing to `main` does not trigger a
+new Vercel deployment on its own. Every fix this session required an
+explicit `vercel --prod` after the push, confirmed by two consecutive
+pushes (homepage copy, then the Gemini timeout fix) sitting live on
+GitHub for 10+ minutes with no corresponding new Vercel deployment
+until manually triggered. Until this is wired up (or deliberately kept
+manual), **a merged/pushed fix is not live until someone runs
+`vercel --prod`** — worth remembering for any future session, and worth
+asking the Director whether manual deploy is intentional or should be
+automated.
+
+**Open, not closed:** the real backlog (2786 at time of writing) will
+now drain at up to 200/run for Dedup and 5/run for Quality Engine
+(hourly), not instantly. `MAX_ARTICLES_PER_QUALITY_RUN` and
+`MAX_ARTICLES_PER_DEDUP_RUN` are both explicitly documented as
+conservative first values to revisit upward once several consecutive
+runs are confirmed completing well under budget — do not raise either
+without live evidence, per this incident's own repeated lesson.
+
+---
+
 *Vibe-Coding Journal — Project Decision Log — updated as decisions are made.*
