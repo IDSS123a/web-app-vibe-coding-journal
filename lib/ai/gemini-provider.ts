@@ -80,11 +80,18 @@ const JUDGE_HOLD_REASON_MAX_OUTPUT_TOKENS = 2048;
 // Same reasoning as above.
 const ASSESS_RELEVANCE_MAX_OUTPUT_TOKENS = 2048;
 
-// A full lesson body is much longer than a relevance judgment -- sized
-// generously (same "thinking tokens eat the budget first" caution as
-// the two constants above) rather than risking truncation on a brand
-// new call site with no live-traffic history yet to calibrate against.
-const LESSON_GENERATION_MAX_OUTPUT_TOKENS = 4096;
+// Found live 2026-09-14/15, University's first two real generation
+// attempts: 4096 was still not enough. Both failures showed
+// finishReason: MAX_TOKENS once the diagnostic context was added (see
+// callGeminiJSON's parse-failure branch) -- a full lesson body (several
+// paragraphs of markdown) plus up to 5 dictionary term/definition pairs
+// is a much larger structured output than a relevance judgment or a
+// hold-reason verdict, and still has the same "thinking" tokens
+// deducted first. Doubled rather than incremented, matching this
+// project's own repeated lesson (ASSESS_RELEVANCE_MAX_OUTPUT_TOKENS
+// above went 512->2048 in one jump, not a slow climb) -- raise
+// generously once, re-verify live, don't guess-and-check in small steps.
+const LESSON_GENERATION_MAX_OUTPUT_TOKENS = 8192;
 
 const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
 const API_BASE = "https://generativelanguage.googleapis.com/v1beta/models";
