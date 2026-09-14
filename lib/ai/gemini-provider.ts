@@ -208,6 +208,22 @@ function classifyFailure(httpStatus: number, body: GeminiErrorBody | null): KeyF
   return null; // not a per-key-rotatable failure — surfaces immediately
 }
 
+// Found live 2026-09-14, active outage (same bug class already found and
+// fixed once in features/sources/actions.ts's parseFeed): this fetch() had
+// NO timeout at all. A single stalled/slow Gemini response could consume
+// the entire remaining 300s function budget on its own, no matter how
+// small MAX_ARTICLES_PER_QUALITY_RUN was capped -- confirmed via a live
+// production run that still timed out at exactly 300s while processing
+// only 5 articles, its last log line a single key-rotation warning with
+// nothing after it. 25s is generous versus this project's normal Gemini
+// response times (seconds) while still leaving room for several key
+// rotations within the 300s budget if multiple keys are genuinely rate-
+// limited. Same lesson as the RSS fix: the AbortController must stay
+// armed through the response body read (response.json()), not just the
+// initial fetch() -- fetch() resolves once headers arrive, not once the
+// body is fully read.
+const GEMINI_FETCH_TIMEOUT_MS = 25000;
+
 async function callGeminiJSON(
   keys: string[],
   prompt: string,
@@ -229,91 +245,102 @@ async function callGeminiJSON(
     const key = keys[i]!;
     const url = `${API_BASE}/${GEMINI_MODEL}:generateContent?key=${key}`;
 
-    let response: Response;
-    try {
-      response = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: {
-            responseMimeType: "application/json",
-            // A-5/AUDIT-003: size to the LONGEST expected structured output
-            // for the specific call, not the average -- omitted (Gemini's
-            // own default) for summarize/classify, unchanged from before
-            // this parameter existed, and explicitly set by
-            // judgeHoldReason below.
-            ...(maxOutputTokens !== undefined && { maxOutputTokens }),
-          },
-        }),
-      });
-    } catch {
-      // Network-level failure — not a per-key issue, don't rotate keys, fail this call.
-      throw new Error("Gemini request failed (network error)");
-    }
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), GEMINI_FETCH_TIMEOUT_MS);
 
-    if (response.ok) {
-      const data = await response.json();
-      const finishReason = data?.candidates?.[0]?.finishReason;
-      const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-      if (typeof text !== "string") {
-        throw new Error("Gemini response missing expected text content");
-      }
+    try {
+      let response: Response;
       try {
-        return JSON.parse(text) as Record<string, unknown>;
-      } catch (parseErr) {
-        // Found live 2026-09-13: a JSON.parse failure here almost always
-        // means the response was truncated by maxOutputTokens (see this
-        // file's MAX_OUTPUT_TOKENS constants' comment on gemini-2.5-
-        // flash's internal "thinking" tokens eating the same budget) --
-        // surfacing finishReason turns a cryptic "Unterminated string in
-        // JSON" into an immediately diagnosable signal instead of a
-        // repeat investigation.
-        const parseMsg = parseErr instanceof Error ? parseErr.message : String(parseErr);
-        const hint = finishReason === "MAX_TOKENS" ? " (finishReason: MAX_TOKENS -- response was truncated, raise the caller's maxOutputTokens)" : "";
-        throw new Error(`Gemini response was not valid JSON: ${parseMsg}${hint}`);
+        response = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: {
+              responseMimeType: "application/json",
+              // A-5/AUDIT-003: size to the LONGEST expected structured output
+              // for the specific call, not the average -- omitted (Gemini's
+              // own default) for summarize/classify, unchanged from before
+              // this parameter existed, and explicitly set by
+              // judgeHoldReason below.
+              ...(maxOutputTokens !== undefined && { maxOutputTokens }),
+            },
+          }),
+          signal: controller.signal,
+        });
+      } catch (fetchErr) {
+        if (controller.signal.aborted) {
+          throw new Error(`Gemini request timed out after ${GEMINI_FETCH_TIMEOUT_MS}ms`);
+        }
+        // Network-level failure — not a per-key issue, don't rotate keys, fail this call.
+        throw new Error("Gemini request failed (network error)");
       }
-    }
 
-    // Parse the error body to classify the failure and pull safe diagnostic
-    // fields (see extractSafeQuotaInfo) — never forwarded to logs verbatim,
-    // only the specific allowlisted fields.
-    let body: GeminiErrorBody | null = null;
-    try {
-      body = (await response.json()) as GeminiErrorBody;
-    } catch {
-      body = null;
-    }
-
-    const failureKind = classifyFailure(response.status, body);
-    const quotaInfo = extractSafeQuotaInfo(body);
-
-    if (failureKind === "rate_limit" || failureKind === "auth_or_suspended" || failureKind === "model_unavailable") {
-      if (failureKind === "auth_or_suspended") {
-        sawAuthOrSuspended = true;
-      } else if (failureKind === "model_unavailable") {
-        sawModelUnavailable = true;
+      if (response.ok) {
+        const data = await response.json();
+        const finishReason = data?.candidates?.[0]?.finishReason;
+        const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (typeof text !== "string") {
+          throw new Error("Gemini response missing expected text content");
+        }
+        try {
+          return JSON.parse(text) as Record<string, unknown>;
+        } catch (parseErr) {
+          // Found live 2026-09-13: a JSON.parse failure here almost always
+          // means the response was truncated by maxOutputTokens (see this
+          // file's MAX_OUTPUT_TOKENS constants' comment on gemini-2.5-
+          // flash's internal "thinking" tokens eating the same budget) --
+          // surfacing finishReason turns a cryptic "Unterminated string in
+          // JSON" into an immediately diagnosable signal instead of a
+          // repeat investigation.
+          const parseMsg = parseErr instanceof Error ? parseErr.message : String(parseErr);
+          const hint = finishReason === "MAX_TOKENS" ? " (finishReason: MAX_TOKENS -- response was truncated, raise the caller's maxOutputTokens)" : "";
+          throw new Error(`Gemini response was not valid JSON: ${parseMsg}${hint}`);
+        }
       }
-      const label =
-        failureKind === "auth_or_suspended"
-          ? "auth/permission failure"
-          : failureKind === "model_unavailable"
-            ? `model unavailable on this key's project (${GEMINI_MODEL})`
-            : "rate-limited";
-      const nextIndex = i + 1;
-      if (nextIndex < keys.length) {
-        console.warn(`[GEMINI] key ${i + 1} ${label}, trying key ${nextIndex + 1}${quotaInfo}`);
-        continue;
-      }
-      console.warn(`[GEMINI] key ${i + 1} ${label}, no more keys configured${quotaInfo}`);
-      throw new GeminiKeysExhaustedError(
-        keys.length,
-        sawAuthOrSuspended ? "suspected_suspension" : sawModelUnavailable ? "model_deprecated" : "quota",
-      );
-    }
 
-    // Any other error (bad request, 5xx, etc.): surface immediately, do not rotate.
-    throw new Error(`Gemini request failed: HTTP ${response.status}`);
+      // Parse the error body to classify the failure and pull safe diagnostic
+      // fields (see extractSafeQuotaInfo) — never forwarded to logs verbatim,
+      // only the specific allowlisted fields.
+      let body: GeminiErrorBody | null = null;
+      try {
+        body = (await response.json()) as GeminiErrorBody;
+      } catch {
+        body = null;
+      }
+
+      const failureKind = classifyFailure(response.status, body);
+      const quotaInfo = extractSafeQuotaInfo(body);
+
+      if (failureKind === "rate_limit" || failureKind === "auth_or_suspended" || failureKind === "model_unavailable") {
+        if (failureKind === "auth_or_suspended") {
+          sawAuthOrSuspended = true;
+        } else if (failureKind === "model_unavailable") {
+          sawModelUnavailable = true;
+        }
+        const label =
+          failureKind === "auth_or_suspended"
+            ? "auth/permission failure"
+            : failureKind === "model_unavailable"
+              ? `model unavailable on this key's project (${GEMINI_MODEL})`
+              : "rate-limited";
+        const nextIndex = i + 1;
+        if (nextIndex < keys.length) {
+          console.warn(`[GEMINI] key ${i + 1} ${label}, trying key ${nextIndex + 1}${quotaInfo}`);
+          continue;
+        }
+        console.warn(`[GEMINI] key ${i + 1} ${label}, no more keys configured${quotaInfo}`);
+        throw new GeminiKeysExhaustedError(
+          keys.length,
+          sawAuthOrSuspended ? "suspected_suspension" : sawModelUnavailable ? "model_deprecated" : "quota",
+        );
+      }
+
+      // Any other error (bad request, 5xx, etc.): surface immediately, do not rotate.
+      throw new Error(`Gemini request failed: HTTP ${response.status}`);
+    } finally {
+      clearTimeout(timeoutId);
+    }
   }
 
   // Unreachable in practice (loop either returns or throws), but keeps
