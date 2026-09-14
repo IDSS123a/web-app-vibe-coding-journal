@@ -20,25 +20,32 @@ export default async function ArchivePage({
   const { reports, hasMore } = await getPublishedReportsPage(page);
 
   return (
-    <div className="min-h-screen bg-gray-50 px-4 py-12 dark:bg-gray-950">
+    <div className="min-h-screen bg-white px-4 py-12 md:px-12">
       <div className="mx-auto max-w-4xl">
-        <div className="mb-8">
-          <h1 className="mb-2 text-4xl font-bold text-gray-900 dark:text-gray-50">Archive</h1>
-          <p className="text-gray-600 dark:text-gray-400">Past Daily Reports</p>
+        <div className="mb-12 border-b-4 border-black pb-8">
+          <p className="mb-2 text-xs font-bold uppercase tracking-widest text-[#FF3000]">
+            Record
+          </p>
+          <h1 className="text-4xl font-black uppercase tracking-tighter text-black">Archive</h1>
+          <p className="mt-2 text-sm text-black">Past Daily Reports</p>
         </div>
 
         {reports.length === 0 ? (
-          <p className="text-center italic text-gray-500">No past reports yet.</p>
+          <p className="border-4 border-black py-16 text-center text-sm italic text-black opacity-60">
+            No past reports yet.
+          </p>
         ) : (
-          <div className="space-y-3">
-            {reports.map((report) => (
+          <div className="border-black md:border-4">
+            {reports.map((report, i) => (
               <a
                 key={report.id}
                 href={`/archive/${report.date}`}
-                className="block rounded-lg border border-gray-200 bg-white p-5 shadow-sm hover:border-blue-300 dark:border-gray-800 dark:bg-gray-900 dark:hover:border-blue-700"
+                className={`group block border-4 border-black p-6 transition-colors duration-150 ease-out hover:bg-black ${
+                  i > 0 ? "border-t-0" : ""
+                }`}
               >
                 <div className="flex items-center justify-between">
-                  <p className="font-semibold text-gray-900 dark:text-gray-50">
+                  <p className="text-sm font-bold uppercase tracking-wide text-black group-hover:text-white">
                     {new Date(report.date).toLocaleDateString("en-US", {
                       weekday: "long",
                       year: "numeric",
@@ -46,7 +53,7 @@ export default async function ArchivePage({
                       day: "numeric",
                     })}
                   </p>
-                  <span className="text-sm text-gray-500 dark:text-gray-400">
+                  <span className="text-xs text-black group-hover:text-[#F2F2F2]">
                     {report.article_count} articles · {report.reading_time_minutes || "< 1"} min read
                   </span>
                 </div>
@@ -55,26 +62,26 @@ export default async function ArchivePage({
           </div>
         )}
 
-        <div className="mt-8 flex items-center justify-between text-sm">
+        <div className="mt-8 flex items-center justify-between text-xs font-bold uppercase tracking-widest">
           {page > 0 ? (
-            <a href={`/archive?page=${page - 1}`} className="text-blue-600 hover:text-blue-800">
+            <a href={`/archive?page=${page - 1}`} className="text-black underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]">
               ← Newer
             </a>
           ) : (
             <span />
           )}
           {hasMore && (
-            <a href={`/archive?page=${page + 1}`} className="text-blue-600 hover:text-blue-800">
+            <a href={`/archive?page=${page + 1}`} className="text-black underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]">
               Older →
             </a>
           )}
         </div>
 
-        <div className="mt-8 flex justify-center gap-4 text-sm text-gray-600">
-          <a href="/dashboard" className="text-blue-600 hover:text-blue-800">
+        <div className="mt-8 flex justify-center gap-6 text-xs font-bold uppercase tracking-widest text-black">
+          <a href="/dashboard" className="underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]">
             ← Dashboard
           </a>
-          <a href="/bookmarks" className="text-blue-600 hover:text-blue-800">
+          <a href="/bookmarks" className="underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]">
             My Bookmarks
           </a>
         </div>

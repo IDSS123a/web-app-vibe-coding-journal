@@ -103,20 +103,20 @@ export function ArticleListWithBookmarks({
   if (articles.length === 0) return null;
 
   return (
-    <div className="mt-6 space-y-4">
-      {articles.map((article) => {
+    <div className="mt-6 space-y-0">
+      {articles.map((article, i) => {
         const isBookmarked = bookmarked.has(article.id);
         return (
           <div
             key={article.id}
-            className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-950"
+            className={`border-black p-6 md:p-8 ${i === 0 ? "border-2" : "border-2 border-t-0"}`}
           >
             <div className="flex items-start justify-between gap-4">
               <a
                 href={article.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="font-semibold text-gray-900 hover:text-blue-700 dark:text-gray-50 dark:hover:text-blue-400"
+                className="text-lg font-black uppercase tracking-tight text-black transition-colors duration-150 ease-out hover:text-[#FF3000]"
               >
                 {article.title}
               </a>
@@ -126,54 +126,52 @@ export function ArticleListWithBookmarks({
                   onClick={() => (token ? toggleBookmark(article.id) : undefined)}
                   disabled={!token || !bookmarksLoaded}
                   title={token ? (isBookmarked ? "Remove bookmark" : "Bookmark") : "Sign in to bookmark"}
-                  className={`shrink-0 rounded-md px-2 py-1 text-sm ${
+                  className={`shrink-0 border-2 px-3 py-1 text-xs font-bold uppercase tracking-widest transition-colors duration-150 ease-out ${
                     isBookmarked
-                      ? "bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300"
-                      : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"
-                  } ${token ? "hover:opacity-80" : "cursor-not-allowed opacity-50"}`}
+                      ? "border-[#FF3000] bg-[#FF3000] text-white"
+                      : "border-black bg-white text-black"
+                  } ${token ? "hover:border-[#FF3000] hover:bg-[#FF3000] hover:text-white" : "cursor-not-allowed opacity-40"}`}
                 >
                   {isBookmarked ? "★ Bookmarked" : "☆ Bookmark"}
                 </button>
               )}
             </div>
             {(article.summary || article.raw_summary) && (
-              <p className="mt-2 text-sm text-gray-700 dark:text-gray-300">
+              <p className="mt-3 text-sm leading-relaxed text-black">
                 {article.summary || article.raw_summary}
               </p>
             )}
             {article.why_it_matters && (
-              <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-                <span className="font-medium">Why it matters: </span>
+              <p className="mt-3 text-sm text-black">
+                <span className="font-bold uppercase tracking-wide">Why it matters: </span>
                 {article.why_it_matters}
                 {article.who_it_affects ? ` (${article.who_it_affects})` : ""}
               </p>
             )}
             {article.what_to_watch && (
-              <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-                <span className="font-medium">What to watch: </span>
+              <p className="mt-3 text-sm text-black">
+                <span className="font-bold uppercase tracking-wide">What to watch: </span>
                 {article.what_to_watch}
               </p>
             )}
-            <div className="mt-3 flex flex-wrap gap-2 text-xs text-gray-500 dark:text-gray-500">
+            <div className="mt-4 flex flex-wrap gap-2 text-xs font-bold uppercase tracking-wide text-black">
               {article.category && (
-                <span className="rounded-full bg-gray-100 px-2 py-0.5 dark:bg-gray-800">{article.category}</span>
+                <span className="border-2 border-black px-2 py-0.5">{article.category}</span>
               )}
               {article.source && (
-                <span className="rounded-full bg-gray-100 px-2 py-0.5 dark:bg-gray-800">{article.source}</span>
+                <span className="border-2 border-black px-2 py-0.5">{article.source}</span>
               )}
               {article.confidence_score != null && (
-                <span className="rounded-full bg-gray-100 px-2 py-0.5 dark:bg-gray-800">
+                <span className="border-2 border-black px-2 py-0.5">
                   {Math.round(article.confidence_score * 100)}% confidence
                 </span>
               )}
               {article.worth_trying && (
                 <span
-                  className={`rounded-full px-2 py-0.5 ${
+                  className={`border-2 px-2 py-0.5 ${
                     article.worth_trying === "yes"
-                      ? "bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300"
-                      : article.worth_trying === "no"
-                        ? "bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300"
-                        : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"
+                      ? "border-[#FF3000] text-[#FF3000]"
+                      : "border-black text-black"
                   }`}
                 >
                   Worth trying: {article.worth_trying === "yes" ? "Yes" : article.worth_trying === "no" ? "No" : "Maybe"}
@@ -181,7 +179,7 @@ export function ArticleListWithBookmarks({
               )}
             </div>
             {relatedSources?.[article.id] && relatedSources[article.id]!.length > 0 && (
-              <p className="mt-2 text-xs italic text-gray-400 dark:text-gray-600">
+              <p className="mt-3 text-xs italic text-black opacity-60">
                 Also covered by: {relatedSources[article.id]!.join(", ")}
               </p>
             )}

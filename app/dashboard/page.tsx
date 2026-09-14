@@ -96,20 +96,27 @@ export default async function DashboardPage() {
   const relatedSources = Object.fromEntries(relatedSourcesMap);
 
   return (
-    <div className="min-h-screen bg-gray-50 px-4 py-12">
+    <div className="min-h-screen bg-white px-4 py-12 md:px-12">
       <div className="mx-auto max-w-4xl">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="mb-2 text-4xl font-bold">Vibe-Coding Journal</h1>
-          <p className="text-gray-600">Automated daily intelligence digest for vibe-coders</p>
+        <div className="mb-12 border-b-4 border-black pb-8">
+          <p className="mb-2 text-xs font-bold uppercase tracking-widest text-[#FF3000]">
+            Daily Digest
+          </p>
+          <h1 className="text-4xl font-black uppercase tracking-tighter text-black md:text-5xl">
+            Vibe-Coding Journal
+          </h1>
+          <p className="mt-2 text-sm text-black">
+            Automated daily intelligence digest for vibe-coders
+          </p>
         </div>
 
         {/* Daily Report Card */}
-        <div className="rounded-lg border border-gray-200 bg-white p-8 shadow-sm">
+        <div className="border-4 border-black p-8 md:p-12">
           {/* Meta info */}
-          <div className="mb-6 flex items-center justify-between border-b border-gray-200 pb-4">
+          <div className="mb-8 flex items-center justify-between border-b-2 border-black pb-6">
             <div>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm font-bold uppercase tracking-wide text-black">
                 {new Date(report.date).toLocaleDateString("en-US", {
                   weekday: "long",
                   year: "numeric",
@@ -117,16 +124,15 @@ export default async function DashboardPage() {
                   day: "numeric",
                 })}
               </p>
-              <p className="text-sm text-gray-500">
-                {report.article_count} articles •{" "}
-                {report.reading_time_minutes || "< 1"} min read
+              <p className="mt-1 text-sm text-black">
+                {report.article_count} articles • {report.reading_time_minutes || "< 1"} min read
               </p>
-              <p className="mt-1 text-xs text-gray-400">
+              <p className="mt-1 text-xs text-black opacity-60">
                 Updated {formatPublicTimestamp(report.updated_at)}
               </p>
             </div>
             <div className="text-right">
-              <span className="inline-block rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-700">
+              <span className="inline-block border-2 border-black px-3 py-1 text-xs font-bold uppercase tracking-widest text-black">
                 {report.review_status === "auto_published" && "Auto-published"}
                 {report.review_status === "manually_approved" && "Approved"}
               </span>
@@ -135,11 +141,9 @@ export default async function DashboardPage() {
 
           {/* Content */}
           {isEmptyState && (
-            <div className="prose prose-sm max-w-none">
-              <p className="text-center italic text-gray-500">
-                No Daily Report is available right now — check back soon.
-              </p>
-            </div>
+            <p className="text-center text-sm italic text-black opacity-60">
+              No Daily Report is available right now — check back soon.
+            </p>
           )}
 
           {/* Sprint 10: structured, bookmarkable article list when available
@@ -148,19 +152,21 @@ export default async function DashboardPage() {
           {articles.length > 0 ? (
             <ArticleListWithBookmarks articles={articles} relatedSources={relatedSources} />
           ) : (
-            <div className="mt-6 whitespace-pre-wrap rounded bg-gray-100 p-4 font-mono text-sm text-gray-700">
+            <div className="swiss-grid-pattern mt-6 whitespace-pre-wrap border-2 border-black bg-[#F2F2F2] p-6 font-mono text-sm text-black">
               {report.markdown}
             </div>
           )}
 
           {/* Sections */}
-          <div className="mt-6 border-t border-gray-200 pt-6">
-            <h3 className="mb-3 font-semibold">Sections</h3>
+          <div className="mt-8 border-t-2 border-black pt-6">
+            <h3 className="mb-3 text-xs font-bold uppercase tracking-widest text-[#FF3000]">
+              Sections
+            </h3>
             <div className="flex flex-wrap gap-2">
               {report.sections.map((section) => (
                 <span
                   key={section}
-                  className="inline-block rounded-md bg-blue-100 px-3 py-1 text-sm text-blue-800"
+                  className="inline-block border-2 border-black px-3 py-1 text-xs font-bold uppercase tracking-wide text-black"
                 >
                   {section}
                 </span>
@@ -170,14 +176,14 @@ export default async function DashboardPage() {
         </div>
 
         {/* Navigation */}
-        <div className="mt-8 flex justify-center gap-4 text-sm text-gray-600">
-          <a href="/" className="text-blue-600 hover:text-blue-800">
+        <div className="mt-8 flex justify-center gap-6 text-xs font-bold uppercase tracking-widest text-black">
+          <a href="/" className="underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]">
             ← Home
           </a>
-          <a href="/archive" className="text-blue-600 hover:text-blue-800">
+          <a href="/archive" className="underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]">
             Archive
           </a>
-          <a href="/bookmarks" className="text-blue-600 hover:text-blue-800">
+          <a href="/bookmarks" className="underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]">
             My Bookmarks
           </a>
         </div>

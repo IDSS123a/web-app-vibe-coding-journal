@@ -50,40 +50,46 @@ export default function BookmarksPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 px-4 py-12 dark:bg-gray-950">
+    <div className="min-h-screen bg-white px-4 py-12 md:px-12">
       <div className="mx-auto max-w-4xl">
-        <div className="mb-8">
-          <h1 className="mb-2 text-4xl font-bold text-gray-900 dark:text-gray-50">My Bookmarks</h1>
-          <p className="text-gray-600 dark:text-gray-400">Articles you've saved</p>
+        <div className="mb-12 border-b-4 border-black pb-8">
+          <p className="mb-2 text-xs font-bold uppercase tracking-widest text-[#FF3000]">
+            Saved
+          </p>
+          <h1 className="text-4xl font-black uppercase tracking-tighter text-black">
+            My Bookmarks
+          </h1>
+          <p className="mt-2 text-sm text-black">Articles you&apos;ve saved</p>
         </div>
 
-        {loading && <p className="text-gray-500">Loading…</p>}
+        {loading && <p className="text-sm text-black opacity-60">Loading…</p>}
 
         {!loading && !token && (
-          <div className="text-center py-12">
-            <p className="mb-4 text-gray-600 dark:text-gray-400">
-              You must be signed in to see your bookmarks.
-            </p>
-            <a href="/login" className="font-semibold text-blue-600 hover:text-blue-800">
-              Sign in →
+          <div className="border-4 border-black py-16 text-center">
+            <p className="mb-4 text-sm text-black">You must be signed in to see your bookmarks.</p>
+            <a
+              href="/login"
+              className="text-sm font-bold uppercase tracking-widest underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]"
+            >
+              Sign In →
             </a>
           </div>
         )}
 
-        {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
+        {error && <p className="mb-4 border-2 border-[#FF3000] p-3 text-sm text-[#FF3000]">{error}</p>}
 
         {!loading && token && bookmarks === null && !error && (
-          <p className="text-gray-500">Loading your bookmarks…</p>
+          <p className="text-sm text-black opacity-60">Loading your bookmarks…</p>
         )}
 
         {!loading && token && bookmarks !== null && bookmarks.length === 0 && (
-          <p className="italic text-gray-500">
+          <p className="border-4 border-black py-16 text-center text-sm italic text-black opacity-60">
             No bookmarks yet — bookmark an article from the{" "}
-            <a href="/dashboard" className="text-blue-600 hover:text-blue-800">
+            <a href="/dashboard" className="font-bold uppercase not-italic underline decoration-2 underline-offset-4 hover:text-[#FF3000]">
               dashboard
             </a>{" "}
             or{" "}
-            <a href="/archive" className="text-blue-600 hover:text-blue-800">
+            <a href="/archive" className="font-bold uppercase not-italic underline decoration-2 underline-offset-4 hover:text-[#FF3000]">
               archive
             </a>
             .
@@ -91,31 +97,31 @@ export default function BookmarksPage() {
         )}
 
         {bookmarks && bookmarks.length > 0 && (
-          <div className="space-y-4">
-            {bookmarks.map((b) => (
+          <div className="border-black md:border-4">
+            {bookmarks.map((b, i) => (
               <div
                 key={b.id}
-                className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900"
+                className={`border-4 border-black p-6 md:p-8 ${i > 0 ? "border-t-0" : ""}`}
               >
                 <div className="flex items-start justify-between gap-4">
                   <a
                     href={b.article.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="font-semibold text-gray-900 hover:text-blue-700 dark:text-gray-50 dark:hover:text-blue-400"
+                    className="text-lg font-black uppercase tracking-tight text-black transition-colors duration-150 ease-out hover:text-[#FF3000]"
                   >
                     {b.article.title}
                   </a>
                   <button
                     type="button"
                     onClick={() => removeBookmark(b.article_id)}
-                    className="shrink-0 rounded-md bg-gray-100 px-2 py-1 text-sm text-gray-600 hover:opacity-80 dark:bg-gray-800 dark:text-gray-400"
+                    className="shrink-0 border-2 border-black bg-white px-3 py-1 text-xs font-bold uppercase tracking-widest text-black transition-colors duration-150 ease-out hover:border-[#FF3000] hover:bg-[#FF3000] hover:text-white"
                   >
                     Remove
                   </button>
                 </div>
                 {(b.article.summary || b.article.raw_summary) && (
-                  <p className="mt-2 text-sm text-gray-700 dark:text-gray-300">
+                  <p className="mt-3 text-sm leading-relaxed text-black">
                     {b.article.summary || b.article.raw_summary}
                   </p>
                 )}
@@ -124,11 +130,11 @@ export default function BookmarksPage() {
           </div>
         )}
 
-        <div className="mt-8 flex justify-center gap-4 text-sm text-gray-600">
-          <a href="/dashboard" className="text-blue-600 hover:text-blue-800">
+        <div className="mt-8 flex justify-center gap-6 text-xs font-bold uppercase tracking-widest text-black">
+          <a href="/dashboard" className="underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]">
             ← Dashboard
           </a>
-          <a href="/archive" className="text-blue-600 hover:text-blue-800">
+          <a href="/archive" className="underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]">
             Archive
           </a>
         </div>

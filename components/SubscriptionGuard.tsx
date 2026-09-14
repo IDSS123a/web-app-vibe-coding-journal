@@ -125,7 +125,7 @@ function PayPalTierButton({
   }, [tier, token, onApproved]);
 
   if (sdkError) {
-    return <p className="text-sm text-red-600 dark:text-red-400">{sdkError}</p>;
+    return <p className="text-sm text-[#FF3000]">{sdkError}</p>;
   }
 
   return <div ref={containerRef} />;
@@ -195,20 +195,21 @@ export function SubscriptionGuard({ children }: { children: ReactNode }) {
 
   if (loading || state === "checking") {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="text-gray-600 dark:text-gray-400">Checking access…</div>
+      <div className="flex min-h-screen items-center justify-center bg-white">
+        <div className="text-sm font-bold uppercase tracking-widest text-black">Checking access…</div>
       </div>
     );
   }
 
   if (state === "anon") {
     return (
-      <div className="py-12 text-center">
-        <p className="mb-4 text-gray-600 dark:text-gray-400">
-          You must be signed in to view this page.
-        </p>
-        <a href="/login" className="font-semibold text-blue-600 hover:text-blue-800">
-          Sign in →
+      <div className="border-4 border-black py-16 text-center">
+        <p className="mb-4 text-sm text-black">You must be signed in to view this page.</p>
+        <a
+          href="/login"
+          className="text-sm font-bold uppercase tracking-widest underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]"
+        >
+          Sign In →
         </a>
       </div>
     );
@@ -219,11 +220,11 @@ export function SubscriptionGuard({ children }: { children: ReactNode }) {
 
     if (awaitingWebhook) {
       return (
-        <div className="mx-auto max-w-md px-4 py-16 text-center">
-          <h2 className="mb-2 text-xl font-semibold text-gray-900 dark:text-gray-50">
-            Processing your payment…
+        <div className="mx-auto max-w-md border-4 border-black px-4 py-16 text-center">
+          <h2 className="mb-2 text-xl font-black uppercase tracking-tight text-black">
+            Processing Your Payment…
           </h2>
-          <p className="text-sm text-gray-600 dark:text-gray-400">
+          <p className="text-sm text-black">
             This usually takes a few seconds. If access doesn&apos;t appear
             shortly, refresh this page.
           </p>
@@ -233,23 +234,24 @@ export function SubscriptionGuard({ children }: { children: ReactNode }) {
 
     return (
       <div className="mx-auto max-w-2xl px-4 py-16 text-center">
-        <h2 className="mb-2 text-2xl font-bold text-gray-900 dark:text-gray-50">
-          {isTrialExpired ? "Your trial has ended" : "Subscription required"}
+        <p className="mb-2 text-xs font-bold uppercase tracking-widest text-[#FF3000]">
+          Access
+        </p>
+        <h2 className="mb-2 text-3xl font-black uppercase tracking-tighter text-black">
+          {isTrialExpired ? "Your Trial Has Ended" : "Subscription Required"}
         </h2>
-        <p className="mb-8 text-gray-600 dark:text-gray-400">
+        <p className="mb-10 text-sm text-black">
           {isTrialExpired
             ? "Your 3-day trial is over. Subscribe to keep access to the Daily Report, Archive, and Bookmarks."
             : "Subscribe to access the Daily Report, Archive, and Bookmarks."}
         </p>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div className="rounded-lg border border-gray-200 p-6 text-left dark:border-gray-700">
-            <h3 className="mb-1 font-semibold text-gray-900 dark:text-gray-50">Basic</h3>
-            <p className="mb-4 text-3xl font-bold text-gray-900 dark:text-gray-50">
-              $10<span className="text-base font-normal text-gray-500">/year</span>
+        <div className="grid gap-0 border-black sm:grid-cols-2 sm:border-4">
+          <div className="border-4 border-black p-6 text-left sm:border-4 sm:border-r-0">
+            <h3 className="mb-1 text-xs font-bold uppercase tracking-widest text-black">Basic</h3>
+            <p className="mb-4 text-4xl font-black text-black">
+              $10<span className="text-sm font-normal">/year</span>
             </p>
-            <p className="mb-6 text-sm text-gray-600 dark:text-gray-400">
-              Daily Report, Archive, and Bookmarks.
-            </p>
+            <p className="mb-6 text-sm text-black">Daily Report, Archive, and Bookmarks.</p>
             {token && (
               <PayPalTierButton
                 tier="basic"
@@ -258,12 +260,14 @@ export function SubscriptionGuard({ children }: { children: ReactNode }) {
               />
             )}
           </div>
-          <div className="rounded-lg border-2 border-blue-600 p-6 text-left">
-            <h3 className="mb-1 font-semibold text-gray-900 dark:text-gray-50">Premium</h3>
-            <p className="mb-4 text-3xl font-bold text-gray-900 dark:text-gray-50">
-              $50<span className="text-base font-normal text-gray-500">/year</span>
+          <div className="border-4 border-t-0 border-[#FF3000] p-6 text-left sm:border-t-4">
+            <h3 className="mb-1 text-xs font-bold uppercase tracking-widest text-[#FF3000]">
+              Premium
+            </h3>
+            <p className="mb-4 text-4xl font-black text-black">
+              $50<span className="text-sm font-normal">/year</span>
             </p>
-            <p className="mb-6 text-sm text-gray-600 dark:text-gray-400">
+            <p className="mb-6 text-sm text-black">
               Everything in Basic, plus the Vibe-Coding Assistant chatbot.
             </p>
             {token && (
@@ -275,7 +279,7 @@ export function SubscriptionGuard({ children }: { children: ReactNode }) {
             )}
           </div>
         </div>
-        <p className="mt-8 text-xs text-gray-400">
+        <p className="mt-8 text-xs uppercase tracking-wide text-black opacity-50">
           Sandbox mode — no real payment is processed.
         </p>
       </div>

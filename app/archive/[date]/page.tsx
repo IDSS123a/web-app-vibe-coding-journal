@@ -32,18 +32,21 @@ export default async function ArchiveDatePage({
   const relatedSources = Object.fromEntries(relatedSourcesMap);
 
   return (
-    <div className="min-h-screen bg-gray-50 px-4 py-12 dark:bg-gray-950">
+    <div className="min-h-screen bg-white px-4 py-12 md:px-12">
       <div className="mx-auto max-w-4xl">
         <div className="mb-8">
-          <a href="/archive" className="text-sm text-blue-600 hover:text-blue-800">
+          <a
+            href="/archive"
+            className="text-xs font-bold uppercase tracking-widest text-black underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]"
+          >
             ← Archive
           </a>
         </div>
 
-        <div className="rounded-lg border border-gray-200 bg-white p-8 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-          <div className="mb-6 flex items-center justify-between border-b border-gray-200 pb-4 dark:border-gray-800">
+        <div className="border-4 border-black p-8 md:p-12">
+          <div className="mb-8 flex items-center justify-between border-b-2 border-black pb-6">
             <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
+              <p className="text-sm font-bold uppercase tracking-wide text-black">
                 {new Date(report.date).toLocaleDateString("en-US", {
                   weekday: "long",
                   year: "numeric",
@@ -51,10 +54,10 @@ export default async function ArchiveDatePage({
                   day: "numeric",
                 })}
               </p>
-              <p className="text-sm text-gray-500 dark:text-gray-500">
+              <p className="mt-1 text-sm text-black">
                 {report.article_count} articles • {report.reading_time_minutes || "< 1"} min read
               </p>
-              <p className="mt-1 text-xs text-gray-400 dark:text-gray-600">
+              <p className="mt-1 text-xs text-black opacity-60">
                 Updated {formatPublicTimestamp(report.updated_at)}
               </p>
             </div>
@@ -63,7 +66,7 @@ export default async function ArchiveDatePage({
           {articles.length > 0 ? (
             <ArticleListWithBookmarks articles={articles} relatedSources={relatedSources} />
           ) : (
-            <div className="mt-6 whitespace-pre-wrap rounded bg-gray-100 p-4 font-mono text-sm text-gray-700 dark:bg-gray-800 dark:text-gray-300">
+            <div className="swiss-grid-pattern mt-6 whitespace-pre-wrap border-2 border-black bg-[#F2F2F2] p-6 font-mono text-sm text-black">
               {report.markdown}
             </div>
           )}

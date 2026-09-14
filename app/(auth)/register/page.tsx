@@ -2,18 +2,26 @@ import { RegisterForm } from "@/features/onboarding/components/RegisterForm";
 
 export default function RegisterPage() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-12">
-      <div className="w-full max-w-md">
-        <h1 className="mb-2 text-center text-3xl font-bold">Vibe-Coding Journal</h1>
-        <p className="mb-8 text-center text-gray-600">
+    <div className="swiss-noise flex min-h-screen items-center justify-center bg-white px-4 py-12">
+      <div className="w-full max-w-md border-4 border-black p-8 md:p-12">
+        <p className="mb-2 text-xs font-bold uppercase tracking-widest text-[#FF3000]">
+          Join
+        </p>
+        <h1 className="text-3xl font-black uppercase tracking-tighter text-black">
+          Vibe-Coding Journal
+        </h1>
+        <p className="mb-8 mt-2 text-sm text-black">
           Automated daily intelligence digest for vibe-coders
         </p>
 
         <RegisterForm />
 
-        <p className="mt-6 text-center text-sm text-gray-600">
+        <p className="mt-8 text-center text-sm text-black">
           Already have an account?{" "}
-          <a href="/login" className="font-semibold text-blue-600 hover:text-blue-800">
+          <a
+            href="/login"
+            className="font-bold uppercase tracking-wide underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]"
+          >
             Sign in
           </a>
         </p>

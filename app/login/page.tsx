@@ -38,19 +38,24 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center px-4">
-      <div className="max-w-md w-full bg-white dark:bg-gray-950 rounded-lg border border-gray-200 dark:border-gray-800 p-6 shadow-sm">
-        <h1 className="text-2xl font-bold mb-6 text-gray-900 dark:text-gray-50">Sign In</h1>
+    <div className="swiss-noise flex min-h-screen items-center justify-center bg-white px-4">
+      <div className="w-full max-w-md border-4 border-black p-8 md:p-12">
+        <p className="mb-2 text-xs font-bold uppercase tracking-widest text-[#FF3000]">
+          Access
+        </p>
+        <h1 className="mb-8 text-4xl font-black uppercase tracking-tighter text-black">
+          Sign In
+        </h1>
 
         {error && (
-          <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded text-red-800 dark:text-red-200 text-sm">
+          <div className="mb-6 border-2 border-[#FF3000] p-3 text-sm text-[#FF3000]">
             {error}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label className="mb-1 block text-xs font-bold uppercase tracking-widest text-black">
               Email
             </label>
             <input
@@ -58,13 +63,13 @@ export default function LoginPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-50"
+              className="w-full border-b-2 border-black bg-white px-1 py-2 text-black outline-none transition-colors duration-150 ease-out focus:border-[#FF3000]"
               disabled={loading}
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label className="mb-1 block text-xs font-bold uppercase tracking-widest text-black">
               Password
             </label>
             <input
@@ -72,7 +77,7 @@ export default function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-50"
+              className="w-full border-b-2 border-black bg-white px-1 py-2 text-black outline-none transition-colors duration-150 ease-out focus:border-[#FF3000]"
               disabled={loading}
             />
           </div>
@@ -80,15 +85,18 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="h-14 w-full border-4 border-black bg-black text-sm font-bold uppercase tracking-widest text-white transition-colors duration-150 ease-out hover:border-[#FF3000] hover:bg-[#FF3000] disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {loading ? "Signing in..." : "Sign In"}
+            {loading ? "Signing In..." : "Sign In"}
           </button>
         </form>
 
-        <p className="mt-4 text-sm text-gray-600 dark:text-gray-400">
+        <p className="mt-8 text-sm text-black">
           No account?{" "}
-          <a href="/register" className="text-blue-600 hover:text-blue-800">
+          <a
+            href="/register"
+            className="font-bold uppercase tracking-wide underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]"
+          >
             Register
           </a>
         </p>
