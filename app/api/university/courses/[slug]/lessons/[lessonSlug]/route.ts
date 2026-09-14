@@ -8,7 +8,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getVerifiedUser } from "@/lib/auth/verify-token";
 import { canAccessUniversity } from "@/lib/permissions";
 import { evaluateSubscriptionAccess } from "@/features/onboarding/domain";
-import { getCourseBySlug, getLessonBySlug } from "@/features/university/repository";
+import { getCourseBySlug, getLessonBySlug, getUserProgress } from "@/features/university/repository";
 
 export async function GET(
   request: NextRequest,
@@ -48,8 +48,16 @@ export async function GET(
       return NextResponse.json({ error: "Lesson not found" }, { status: 404 });
     }
 
+    // Found live 2026-09-15: the lesson reader page's "Mark Lesson
+    // Complete" button always showed its un-completed state on load,
+    // even for a lesson the user had already finished, because this
+    // endpoint never told the client whether it was already done.
+    const progress = await getUserProgress(user.sub);
+    const courseProgress = progress.find((p) => p.course_id === course.id);
+    const alreadyCompleted = courseProgress?.lessons_completed.includes(lesson.id) ?? false;
+
     // 5. RETURN
-    return NextResponse.json({ course, lesson });
+    return NextResponse.json({ course, lesson, alreadyCompleted });
   } catch (err) {
     const errorMsg = err instanceof Error ? err.message : String(err);
     console.error(`[UNIVERSITY] Error fetching lesson: ${errorMsg}`);

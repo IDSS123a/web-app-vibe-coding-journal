@@ -29,7 +29,10 @@ function LessonReader() {
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         return r.json();
       })
-      .then((d: { course: Course; lesson: Lesson }) => setData(d))
+      .then((d: { course: Course; lesson: Lesson; alreadyCompleted: boolean }) => {
+        setData(d);
+        setCompleted(d.alreadyCompleted);
+      })
       .catch(() => setError("Failed to load lesson."))
       .finally(() => setLoading(false));
   }, [token, sessionLoading, params.courseSlug, params.lessonSlug]);
