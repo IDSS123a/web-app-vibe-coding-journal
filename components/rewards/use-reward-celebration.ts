@@ -49,14 +49,14 @@ export function useRewardCelebration(token: string | null) {
           setConfettiActive(true);
           setCelebration({
             title: `Level ${result.newState.level}`,
-            subtitle: "Dosegao si novi nivo.",
+            subtitle: "You've reached a new level.",
             coins: result.coinsAwarded,
           });
         } else if (result.streakMilestoneHit) {
           setConfettiActive(true);
           setCelebration({
             title: `${result.streakMilestoneHit}-Day Streak`,
-            subtitle: "Odličan progres. Nastavi u istom ritmu.",
+            subtitle: "Excellent progress. Keep up the pace.",
             coins: result.coinsAwarded,
           });
         } else if (result.coinsAwarded > 0) {

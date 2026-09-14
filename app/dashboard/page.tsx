@@ -27,13 +27,13 @@ const EMPTY_STATE_REPORT: DailyReport = {
   id: "empty-state",
   date: new Date().toISOString().split("T")[0]!,
   markdown: `
-# Najvažnije
+# Highlights
 *No articles today — check back tomorrow.*
 
-## Trendovi
+## Trends
 *No trending topics at this time.*
 
-## Novi alati
+## New Tools
 *Awaiting new tool releases.*
 
 ## Research
@@ -42,12 +42,12 @@ const EMPTY_STATE_REPORT: DailyReport = {
 ## GitHub
 *No GitHub updates at this time.*
 
-## Šta testirati danas
+## What to Test Today
 *Explore yesterday's report or check back tomorrow for new recommendations.*
 `.trim(),
   reading_time_minutes: 0,
   article_count: 0,
-  sections: ["Najvažnije", "Trendovi", "Novi alati", "Research", "GitHub", "Šta testirati danas"],
+  sections: ["Highlights", "Trends", "New Tools", "Research", "GitHub", "What to Test Today"],
   review_status: "auto_published",
   approved_by: null,
   approved_at: null,

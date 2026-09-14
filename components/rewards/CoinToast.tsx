@@ -28,7 +28,7 @@ export function CoinToast({ coins, onDone }: { coins: number; onDone: () => void
         visible ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0"
       }`}
     >
-      <span className="inline-block h-3 w-3 bg-[#D4A017]" aria-hidden />+{coins} Vibe Coina
+      <span className="inline-block h-3 w-3 bg-[#D4A017]" aria-hidden />+{coins} Vibe Coins
     </div>
   );
 }

@@ -64,7 +64,7 @@ export function CelebrationOverlay({ open, title, subtitle, coins, onDismiss }: 
         <p className="mt-3 text-sm text-black">{subtitle}</p>
         {coins != null && (
           <p className="mt-4 text-lg font-black text-black">
-            +{coins} <span className="text-sm font-bold uppercase tracking-widest">Vibe Coina</span>
+            +{coins} <span className="text-sm font-bold uppercase tracking-widest">Vibe Coins</span>
           </p>
         )}
         <button
