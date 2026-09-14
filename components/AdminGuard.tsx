@@ -41,20 +41,21 @@ export function AdminGuard({ children }: { children: ReactNode }) {
 
   if (loading || state === "checking") {
     return (
-      <div className="flex justify-center items-center min-h-screen">
-        <div className="text-gray-600 dark:text-gray-400">Checking access…</div>
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="text-sm font-bold uppercase tracking-widest text-black">Checking access…</div>
       </div>
     );
   }
 
   if (state === "anon") {
     return (
-      <div className="text-center py-12">
-        <p className="text-gray-600 dark:text-gray-400 mb-4">
-          You must be signed in as an admin to access this area.
-        </p>
-        <a href="/login" className="text-blue-600 hover:text-blue-800 font-semibold">
-          Sign in →
+      <div className="border-4 border-black py-12 text-center">
+        <p className="mb-4 text-sm text-black">You must be signed in as an admin to access this area.</p>
+        <a
+          href="/login"
+          className="text-sm font-bold uppercase tracking-widest text-black underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]"
+        >
+          Sign In →
         </a>
       </div>
     );
@@ -62,15 +63,14 @@ export function AdminGuard({ children }: { children: ReactNode }) {
 
   if (state === "forbidden") {
     return (
-      <div className="text-center py-12">
-        <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-50 mb-2">
-          Not authorized
-        </h2>
-        <p className="text-gray-600 dark:text-gray-400 mb-4">
-          Your account does not have admin access.
-        </p>
-        <a href="/dashboard" className="text-blue-600 hover:text-blue-800 font-semibold">
-          Back to dashboard →
+      <div className="border-4 border-black py-12 text-center">
+        <h2 className="mb-2 text-xl font-black uppercase tracking-tight text-black">Not Authorized</h2>
+        <p className="mb-4 text-sm text-black">Your account does not have admin access.</p>
+        <a
+          href="/dashboard"
+          className="text-sm font-bold uppercase tracking-widest text-black underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]"
+        >
+          Back to Dashboard →
         </a>
       </div>
     );

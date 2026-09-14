@@ -22,7 +22,7 @@ import {
 } from "@/features/payments/repository";
 import { classifyPaymentWebhookEvent, computeSubscriptionExpiry } from "@/features/payments/domain";
 import { supabaseAdmin } from "@/lib/db/client";
-import { sendPaymentIssueAlert } from "@/lib/email/resend";
+import { sendPaymentIssueAlert, sendAdminNotification } from "@/lib/email/resend";
 
 interface PayPalWebhookResource {
   custom_id?: string;
@@ -158,5 +158,26 @@ export async function POST(request: NextRequest) {
   }
 
   console.log(`[PAYPAL_WEBHOOK] Activated ${classification.tier} subscription for user ${userId}`);
+
+  // 2026-09-14, Director's request: admin sees a payment as soon as it
+  // happens (not just problems, via sendPaymentIssueAlert above). Does
+  // NOT gate activation -- the subscription is already live by the time
+  // this fires; this is visibility, not an approval step (confirmed
+  // explicitly with the Director rather than assumed, see
+  // DECISION_LOG.md PDL-030's sibling discussion the same day).
+  // Best-effort: a failed notification must never undo or fail the
+  // activation that already succeeded above.
+  void sendAdminNotification({
+    subject: `New ${classification.tier} subscription — $${amountUsd ?? "?"}`,
+    html: `
+<h2>New Subscription Activated</h2>
+<p><strong>Tier:</strong> ${classification.tier}</p>
+<p><strong>Amount:</strong> $${amountUsd ?? "unknown"}</p>
+<p><strong>User ID:</strong> ${userId}</p>
+<p><strong>PayPal event:</strong> ${eventId}</p>
+<p>Already active -- this is a notification, not an approval request.</p>
+    `.trim(),
+  }).catch(() => undefined);
+
   return NextResponse.json({ success: true, activated: true });
 }

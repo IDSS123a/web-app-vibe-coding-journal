@@ -39,6 +39,40 @@ export async function recordPaymentEventIfNew(
   return { event: data as PaymentEvent, alreadyProcessed: false };
 }
 
+export type PaymentEventWithEmail = PaymentEvent & { user_email: string | null };
+
+/**
+ * Most recent payment events, newest first — powers the admin payments
+ * view (2026-09-14, Director's request: admin should see a payment as
+ * soon as it happens). Joins user_profiles for the paying user's email
+ * (a bare user_id UUID isn't useful to a human reviewing the list).
+ * Read-only visibility; does NOT gate subscription activation (that
+ * stays fully automatic via the webhook, unchanged — the Director
+ * explicitly confirmed automatic activation over a manual approval gate).
+ */
+export async function getRecentPaymentEvents(limit = 50): Promise<PaymentEventWithEmail[]> {
+  if (!supabaseAdmin) {
+    throw new Error("Admin client not available");
+  }
+
+  const { data, error } = await supabaseAdmin
+    .from("payment_events")
+    .select("*, user_profiles(email)")
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    throw new Error(`Failed to fetch recent payment events: ${error.message}`);
+  }
+
+  return (data as unknown as Array<PaymentEvent & { user_profiles: { email: string } | null }>).map(
+    (row) => {
+      const { user_profiles, ...event } = row;
+      return { ...event, user_email: user_profiles?.email ?? null };
+    },
+  );
+}
+
 export async function getPaymentEventByPaypalId(
   paypalEventId: string,
 ): Promise<PaymentEvent | null> {
