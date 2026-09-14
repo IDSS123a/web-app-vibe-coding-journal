@@ -1292,4 +1292,53 @@ this project tracks explicitly rather than assumes.
 
 ---
 
+## PDL-033 — University generation pipeline verified live after three real bugs found and fixed on its first run
+
+**Date:** 2026-09-15
+
+**Finding:** The very first real trigger of `/api/cron/university-generate`
+(manually dispatched, since the weekly schedule hadn't fired yet)
+surfaced three genuine, independent bugs in a row — each found only by
+fixing the previous one and re-triggering, same "proof not claims"
+discipline as PDL-027's outage response:
+
+1. `hasGenerationRunThisWeek()` checked for ANY row this ISO week
+   regardless of status — a single failed attempt silently blocked
+   every retry until the following Monday. Fixed to only count a
+   `completed` row as "done."
+2. `university_generation_runs.iso_week` was `UNIQUE` (migration 014)
+   — once (1) was fixed, the retry's own `INSERT` then failed with a
+   duplicate-key violation, confirmed live via a real HTTP 500.
+   Migration 016 drops the constraint; this table is an append-only
+   audit log, not one-row-per-week, and idempotency is already
+   correctly enforced at the application layer.
+3. `LESSON_GENERATION_MAX_OUTPUT_TOKENS` (4096) was still too small —
+   `finishReason: MAX_TOKENS`, the same "thinking tokens eat the
+   budget first" bug class already fixed twice this project
+   (`ASSESS_RELEVANCE`/`JUDGE_HOLD_REASON`, 512→2048), now recurring in
+   the new lesson-generation call site. Only diagnosable because of a
+   companion fix made the same day: `callGeminiJSON`'s parse-failure
+   error now slices the raw response text around the JSON error's own
+   reported character position, turning a bare "Unexpected end of JSON
+   input" into an immediately actionable signal. Raised to 8192.
+
+**Verified live, fourth attempt**: a real lesson ("Agentic Coding
+Workflows," the correct next curriculum stub) generated from 5 real
+source articles, landed in `pending_review`, visually confirmed in
+`/admin/university` — coherent, well-structured content that correctly
+follows P-3's Evidence Framing rule ("reports indicate... a 25% rise,"
+attributing a vendor/source claim rather than stating it as fact) with
+3 proposed Dictionary terms. Awaiting the Director's actual
+approve/reject decision — generating cleanly is not the same as the
+content being judged good enough to publish, same distinction already
+drawn for the Daily Report pipeline.
+
+**Consequence:** the diagnostic-context addition to `callGeminiJSON`
+(finding #3 here) is now standing infrastructure for every future
+Gemini JSON-mode call site in this project, not just this one — any
+future MAX_TOKENS-class failure anywhere should now self-diagnose from
+its own error message instead of needing a fresh investigation.
+
+---
+
 *Vibe-Coding Journal — Project Decision Log — updated as decisions are made.*
