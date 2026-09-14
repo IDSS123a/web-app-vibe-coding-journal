@@ -57,10 +57,12 @@ or summarize it away — feed it in full.
    admin/review-queue, login) as a retrofit pass — per the Director's
    Option A sequencing (functional sprints 06–09 + Bookmarks/Archive
    complete before any visual design work begins).
-3. Confirm before implementation: does "Swiss Red" become the brand
+3. ~~Confirm before implementation: does "Swiss Red" become the brand
    accent color for "Prompt Hero Studio™" (P-15), or does branding
    get its own accent decision? Not yet resolved — ask the Director
-   when the design sprint opens, don't assume.
+   when the design sprint opens, don't assume.~~ **Resolved
+   2026-09-14: yes, Swiss Red is the brand accent.** See
+   `CONSTITUTION.md` P-20.
 
 ---
 

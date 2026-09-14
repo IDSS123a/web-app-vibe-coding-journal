@@ -644,5 +644,52 @@ this project is not done until:
 
 ---
 
+## P-20. Visual Design System — Swiss International Style `[ACTIVE]` 🟡 STANDARD
+
+- **Formalized 2026-09-14** (design sprint opened) per `DESIGN_NOTES.md`'s
+  own instruction to promote this from "early direction" to a
+  Constitution rule once the design pass actually starts, not before.
+  Chosen by the Director 2026-07-18; sequencing (after functional
+  sprints 06–09 + Bookmarks/Archive) was also the Director's explicit
+  choice ("ne žurimo nam se") and is now satisfied.
+- **Full spec lives in `DESIGN_NOTES.md`** (verbatim `<role>`/
+  `<design-system>` block) — this section is the decision record and
+  pointer, not a duplicate. Do not paraphrase the spec elsewhere;
+  always read it directly before design work.
+- **Key tokens** (see `DESIGN_NOTES.md` for the complete system):
+  `#FFFFFF`/`#000000`/`#F2F2F2` palette, `#FF3000` "Swiss Red" as the
+  only accent, `0px` radius everywhere, no shadows/gradients (depth via
+  low-opacity CSS pattern textures instead), Inter typeface,
+  mechanical/snappy animation (150–300ms, ease-out, never spring/
+  elastic).
+- **Resolved 2026-09-14: Swiss Red (`#FF3000`) is the brand accent color
+  for "Prompt Hero Studio™" (P-15)** — one consistent palette across
+  UI and brand identity, not a separate branding-color decision. This
+  closes the open question `DESIGN_NOTES.md` flagged under "How to use
+  this when the design sprint starts," item 3.
+- **Retrofit, not rebuild**: applies to the already-built pages first
+  (home, register, login, dashboard, archive, bookmarks,
+  admin/review-queue) as a styling pass over existing functionality —
+  not a rewrite of application logic.
+- **Prerequisite found 2026-09-14**: Tailwind CSS was never actually
+  installed in this project (`package.json` has no `tailwindcss`/
+  `postcss` dependency, no config file) despite nearly every component
+  being written with Tailwind utility class names since Sprint 1 — the
+  live compiled CSS bundle was 479 bytes, a hand-written reset only,
+  with zero effect from any `className` anywhere in the app. This is a
+  build-pipeline fix, prerequisite to this section, not itself a design
+  decision — tracked in `DECISION_LOG.md`.
+- **Gamification layer** (coin rewards, celebration screens, streaks,
+  levels — Director's 2026-09-14 brief) is a **separate, additional**
+  proposal layered on top of this design system, not itself part of
+  the Swiss spec above. Requires its own architecture analysis before
+  implementation (Director's own instruction: wait for approval before
+  large code changes) — not yet built as of this section's writing.
+  Must not compromise the Swiss system's core constraints (rectangular,
+  flat, mechanical motion, functional-only red) — gold/yellow reward
+  color is additive, not a palette replacement.
+
+---
+
 *Vibe-Coding Journal — Project Constitution v0.1 — draft, pending
 Director review before first sprint.*

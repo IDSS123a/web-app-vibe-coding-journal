@@ -1136,4 +1136,42 @@ one included.
 
 ---
 
+## PDL-029 — Design sprint opened: Tailwind was never installed (real bug); Swiss International formalized as P-20; gamification layer proposed, Phase 0 pending
+
+**Date:** 2026-09-14
+
+**Finding, not a design question:** every component in this codebase
+has been written with Tailwind utility class names since Sprint 1, but
+`tailwindcss`/`postcss` were never actually added to `package.json` and
+no config file exists. The live production CSS bundle was 479 bytes —
+a hand-written reset in `app/globals.css`, zero Tailwind output. Every
+`className` in the entire app has been visually inert this whole time;
+nobody had visually screenshotted the deployed site until today. This
+is a build-pipeline defect, found while the Director asked whether now
+was a good time to start UI/UX work — not itself a design decision.
+
+**Decision: design sprint opens now.** `DESIGN_NOTES.md`'s own
+sequencing condition (functional sprints 06-09 + Bookmarks/Archive
+complete) is satisfied. Formalized as `CONSTITUTION.md` P-20.
+
+**Resolved the one open question `DESIGN_NOTES.md` had flagged:** Swiss
+Red (`#FF3000`) is now the official brand accent for "Prompt Hero
+Studio™" (P-15) — one palette, not a separate branding-color track.
+
+**New proposal, same-day, not yet built:** the Director provided a
+detailed brief for a "premium mobile-game juice" gamification layer
+(coin rewards, celebration overlays, streaks, levels) explicitly
+designed to sit on top of the Swiss system without breaking its core
+constraints (rectangular, flat, mechanical motion, red as functional
+signal only). The brief itself instructs "Phase 0 — analysis, wait for
+approval before code if it's a big change" — honored: sequencing
+confirmed with the Director as (1) Tailwind fix, (2) Swiss retrofit of
+existing pages [already fully specified, lower risk], (3) gamification
+architecture proposal *then* implementation, not built in one pass.
+Matches `corrections/SPRINT_04_LESSONS.md` finding #15 (no
+batch-approval without its own verification gate) — three
+differently-sized, differently-risked changes, not one.
+
+---
+
 *Vibe-Coding Journal — Project Decision Log — updated as decisions are made.*
