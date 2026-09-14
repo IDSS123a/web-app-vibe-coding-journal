@@ -211,12 +211,23 @@ export async function getUnusedHighRelevanceArticles(limit = 5): Promise<Array<{
     }));
 }
 
+/**
+ * Found live 2026-09-14/15: this originally checked for ANY row this
+ * ISO week regardless of status, which meant a single FAILED attempt
+ * (e.g. a Gemini parse error) silently blocked every retry until next
+ * Monday -- confirmed live when the very first real generation run
+ * failed and a manual re-trigger reported "already ran this week"
+ * despite never actually producing a lesson. Only a COMPLETED run
+ * should count as "done" for the week; failed/no-stub-available
+ * attempts must allow retry the same week.
+ */
 export async function hasGenerationRunThisWeek(isoWeek: string): Promise<boolean> {
   if (!supabaseAdmin) throw new Error("Admin client not available");
   const { data, error } = await supabaseAdmin
     .from("university_generation_runs")
     .select("id")
     .eq("iso_week", isoWeek)
+    .eq("status", "completed")
     .maybeSingle();
   if (error) throw new Error(`Failed to check generation run: ${error.message}`);
   return !!data;

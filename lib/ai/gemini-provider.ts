@@ -303,7 +303,28 @@ async function callGeminiJSON(
           // repeat investigation.
           const parseMsg = parseErr instanceof Error ? parseErr.message : String(parseErr);
           const hint = finishReason === "MAX_TOKENS" ? " (finishReason: MAX_TOKENS -- response was truncated, raise the caller's maxOutputTokens)" : "";
-          throw new Error(`Gemini response was not valid JSON: ${parseMsg}${hint}`);
+          // Found live 2026-09-14/15 (Vibe-Coding University's first real
+          // generation run): a parse failure is NOT always truncation --
+          // this one had a normal finishReason but broke mid-string at a
+          // specific character position, almost certainly Gemini emitting
+          // an unescaped quote/control character inside a long free-text
+          // field despite structured-output mode. `position N` in
+          // JSON.parse's own message is the only lead a bare error message
+          // gives; without the surrounding text, every such failure is a
+          // fresh unstarted investigation. Slicing the raw text around
+          // that position turns it into an immediately actionable one --
+          // safe to include (this is article/lesson content the pipeline
+          // already processes, never a credential).
+          const posMatch = parseMsg.match(/position (\d+)/);
+          const contextHint = posMatch
+            ? (() => {
+                const pos = Number(posMatch[1]);
+                const start = Math.max(0, pos - 80);
+                const snippet = text.slice(start, pos + 80);
+                return ` | context around position ${pos}: ...${snippet}...`;
+              })()
+            : "";
+          throw new Error(`Gemini response was not valid JSON: ${parseMsg}${hint}${contextHint}`);
         }
       }
 
