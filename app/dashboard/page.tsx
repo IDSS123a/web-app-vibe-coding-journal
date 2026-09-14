@@ -186,6 +186,12 @@ export default async function DashboardPage() {
           <a href="/bookmarks" className="underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]">
             My Bookmarks
           </a>
+          <a href="/university" className="underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]">
+            University
+          </a>
+          <a href="/dictionary" className="underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]">
+            Dictionary
+          </a>
         </div>
       </div>
     </div>

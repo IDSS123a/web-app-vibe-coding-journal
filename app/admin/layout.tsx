@@ -30,6 +30,12 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
                 Payments
               </a>
               <a
+                href="/admin/university"
+                className="text-black underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]"
+              >
+                University
+              </a>
+              <a
                 href="/admin/hold-gate-calibration"
                 className="text-black underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]"
               >

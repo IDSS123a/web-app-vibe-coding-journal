@@ -64,3 +64,17 @@ export function isBillingExempt(user: { role: string } | null): boolean {
   if (!user) return false;
   return user.role === "admin";
 }
+
+// Vibe-Coding University + Dictionary (specs/vibe-coding-university/
+// SPEC.md, confirmed 2026-09-14): Premium-only, distinct from the
+// general subscription-access check (/api/me's hasAccess) which does
+// not distinguish tiers. Admin exemption (isBillingExempt) still
+// applies -- an admin has "sve privilegije" (P-14), not a partial set.
+export function canAccessUniversity(user: {
+  role: string;
+  subscriptionTier: "basic" | "premium";
+  hasActiveAccess: boolean;
+}): boolean {
+  if (isBillingExempt({ role: user.role })) return true;
+  return user.hasActiveAccess && user.subscriptionTier === "premium";
+}

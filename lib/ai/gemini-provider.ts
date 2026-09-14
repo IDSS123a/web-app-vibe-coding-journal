@@ -56,6 +56,8 @@ import type {
   JudgeHoldReasonOutput,
   AssessRelevanceInput,
   AssessRelevanceOutput,
+  GenerateLessonInput,
+  GenerateLessonOutput,
 } from "./ai-provider";
 
 // A-5/AUDIT-003: sized to the longest expected output for this specific
@@ -77,6 +79,12 @@ const JUDGE_HOLD_REASON_MAX_OUTPUT_TOKENS = 2048;
 
 // Same reasoning as above.
 const ASSESS_RELEVANCE_MAX_OUTPUT_TOKENS = 2048;
+
+// A full lesson body is much longer than a relevance judgment -- sized
+// generously (same "thinking tokens eat the budget first" caution as
+// the two constants above) rather than risking truncation on a brand
+// new call site with no live-traffic history yet to calibrate against.
+const LESSON_GENERATION_MAX_OUTPUT_TOKENS = 4096;
 
 const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
 const API_BASE = "https://generativelanguage.googleapis.com/v1beta/models";
@@ -495,6 +503,57 @@ Return ONLY a JSON object: { "relevanceScore": integer 0-100, "reasoning": strin
     return {
       relevanceScore,
       reasoning: typeof result.reasoning === "string" ? result.reasoning : "",
+    };
+  }
+
+  /**
+   * Vibe-Coding University weekly lesson generation (specs/vibe-coding-
+   * university/PLAN.md). A lesson body is longer than a relevance
+   * judgment or article summary, so this gets its own, larger token
+   * budget -- same "thinking tokens eat the budget first" lesson as
+   * ASSESS_RELEVANCE_MAX_OUTPUT_TOKENS's own comment, sized generously
+   * rather than risking the same truncation bug in a new call site.
+   */
+  async generateLesson(input: GenerateLessonInput): Promise<GenerateLessonOutput> {
+    const sourceText = input.sourceArticles
+      .map((a, i) => `[Source ${i + 1}] ${a.title}\n${a.summary}`)
+      .join("\n\n");
+
+    const prompt = `${P3_SYSTEM_RULES}
+
+You are writing one lesson for the Vibe-Coding University, a structured curriculum teaching vibe-coding (building software with AI coding tools) from beginner to expert.
+
+Lesson title: "${input.lessonTitle}"
+Curriculum level: ${input.courseLevel}
+
+Write the lesson body as markdown (use ## for section headings within the lesson, not a top-level # title -- the title is already shown separately). Ground it in the source material below where genuinely relevant, but the lesson must stand on its own as a real teaching piece for the stated title and level -- do not simply summarize the sources. End with a concrete, actionable takeaway, matching this project's existing editorial voice.
+
+Source material (recent, real articles -- use for grounding and current examples, not as the lesson's only content):
+${sourceText || "(no directly relevant recent articles this run -- write from general, accurate knowledge of the topic instead)"}
+
+Return ONLY a JSON object with exactly these fields:
+{
+  "body": string,   // the full lesson markdown body, following all rules above
+  "terms": [ { "term": string, "definition": string }, ... ]  // 0 to 5 NEW vibe-coding terms this specific lesson introduces that a beginner might not know; omit terms already extremely common knowledge
+}`;
+
+    const result = await callGeminiJSON(this.keys, prompt, LESSON_GENERATION_MAX_OUTPUT_TOKENS);
+
+    const rawTerms = Array.isArray(result.terms) ? result.terms : [];
+    const terms = rawTerms
+      .filter(
+        (t): t is { term: unknown; definition: unknown } => typeof t === "object" && t !== null,
+      )
+      .map((t) => ({
+        term: typeof t.term === "string" ? t.term : "",
+        definition: typeof t.definition === "string" ? t.definition : "",
+      }))
+      .filter((t) => t.term.length > 0 && t.definition.length > 0)
+      .slice(0, 5);
+
+    return {
+      body: typeof result.body === "string" ? result.body : "",
+      terms,
     };
   }
 }

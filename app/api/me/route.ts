@@ -12,7 +12,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { getVerifiedUser } from "@/lib/auth/verify-token";
-import { isBillingExempt } from "@/lib/permissions";
+import { isBillingExempt, canAccessUniversity } from "@/lib/permissions";
 import { evaluateSubscriptionAccess } from "@/features/onboarding/domain";
 
 export async function GET(request: NextRequest) {
@@ -20,7 +20,13 @@ export async function GET(request: NextRequest) {
 
   if (!user) {
     return NextResponse.json(
-      { authenticated: false, isAdmin: false, hasAccess: false, accessReason: "unauthenticated" },
+      {
+        authenticated: false,
+        isAdmin: false,
+        hasAccess: false,
+        accessReason: "unauthenticated",
+        hasUniversityAccess: false,
+      },
       { status: 200 },
     );
   }
@@ -30,14 +36,23 @@ export async function GET(request: NextRequest) {
     subscription_status: user.subscriptionStatus,
     trial_ends_at: user.trialEndsAt,
   });
+  const hasAccess = exempt || subscriptionResult.hasAccess;
 
   return NextResponse.json(
     {
       authenticated: true,
       isAdmin: user.isAdmin,
       email: user.email,
-      hasAccess: exempt || subscriptionResult.hasAccess,
+      hasAccess,
       accessReason: exempt ? "admin_exempt" : subscriptionResult.reason,
+      // Vibe-Coding University + Dictionary (specs/vibe-coding-university/):
+      // Premium-only, distinct from the general subscription-access
+      // check above -- see lib/permissions.ts canAccessUniversity.
+      hasUniversityAccess: canAccessUniversity({
+        role: user.role,
+        subscriptionTier: user.subscriptionTier,
+        hasActiveAccess: subscriptionResult.hasAccess,
+      }),
     },
     { status: 200 },
   );

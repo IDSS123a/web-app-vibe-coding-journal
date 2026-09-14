@@ -177,6 +177,67 @@ export const paymentEventSchema = z.object({
 
 export type PaymentEvent = z.infer<typeof paymentEventSchema>;
 
+// Vibe-Coding University + Dictionary (specs/vibe-coding-university/,
+// migration 014, confirmed 2026-09-14). Premium-only.
+export const courseSchema = z.object({
+  id: z.string().uuid(),
+  slug: z.string().min(1),
+  title: z.string().min(1),
+  level: z.enum(["beginner", "intermediate", "expert"]),
+  description: z.string(),
+  order_index: z.number().int(),
+  created_at: z.string().datetime(),
+  updated_at: z.string().datetime(),
+});
+
+export type Course = z.infer<typeof courseSchema>;
+
+export const lessonSchema = z.object({
+  id: z.string().uuid(),
+  course_id: z.string().uuid(),
+  slug: z.string().min(1),
+  title: z.string().min(1),
+  order_index: z.number().int(),
+  body: z.string().nullable(),
+  status: z.enum(["stub", "pending_review", "published"]),
+  source_article_ids: z.array(z.string().uuid()),
+  candidate_terms: z.array(z.object({ term: z.string(), definition: z.string() })),
+  reviewed_by: z.string().uuid().nullable(),
+  reviewed_at: z.string().datetime().nullable(),
+  created_at: z.string().datetime(),
+  updated_at: z.string().datetime(),
+});
+
+export type Lesson = z.infer<typeof lessonSchema>;
+
+export const dictionaryTermSchema = z.object({
+  id: z.string().uuid(),
+  term: z.string().min(1),
+  definition: z.string().min(1),
+  source_lesson_id: z.string().uuid().nullable(),
+  created_at: z.string().datetime(),
+});
+
+export type DictionaryTerm = z.infer<typeof dictionaryTermSchema>;
+
+export const courseProgressSchema = z.object({
+  id: z.string().uuid(),
+  user_id: z.string().uuid(),
+  course_id: z.string().uuid(),
+  lessons_completed: z.array(z.string().uuid()),
+  status: z.enum(["not_started", "in_progress", "completed"]),
+  updated_at: z.string().datetime(),
+});
+
+export type CourseProgress = z.infer<typeof courseProgressSchema>;
+
+export const markLessonCompleteInputSchema = z.object({
+  course_id: z.string().uuid(),
+  lesson_id: z.string().uuid(),
+});
+
+export type MarkLessonCompleteInput = z.infer<typeof markLessonCompleteInputSchema>;
+
 // Hold-gate calibration learning (specs/hold-gate-calibration-learning/) —
 // Phase 1 of the Director's continuous-learning idea, scoped to the P-3/P-6
 // hold gate. One row per analysis run.

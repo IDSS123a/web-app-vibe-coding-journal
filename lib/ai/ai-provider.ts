@@ -99,11 +99,32 @@ export interface AssessRelevanceOutput {
   reasoning: string;
 }
 
+/**
+ * Vibe-Coding University's weekly lesson-generation job (specs/
+ * vibe-coding-university/PLAN.md, confirmed 2026-09-14). Writes the
+ * body for ONE already-titled stub lesson using recent high-relevance
+ * articles as source material -- deliberately not "invent a lesson
+ * topic," which would be much harder to keep on-topic and impossible
+ * to pre-review (the topic itself is confirmed by the Director already,
+ * via specs/vibe-coding-university/CURRICULUM_DRAFT.md).
+ */
+export interface GenerateLessonInput {
+  lessonTitle: string;
+  courseLevel: "beginner" | "intermediate" | "expert";
+  sourceArticles: Array<{ title: string; summary: string }>;
+}
+
+export interface GenerateLessonOutput {
+  body: string; // markdown, follows the same P-3 editorial rules as Daily Report summaries
+  terms: Array<{ term: string; definition: string }>; // 0-5 new Dictionary terms this lesson introduces
+}
+
 export interface AIProvider {
   summarize(input: SummarizeInput): Promise<SummarizeOutput>;
   classify(input: ClassifyInput): Promise<ClassifyOutput>;
   judgeHoldReason(input: JudgeHoldReasonInput): Promise<JudgeHoldReasonOutput>;
   assessRelevance(input: AssessRelevanceInput): Promise<AssessRelevanceOutput>;
+  generateLesson(input: GenerateLessonInput): Promise<GenerateLessonOutput>;
   // Additional methods will be added as pipeline stages are implemented
 }
 
@@ -159,6 +180,14 @@ class NoOpProvider implements AIProvider {
       relevanceScore: 100,
       reasoning: "[AI provider not configured]",
     };
+  }
+
+  // Deliberately NOT fail-open like assessRelevance above -- an empty
+  // lesson body must never be mistaken for real generated content. The
+  // caller (app/api/cron/university-generate/route.ts) treats an empty
+  // body as a failed generation attempt, not a lesson ready for review.
+  async generateLesson(): Promise<GenerateLessonOutput> {
+    return { body: "", terms: [] };
   }
 }
 
