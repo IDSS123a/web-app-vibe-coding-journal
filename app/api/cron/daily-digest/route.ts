@@ -346,17 +346,22 @@ async function deduplicateArticles(): Promise<{
 // Capping this phase to a bounded chunk per run guarantees a single
 // run's Quality Engine work can never itself exceed the time budget,
 // regardless of how large the backlog gets; the rest is naturally
-// picked up by the next hourly run. Sized conservatively: each article
-// can need up to 2-3 sequential Gemini calls (assessRelevance,
-// summarize, occasionally classify), and Gemini 2.5 Flash's own
-// "thinking" tokens (see DECISION_LOG.md's Phase-2 finding) mean a
-// single call can genuinely take several seconds -- 20 articles
-// leaves real margin against the 300s total budget after Phases
-// 1/2/4 also take their share, rather than cutting it close. At a
-// once-per-hour cadence this still drains a large backlog within a
-// day or so, and keeps pace with normal (non-backlog) daily volume,
-// which has historically been well under 20*24.
-const MAX_ARTICLES_PER_QUALITY_RUN = 20;
+// picked up by the next hourly run.
+//
+// First value tried (20) was still confirmed live to time out at 300s
+// -- the real bottleneck once Phases 1/2 stopped being the problem
+// turned out to be Gemini's free-tier rate limit itself
+// (GenerateRequestsPerMinutePerProjectPerModel-FreeTier, 5/minute per
+// key): 20 articles x up to 2-3 sequential calls each repeatedly hit
+// RESOURCE_EXHAUSTED and rotated through multiple of the 8 keys before
+// succeeding, and that real per-call latency (plus Gemini 2.5 Flash's
+// own "thinking" tokens, see DECISION_LOG.md's Phase-2 finding) added
+// up well past the remaining budget. Lowered to 5 -- much slower
+// backlog drain per run, but reliably finishes within budget even
+// under heavy rate-limiting, which matters far more than speed while
+// recovering from an active outage. Revisit upward once the backlog is
+// actually cleared and this is back to processing normal daily volume.
+const MAX_ARTICLES_PER_QUALITY_RUN = 5;
 
 /**
  * Phase 3: Quality Engine & Classifier & AI Summary
