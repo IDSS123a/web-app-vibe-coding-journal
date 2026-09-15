@@ -68,8 +68,8 @@ function CourseList() {
             Vibe-Coding University
           </h1>
           <p className="mt-2 text-sm text-black">
-            Minimum 20 core lessons per level, organized into chapters. Pass each chapter's quiz to
-            unlock the next, then clear the level final test.
+            25 core lessons per level across 5 chapters. Pass each chapter's quiz to unlock the
+            next, then clear the level final test.
           </p>
           <a
             href="/dictionary"

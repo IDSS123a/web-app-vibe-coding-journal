@@ -32,6 +32,13 @@ const FEATURES = [
     href: "/bookmarks",
     cta: "View Bookmarks",
   },
+  {
+    n: "04",
+    title: "University",
+    body: "A full curriculum on building software with AI — 75 lessons across beginner, intermediate, and expert, organized into chapters with quizzes and a final test per level. Start from wherever actually fits you.",
+    href: "/university",
+    cta: "Start the University",
+  },
 ];
 
 export default function WelcomePage() {

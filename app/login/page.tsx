@@ -4,6 +4,16 @@
  * Login page — client-side Supabase sign-in.
  * signInWithPassword stores the session in localStorage so admin pages
  * (via useSession) can attach the access_token to API calls.
+ *
+ * Post-login redirect fixed 2026-09-16 (P-21 UI/UX pass): this
+ * unconditionally sent EVERY successful sign-in to
+ * /admin/review-queue, regardless of role -- found live testing that a
+ * regular subscriber (the actual majority of this page's traffic; the
+ * "Sign In" link in SiteNav and "No account? Register" here are both
+ * general-purpose, not admin-only) got bounced straight into
+ * AdminGuard's "not authorized" screen immediately after successfully
+ * signing in. Now checks /api/me (same endpoint AdminGuard itself
+ * already uses) and routes by actual role.
  */
 
 import { useState } from "react";
@@ -22,19 +32,34 @@ export default function LoginPage() {
     setLoading(true);
     setError(null);
 
-    const { error: signInError } = await supabase.auth.signInWithPassword({
+    const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
 
-    setLoading(false);
-
     if (signInError) {
+      setLoading(false);
       setError(signInError.message);
       return;
     }
 
-    router.push("/admin/review-queue");
+    const accessToken = signInData.session?.access_token;
+    let isAdmin = false;
+    try {
+      if (accessToken) {
+        const res = await fetch("/api/me", { headers: { authorization: `Bearer ${accessToken}` } });
+        const me = await res.json();
+        isAdmin = Boolean(me.isAdmin);
+      }
+    } catch {
+      // Fail safe to the regular-user destination, not the admin one --
+      // an unreachable /api/me should never accidentally route a
+      // non-admin into an admin-only page.
+      isAdmin = false;
+    }
+
+    setLoading(false);
+    router.push(isAdmin ? "/admin/review-queue" : "/dashboard");
   }
 
   return (
