@@ -696,5 +696,48 @@ this project is not done until:
 
 ---
 
+## P-21. Backend Health — Priority Zero, Standing Duty `[ACTIVE]` 🔴 CRITICAL
+
+- **Director's directive (2026-09-16, verbatim):** "Backend je nulti
+  prioritet. Imaš zadatak da konstantno pregledavaš backend i tražiš
+  moguće greške i najbolje načine za unapređenje backenda." (The
+  backend is priority zero. You have a standing task to constantly
+  review the backend and look for possible errors and the best ways to
+  improve it.) This ranks above feature work, not alongside it — when
+  backend health is in question, resolve that first.
+- **Prompted by a real finding, not a hypothetical:** the same day,
+  a direct audit (not a self-report) found a full-day production
+  outage (`daily_reports` had zero rows for 2026-09-15 —
+  `FUNCTION_INVOCATION_TIMEOUT` on every real invocation, PDL-043) that
+  had gone unnoticed through several turns of "everything's fine"
+  summaries built from memory rather than fresh evidence. The standing
+  duty exists specifically to prevent that gap from recurring.
+- **What "review" means in practice, per this project's own established
+  discipline** (same pattern as every fix logged in `DECISION_LOG.md`
+  this session): real evidence over assumption — `gh run list`/`gh run
+  view` on every scheduled workflow, direct SQL against production for
+  data gaps or anomalies, live endpoint checks, `git status` for
+  uncommitted work, the full verification chain (naming-discipline
+  grep → `tsc --noEmit` → `vitest run` → `npm run build`) before
+  claiming anything fixed. A status report built from memory of a prior
+  session's summary is not a review.
+- **Scope**: cron/workflow health (daily-digest, university-generate,
+  hold-gate-calibration, CI, project-guard), database anomalies
+  (missing rows, zero-count reports, orphaned data), auth/payments
+  integrity, AI-provider quota/key health, git-hygiene (uncommitted
+  deploys), and anything else that affects whether the system is
+  actually working versus appearing to.
+- **Not yet resolved, per this directive's own founding audit
+  (PDL-043)**: the `MAX_ARTICLES_PER_QUALITY_RUN` 40→20 revert has not
+  been confirmed under a real target-hour invocation; 2026-09-13's
+  zero-article report anomaly is unexplained. Both are the concrete
+  next steps this rule commits to following up on, not closed items.
+- **Automation cadence** (how literally "constantly" is implemented —
+  every session vs. a scheduled recurring check) is a Director decision
+  still open as of this rule's creation — see the open question at the
+  end of this document / raised directly with the Director.
+
+---
+
 *Vibe-Coding Journal — Project Constitution v0.1 — draft, pending
 Director review before first sprint.*
