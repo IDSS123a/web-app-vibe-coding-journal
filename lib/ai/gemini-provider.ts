@@ -58,6 +58,8 @@ import type {
   AssessRelevanceOutput,
   GenerateLessonInput,
   GenerateLessonOutput,
+  GenerateSupplementaryLessonInput,
+  GenerateSupplementaryLessonOutput,
 } from "./ai-provider";
 
 // A-5/AUDIT-003: sized to the longest expected output for this specific
@@ -580,6 +582,84 @@ Return ONLY a JSON object with exactly these fields:
       .slice(0, 5);
 
     return {
+      body: typeof result.body === "string" ? result.body : "",
+      terms,
+    };
+  }
+
+  /**
+   * Autonomous supplementary-lesson growth (specs/vibe-coding-university/
+   * SPEC.md Amendment, PDL-042). Unlike generateLesson above, this DOES
+   * invent the topic and level -- deliberately, and safely, because the
+   * result always lands in pending_review (app/api/cron/university-
+   * generate/route.ts), never publishes unreviewed. Same token budget as
+   * generateLesson -- same shape of output (a full lesson body), just
+   * with two more small fields (title, level) added to the same call
+   * rather than a second one, so this costs nothing extra against the
+   * free-tier weekly budget.
+   */
+  async generateSupplementaryLesson(
+    input: GenerateSupplementaryLessonInput,
+  ): Promise<GenerateSupplementaryLessonOutput> {
+    const sourceText = input.sourceArticles
+      .map((a, i) => `[Source ${i + 1}] ${a.title}\n${a.summary}`)
+      .join("\n\n");
+
+    const existingTitlesText =
+      input.existingLessonTitles.length > 0
+        ? input.existingLessonTitles.map((t) => `- ${t}`).join("\n")
+        : "(none yet)";
+
+    const prompt = `${P3_SYSTEM_RULES}
+
+You are proposing and writing ONE new SUPPLEMENTARY lesson for the Vibe-Coding University, a structured curriculum teaching vibe-coding (building software with AI coding tools). The core curriculum (75 lessons across beginner/intermediate/expert) is fixed and complete -- this lesson is an ADD-ON layered on top of it, growing the curriculum's breadth as new material becomes available, not part of the required core path.
+
+Topics already covered anywhere in the curriculum (core or supplementary) -- do NOT propose a topic that duplicates or closely overlaps any of these:
+${existingTitlesText}
+
+Source material (recent, real articles -- ground the lesson in genuinely new, current material from here):
+${sourceText || "(no directly relevant recent articles this run -- do not generate a lesson; source material is required for a new supplementary topic)"}
+
+Based on the source material, propose ONE specific, well-scoped lesson topic that is NOT already covered, genuinely useful to a vibe-coder, and grounded in what's actually in the source material above (not a generic topic the sources don't really support).
+
+Classify which curriculum level this topic genuinely fits -- beginner, intermediate, or expert -- based on the actual complexity of the underlying concept for someone learning it, not which level the source article itself was written for. A topic explaining a basic concept in an advanced context is still a beginner topic; a nuanced operational or architectural topic is expert-level even if the source article is written simply.
+
+Write the lesson body as markdown (use ## for section headings within the lesson, not a top-level # title -- the title is shown separately), matching this curriculum's existing editorial voice and P-3 rules above. The lesson must stand on its own as a real teaching piece, not simply summarize the sources. End with a concrete, actionable takeaway.
+
+Return ONLY a JSON object with exactly these fields:
+{
+  "title": string,   // the proposed lesson title, matching this curriculum's existing title style
+  "level": "beginner" | "intermediate" | "expert",
+  "body": string,     // the full lesson markdown body, following all rules above
+  "terms": [ { "term": string, "definition": string }, ... ]  // 0 to 5 NEW vibe-coding terms this specific lesson introduces that a beginner might not know; omit terms already extremely common knowledge
+}`;
+
+    const result = await callGeminiJSON(this.keys, prompt, LESSON_GENERATION_MAX_OUTPUT_TOKENS);
+
+    const rawTerms = Array.isArray(result.terms) ? result.terms : [];
+    const terms = rawTerms
+      .filter(
+        (t): t is { term: unknown; definition: unknown } => typeof t === "object" && t !== null,
+      )
+      .map((t) => ({
+        term: typeof t.term === "string" ? t.term : "",
+        definition: typeof t.definition === "string" ? t.definition : "",
+      }))
+      .filter((t) => t.term.length > 0 && t.definition.length > 0)
+      .slice(0, 5);
+
+    const rawLevel = typeof result.level === "string" ? result.level : "";
+    // Fall back to "intermediate" for an invalid/missing classification
+    // rather than rejecting the whole generation -- the admin review
+    // gate is the real safety net; a slightly-off level classification
+    // is a minor, correctable review note, not a failure worth discarding
+    // real generated content over.
+    const level: "beginner" | "intermediate" | "expert" =
+      rawLevel === "beginner" || rawLevel === "intermediate" || rawLevel === "expert" ? rawLevel : "intermediate";
+
+    return {
+      title: typeof result.title === "string" ? result.title : "",
+      level,
       body: typeof result.body === "string" ? result.body : "",
       terms,
     };

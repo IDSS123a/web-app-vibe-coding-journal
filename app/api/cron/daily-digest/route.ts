@@ -382,28 +382,27 @@ async function deduplicateArticles(): Promise<{
 // up well past the remaining budget. Lowered to 5 to survive the
 // active outage (PDL-027).
 //
-// Raised 5 -> 40 the same day, PDL-027 follow-up: this endpoint only
-// runs once per calendar day (the idempotency check earlier in this
-// file skips every subsequent trigger once today's report exists), not
-// once per hour -- at 5/day, the real 2786-article backlog measured
-// live during the outage would take roughly a year and a half to
-// drain. 5 was sized for a crash that turned out to have two OTHER
-// causes (gemini-provider.ts's missing fetch timeout, and this file's
-// own uncapped Dedup phase -- both fixed same day, see PDL-027); it was
-// never actually validated as the right steady-state throughput once
-// those were gone. 40 is chosen against Gemini's own confirmed daily
-// quota (a live rate-limit error during the outage surfaced
-// quotaId=GenerateRequestsPerDayPerProjectPerModel-FreeTier,
-// quotaValue=20 per key -- 8 keys is a ~160/day theoretical ceiling),
-// leaving comfortable headroom for classify/summarize's extra calls on
-// articles that pass P-0, and matching the very first value this
-// constant was ever intended to hold before the outage forced it down.
-// Cannot be re-verified same-day (the once-daily cadence above, plus
-// spending today's already-partially-used Gemini quota on a duplicate
-// test run instead of real backlog would waste it) -- the first real
-// proof is tomorrow's natural daily run. Revisit again (up or down)
-// once that's confirmed, rather than assuming this number is final.
-const MAX_ARTICLES_PER_QUALITY_RUN = 40;
+// Raised 5 -> 40 on 2026-09-14 (PDL-027 follow-up), against Gemini's
+// own daily quota headroom -- but never against the Vercel FUNCTION
+// duration budget, because the per-article loop directly below is
+// fully sequential (up to 2-3 real Gemini network calls per article,
+// one `await` after another, zero parallelism). That gap was flagged
+// explicitly at the time ("cannot be re-verified same-day... the first
+// real proof is tomorrow's natural daily run") and the real proof
+// arrived 2026-09-15: EVERY real invocation that day
+// (05:53/11:12/16:23/20:01 UTC, confirmed via `gh run view` on
+// .github/workflows/hourly-digest-trigger.yml) hit Vercel's
+// FUNCTION_INVOCATION_TIMEOUT (300s) before finishing -- a full day
+// with ZERO daily_reports rows produced, a real service outage, not a
+// hypothetical risk. Reverted to 20 -- the last value with an actual
+// working track record (used through 2026-09-10 to -14 before this
+// raise) rather than guessing a new number. Still just as sequential
+// as before; if 20 also turns out to be too slow, the real fix is
+// parallelizing this loop (e.g. Promise.all in small batches), not
+// another blind cap adjustment -- watch real Vercel function-duration
+// data before touching this constant again, the same mistake this
+// comment exists to not repeat.
+const MAX_ARTICLES_PER_QUALITY_RUN = 20;
 
 /**
  * Phase 3: Quality Engine & Classifier & AI Summary

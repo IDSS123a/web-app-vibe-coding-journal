@@ -119,12 +119,35 @@ export interface GenerateLessonOutput {
   terms: Array<{ term: string; definition: string }>; // 0-5 new Dictionary terms this lesson introduces
 }
 
+/**
+ * Autonomous supplementary-lesson growth (specs/vibe-coding-university/
+ * SPEC.md Amendment, PDL-042, picked up 2026-09-15). Unlike
+ * GenerateLessonInput above, this one DOES invent the topic and level
+ * itself -- safe specifically because the result always lands in
+ * `pending_review`, never publishes unreviewed, and only ever produces
+ * supplementary (is_core=false, unchaptered) content. The fixed
+ * 75-lesson core this input type was designed to protect is untouched
+ * either way.
+ */
+export interface GenerateSupplementaryLessonInput {
+  sourceArticles: Array<{ title: string; summary: string }>;
+  existingLessonTitles: string[]; // dedup context -- avoid re-covering a topic already taught anywhere in the curriculum
+}
+
+export interface GenerateSupplementaryLessonOutput {
+  title: string;
+  level: "beginner" | "intermediate" | "expert";
+  body: string;
+  terms: Array<{ term: string; definition: string }>;
+}
+
 export interface AIProvider {
   summarize(input: SummarizeInput): Promise<SummarizeOutput>;
   classify(input: ClassifyInput): Promise<ClassifyOutput>;
   judgeHoldReason(input: JudgeHoldReasonInput): Promise<JudgeHoldReasonOutput>;
   assessRelevance(input: AssessRelevanceInput): Promise<AssessRelevanceOutput>;
   generateLesson(input: GenerateLessonInput): Promise<GenerateLessonOutput>;
+  generateSupplementaryLesson(input: GenerateSupplementaryLessonInput): Promise<GenerateSupplementaryLessonOutput>;
   // Additional methods will be added as pipeline stages are implemented
 }
 
@@ -188,6 +211,13 @@ class NoOpProvider implements AIProvider {
   // body as a failed generation attempt, not a lesson ready for review.
   async generateLesson(): Promise<GenerateLessonOutput> {
     return { body: "", terms: [] };
+  }
+
+  // Same discipline as generateLesson above: empty title/body must
+  // never be mistaken for a real proposed lesson. The cron route
+  // treats an empty title as a failed generation attempt.
+  async generateSupplementaryLesson(): Promise<GenerateSupplementaryLessonOutput> {
+    return { title: "", level: "intermediate", body: "", terms: [] };
   }
 }
 

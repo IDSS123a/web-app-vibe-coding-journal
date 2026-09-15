@@ -118,6 +118,20 @@ until (a) the Director opens P-19's dedicated chatbot sprint, and (b)
 the AI-cost model for that is resolved (P-19 already flags this as a
 harder problem than the batch pipeline's).
 
+**University supplementary-content growth (added 2026-09-15, PDL-037):**
+Director's stated conclusion for `specs/vibe-coding-university/` — as
+this app's article knowledge base grows, new supplementary University
+lessons/chapters should be created autonomously over time, organized
+by level according to difficulty/complexity, rather than the flat
+ungated list the weekly generation cron (PLAN.md, PDL-032/033)
+produces today. Explicitly NOT scoped for design or build yet —
+Director confirmed continuing hand-authored core-curriculum work
+first. Belongs here rather than a separate University roadmap doc
+because it's the same underlying AI-cost tension as everything else on
+this page (free-only Gemini, PDL-021; no paid budget without real
+traffic, P-19) — when it's picked up, reconcile it the same way this
+whole roadmap reconciled the original "Knowledge Engine" mandate.
+
 ## Source growth, concretely
 
 Today: 14 active sources (GitHub Blog, Hacker News Front Page + 4

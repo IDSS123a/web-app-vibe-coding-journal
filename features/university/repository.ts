@@ -299,15 +299,25 @@ export async function updateLessonContent(
   if (error) throw new Error(`Failed to update lesson content: ${error.message}`);
 }
 
-export async function getPendingReviewLessons(): Promise<Lesson[]> {
+/**
+ * Joins courses(slug) so the admin review page can show which level a
+ * pending lesson belongs to -- a real pre-existing gap (no course/level
+ * context was ever surfaced here), closed now that level classification
+ * is the actual point of the autonomous-supplementary-growth change
+ * (PDL-042) reviewers need to be able to check.
+ */
+export async function getPendingReviewLessons(): Promise<Array<Lesson & { course_slug: string }>> {
   if (!supabaseAdmin) throw new Error("Admin client not available");
   const { data, error } = await supabaseAdmin
     .from("lessons")
-    .select("*")
+    .select("*, courses!inner(slug)")
     .eq("status", "pending_review")
     .order("updated_at", { ascending: false });
   if (error) throw new Error(`Failed to fetch pending-review lessons: ${error.message}`);
-  return data as Lesson[];
+  return (data ?? []).map((row) => {
+    const { courses, ...lesson } = row as unknown as Lesson & { courses: { slug: string } };
+    return { ...lesson, course_slug: courses.slug };
+  });
 }
 
 export async function reviewLesson(
@@ -373,6 +383,107 @@ export async function getUnusedHighRelevanceArticles(limit = 5): Promise<Array<{
       summary: a.summary as string | null,
       raw_summary: a.raw_summary as string | null,
     }));
+}
+
+/**
+ * Dedup context for the autonomous-supplementary-growth prompt
+ * (PDL-042) -- every lesson title in the curriculum, core and
+ * supplementary, published or still pending review, so the AI never
+ * proposes a topic that duplicates ground already taught or already
+ * awaiting a review decision.
+ */
+export async function getAllLessonTitles(): Promise<string[]> {
+  if (!supabaseAdmin) throw new Error("Admin client not available");
+  const { data, error } = await supabaseAdmin.from("lessons").select("title").not("title", "is", null);
+  if (error) throw new Error(`Failed to fetch lesson titles: ${error.message}`);
+  return (data ?? []).map((r) => r.title as string).filter((t) => t.length > 0);
+}
+
+/**
+ * Maps a curriculum level to its course id, for routing a newly
+ * AI-classified supplementary lesson (PDL-042) to the right course --
+ * courses.slug IS the level identifier in this project's seed data
+ * (same shortcut already relied on in app/api/cron/university-generate/
+ * route.ts's courseLevel derivation).
+ */
+export async function getCourseIdByLevel(
+  level: "beginner" | "intermediate" | "expert",
+): Promise<string | null> {
+  if (!supabaseAdmin) throw new Error("Admin client not available");
+  const { data, error } = await supabaseAdmin.from("courses").select("id").eq("slug", level).maybeSingle();
+  if (error) throw new Error(`Failed to fetch course id for level ${level}: ${error.message}`);
+  return data ? (data.id as string) : null;
+}
+
+/**
+ * Inserts a brand-new AI-proposed supplementary lesson (PDL-042) --
+ * is_core=false, chapter_id=null (unchaptered, matches the one existing
+ * supplementary lesson from PDL-033), status='pending_review' so it
+ * never reaches a subscriber without going through the same admin
+ * approval gate as every other generated lesson. Slug is derived from
+ * the AI-proposed title with a numeric suffix on collision (courses,
+ * slug) is unique per migration 014, so a title that happens to repeat
+ * an existing one -- despite the dedup context passed to the prompt --
+ * still can't violate that constraint and abort the whole generation
+ * run over a cosmetic slug clash.
+ */
+export async function insertSupplementaryLesson(input: {
+  courseId: string;
+  title: string;
+  body: string;
+  source_article_ids: string[];
+  candidate_terms: Array<{ term: string; definition: string }>;
+}): Promise<{ id: string; slug: string }> {
+  if (!supabaseAdmin) throw new Error("Admin client not available");
+
+  const baseSlug =
+    input.title
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 80) || "supplementary-lesson";
+
+  const { data: maxOrderRow, error: maxOrderError } = await supabaseAdmin
+    .from("lessons")
+    .select("order_index")
+    .eq("course_id", input.courseId)
+    .eq("is_core", false)
+    .order("order_index", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (maxOrderError) throw new Error(`Failed to compute next order_index: ${maxOrderError.message}`);
+  const nextOrderIndex = ((maxOrderRow?.order_index as number | undefined) ?? 0) + 1;
+
+  let slug = baseSlug;
+  for (let attempt = 0; attempt < 10; attempt++) {
+    const { data, error } = await supabaseAdmin
+      .from("lessons")
+      .insert({
+        course_id: input.courseId,
+        chapter_id: null,
+        is_core: false,
+        slug,
+        title: input.title,
+        order_index: nextOrderIndex,
+        body: input.body,
+        status: "pending_review",
+        source_article_ids: input.source_article_ids,
+        candidate_terms: input.candidate_terms,
+      })
+      .select("id, slug")
+      .single();
+
+    if (!error) return { id: data.id as string, slug: data.slug as string };
+
+    // 23505 = unique_violation; only retry with a suffixed slug for
+    // exactly that case, anything else is a real failure to surface.
+    if (error.code === "23505") {
+      slug = `${baseSlug}-${attempt + 2}`;
+      continue;
+    }
+    throw new Error(`Failed to insert supplementary lesson: ${error.message}`);
+  }
+  throw new Error(`Failed to insert supplementary lesson: slug "${baseSlug}" collided too many times`);
 }
 
 /**

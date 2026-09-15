@@ -11,9 +11,14 @@ import { useSession } from "@/lib/auth/use-session";
 import { MarkdownContent } from "@/components/MarkdownContent";
 import type { Lesson } from "@/lib/validation/schemas";
 
+// PDL-042: the admin API now joins courses(slug) onto each pending
+// lesson so the reviewer can see which level the AI classified it
+// into -- previously this page showed no course/level context at all.
+type PendingLesson = Lesson & { course_slug: string };
+
 export default function AdminUniversityPage() {
   const { token, loading: sessionLoading } = useSession();
-  const [lessons, setLessons] = useState<Lesson[]>([]);
+  const [lessons, setLessons] = useState<PendingLesson[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionMsg, setActionMsg] = useState<string | null>(null);
@@ -80,6 +85,9 @@ export default function AdminUniversityPage() {
       <div className="space-y-8">
         {lessons.map((lesson) => (
           <div key={lesson.id} className="border-4 border-black p-8">
+            <p className="mb-1 text-xs font-bold uppercase tracking-widest text-[#FF3000]">
+              {lesson.course_slug} — Supplementary
+            </p>
             <h3 className="text-2xl font-black uppercase tracking-tight text-black">{lesson.title}</h3>
             <div className="swiss-grid-pattern mt-4 max-h-96 overflow-y-auto border-2 border-black bg-[#F2F2F2] p-4 text-black">
               <MarkdownContent>{lesson.body ?? ""}</MarkdownContent>

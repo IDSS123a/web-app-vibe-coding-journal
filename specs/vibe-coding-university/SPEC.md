@@ -156,3 +156,95 @@ conflict.
    allowed, and is there a cooldown or unlimited immediate retry?
 4. **Level final test**: how many questions, and what passing bar?
    Same retry-policy question as #3.
+
+## Amendment — Scope correction + supplementary growth vision (2026-09-15, PDL-037)
+
+**Scope correction:** "minimum 20 lessons per level" was being treated
+as exactly 20, not a floor. Director corrected this — the count needs
+to be large enough for real curriculum quality, not just clear the
+minimum, for every level. Resolved via AskUserQuestion: **5 chapters
+per level instead of 4 (~25 lessons/level, 75 total)**, applied
+retroactively to Beginner (already complete at the old 20) as well as
+Intermediate and Expert. See `CURRICULUM_DRAFT.md` v3 and PDL-037 for
+the full record, including live re-verification that the chapter/level
+gating logic re-locks correctly when a chapter is added (it was never
+hardcoded to a fixed count).
+
+**Supplementary growth vision (future, not scoped for build yet):**
+Director's conclusion — as the article knowledge base grows through
+this app's Daily Report pipeline, new lessons/chapters should be
+created *autonomously* over time, organized by level according to
+difficulty/complexity of the underlying material. Clarified via
+AskUserQuestion:
+
+- This applies to the **supplementary layer only** — the ~75-lesson
+  hand-authored core (this Amendment + the previous one) stays fixed
+  and does not get modified or extended automatically. This isn't a
+  new concept — the original spec always described supplementary
+  content as an "add-on for knowledge advancement" placed by level;
+  what's new is the explicit direction that it should scale
+  *organized by level/difficulty* as the article corpus grows, not stay
+  a flat, ungated list the way it renders today (see `/university`,
+  the "Supplementary" section under each level).
+- Explicitly **not scoped for design or build right now** — recorded
+  here as a roadmap item. Director confirmed: continue hand-authoring
+  the remaining Intermediate/Expert core lessons; revisit this once
+  the core is further along.
+- **Directly touches standing AI-cost constraints already on record**:
+  P-19 (chatbot/RAG — no paid AI budget without real traffic) and
+  PDL-021 (free-only Gemini). Any real design for "autonomous,
+  difficulty-classified lesson growth from a growing article corpus"
+  needs to reconcile against those the same way
+  `specs/vibe-coding-intelligence-engine/ROADMAP.md` already reconciled
+  a similarly-shaped "Knowledge Engine" mandate — likely the right home
+  for this item once it's actually picked up, rather than duplicating
+  a second roadmap document for the same underlying cost tension.
+
+## Amendment — Autonomous supplementary growth, picked up (2026-09-15, PDL-042)
+
+Director picked up the PDL-038 roadmap item explicitly ("nastavi
+kreirati naredne korake, samostalni rast dopunskog sloja iz sve većeg
+broja članaka") before going offline for the night — this assistant
+proceeds under the same autonomous-overnight-work precedent as
+PDL-019 (Sprint 10-11), with the same discipline: real verification at
+every step, decisions logged as they're made, nothing published to end
+users without going through the existing human review gate.
+
+**What actually changes, concretely:**
+
+- The weekly generation cron (`app/api/cron/university-generate/route.ts`)
+  no longer stops when there's no rejected/reset stub lesson to retry.
+  It falls through to a NEW mode: propose an entirely new supplementary
+  lesson topic from unused high-relevance articles, rather than only
+  filling a pre-titled slot. This is a deliberate reversal of the
+  original design comment in `lib/ai/ai-provider.ts`
+  (`GenerateLessonInput`) — "deliberately not 'invent a lesson topic'…
+  impossible to pre-review" — which was correct for the CORE curriculum
+  (fixed, hand-authored, gated by Director review of the outline
+  itself) but was never actually written with the supplementary layer
+  in mind. Inventing a topic is safe here specifically because every
+  generated lesson still lands in `pending_review`, same as before —
+  nothing publishes without a human approving it in `/admin/university`.
+- The same AI call that writes the lesson body also classifies which
+  level (beginner/intermediate/expert) the topic actually fits, based
+  on the complexity of the underlying concept — not which level the
+  source article happened to be filed under. No second AI call, no
+  extra cost: this is the "organized by level/difficulty instead of a
+  flat list" requirement from PDL-038, resolved as one added field in
+  the existing prompt/response shape.
+- Existing lesson titles (the full 75-lesson core plus any prior
+  supplementary lessons) are passed as context so the AI avoids
+  proposing a topic that duplicates ground already taught.
+- **No schema change** — reuses `lessons.is_core=false`,
+  `lessons.chapter_id=null` (supplementary, unchaptered, per migration
+  017), and the existing `pending_review` → admin-approve → `published`
+  flow untouched since PDL-032/033.
+- **No cost-budget change** — same weekly cadence, same
+  `hasGenerationRunThisWeek` idempotency, same free-tier Gemini keys,
+  same one-call-per-week ceiling. This is a routing/classification
+  change to an existing budgeted call, not a new one.
+- `/admin/university` now shows which level the AI proposed for each
+  pending lesson (it previously showed no course/level context at
+  all — a real pre-existing gap, worth closing regardless, but made
+  load-bearing now that level classification is the actual point of
+  the change).

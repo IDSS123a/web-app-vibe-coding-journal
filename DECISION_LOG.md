@@ -1418,4 +1418,315 @@ yet built — the next concrete step.
 
 ---
 
+---
+
+## PDL-036 — University audit correction: content gap + missing site nav
+
+**Date:** 2026-09-15
+
+**Decision:** Director directly audited the University after PDL-035
+shipped and correctly found it materially incomplete: *"Nivoi ne
+sadrže po minimalno 20 pitanja. Nema provjere znanja."* A direct SQL
+audit confirmed it before any response — 1/20 Beginner core lessons
+published, 0 quiz questions in the entire database, despite the schema
+and gating logic from PDL-035 being fully built. Separately, while
+addressing the Director's "postavi lagano kretanje kroz cijelu web
+app" request, found there was no site-wide navigation and no sign-out
+control anywhere in the app (`grep -r signOut` returned zero matches)
+— a previously unnoticed gap, not something the Director flagged
+directly.
+
+**Fixed this session:**
+- `SiteNav` component (`components/SiteNav.tsx`), wired into root
+  layout, hidden on `/admin/*` (which has its own nav) — Dashboard /
+  Archive / Bookmarks / University / Dictionary / Sign Out, visible on
+  every page.
+- Chapter 1 (Foundations, Beginner) completed for real: 4 more
+  hand-authored lessons (`vibe-coding-mindset`,
+  `short-history-autocomplete-to-agents`,
+  `vibe-coding-vs-traditional-programming`,
+  `setting-realistic-expectations`) plus 5 real quiz questions with a
+  correct answer key, seeded via `supabase/seed/018_chapter1_content.sql`.
+- A `CelebrationOverlay` dismiss bug found while testing (`onDismiss`
+  was re-setting the same object reference, so the overlay never
+  actually closed) — fixed in both the chapter-quiz and level-test
+  pages.
+
+**Verified live, not just deployed:** marked all 5 Chapter 1 lessons
+complete one at a time on the production site, confirmed "Take Chapter
+Quiz" only appears once all 5 are done, took the quiz with the
+Director-approved 4/5-to-pass bar, confirmed the GET route never
+exposes the answer key, scored 5/5 server-side, confirmed the
+"Chapter Passed" celebration fires, and confirmed Chapter 2 unlocks
+immediately after on a fresh page load. The full gating chain (lesson
+completion → quiz availability → server-side grading → chapter
+unlock) is confirmed working end-to-end, not just architecturally
+present.
+
+**Continued the same session, after Director's "nastavi":** wrote
+Chapters 3 and 4 of Beginner (Working With Prompts; Reading, Testing,
+and Trusting Output — 10 more lessons, 10 more quiz questions,
+`supabase/seed/019` through `021`-equivalent inline seeds), completing
+Beginner's 20/20 core lessons. Designed and wrote the Beginner level
+final test (10 cumulative questions across all 4 chapters,
+`level_test_questions` table, same 80% bar, graded by percentage so it
+isn't tied to a fixed question count).
+
+**Fully live-verified, not just deployed:** walked through the entire
+Beginner level in the real Browser pane against production — all 20
+lessons marked complete one at a time, all 4 chapter quizzes taken and
+passed (5/5 each, correct answer key never exposed to the client),
+each chapter unlocking the next exactly as designed, then the level
+final test unlocking automatically once all 4 chapters passed, taken
+and passed 10/10, ending in the "LEVEL COMPLETE: BEGINNER" celebration.
+**Beginner is the first fully complete, fully verified level end to
+end.**
+
+**Still open:** Intermediate and Expert levels (40 lessons, 40 quiz
+questions, 8 chapters, 2 level final tests) remain unwritten — only
+Chapter 1 of each has a single pre-seeded stub lesson, same as
+Beginner started. Pacing stays as agreed — hand-authored in
+independently reviewable waves, not one dump.
+
+**Correction, same day (PDL-037):** Director caught that this
+assistant had been treating the spec's "minimum 20" as exactly 20.
+Corrected to 5 chapters/level (~25 lessons/level, 75 total) via
+AskUserQuestion, applied retroactively to Beginner. `CURRICULUM_DRAFT.md`
+rewritten to v3. Beginner's new Chapter 5 ("Building Your First Real
+Project" — 5 lessons + 5 quiz questions) written and live-verified;
+the level final test grew to 12 questions (2 new ones covering
+Chapter 5) and was re-passed live at 12/12 after confirming it had
+correctly re-locked until the new chapter was cleared (verified by
+inspection of `isLevelTestUnlocked`, which compares against the live
+chapter count, not a stored total — no code change was needed, only
+content). This assistant's own stale QA pass of the old 4-chapter test
+was deleted from `level_test_attempts` first so the UI didn't show a
+false "passed" state. **Beginner is now 25/25 lessons, 5/5 chapters,
+level test passed at the new standard.** Intermediate and Expert will
+be built as 5 chapters each from the start — no retrofit needed there.
+
+---
+
+---
+
+## PDL-037 — University scope correction: "minimum 20" isn't "exactly 20"
+
+**Date:** 2026-09-15
+
+**Decision:** Director corrected this assistant's reading of the
+original spec ("*za svaki nivo broj lekcija je minimalno 20*" —
+minimum 20 per level). This assistant had been planning and building
+to exactly 20/level as if it were the target, not the floor. Director:
+the count needs to be large enough for real curriculum quality, not
+just clear the minimum, for every level.
+
+**Resolved via AskUserQuestion, not invented (M-4):** 5 chapters per
+level instead of 4 (~25 lessons/level, 75 total across 3 levels),
+applied retroactively to Beginner — already complete at the old
+20/20 — as well as Intermediate and Expert, which hadn't started.
+`CURRICULUM_DRAFT.md` rewritten to v3 with the new Chapter 5 per level
+(titles and lesson list added for all three) before any content
+writing, per this project's own FEATURE_LIFECYCLE discipline.
+
+**No schema or gating-logic change needed:** chapter/lesson counts
+were never hardcoded — `isChapterQuizAvailable` checks "all lessons in
+this chapter are complete," and `isLevelTestUnlocked` compares against
+the live chapter count for the level, not a constant. Adding a 5th
+chapter to Beginner automatically re-locks its level final test until
+the new chapter is also passed — confirmed by inspection, not assumed.
+
+**Cleanup:** this assistant's own QA level-test pass for Beginner
+(recorded when the level had only 4 chapters) no longer reflects
+"passed the whole level" now that a 5th chapter exists — deleted that
+`level_test_attempts` row directly so the UI doesn't show a stale
+"passed" state; the level test itself needs 2-3 more questions
+covering the new chapter and a fresh pass, once Chapter 5 is written.
+
+---
+
+---
+
+## PDL-038 — University: autonomous supplementary growth is a future roadmap item, not a build now
+
+**Date:** 2026-09-15
+
+**Decision:** Director's conclusion for the University: as this app's
+article knowledge base grows, new lessons/chapters should be created
+autonomously over time, organized by level according to
+difficulty/complexity. Clarified via AskUserQuestion before acting
+(M-4):
+
+- Applies to the **supplementary layer only** — the hand-authored core
+  (75 lessons, PDL-035/037) stays fixed, not auto-modified. This
+  restates something the original spec already said ("dodatak za
+  unapređenje znanja"); what's new is that it should be organized by
+  level/difficulty as it scales, not stay the flat ungated list it
+  renders as today.
+- **Not scoped for design or build now** — recorded as a roadmap item
+  in `specs/vibe-coding-intelligence-engine/ROADMAP.md` (added a
+  "parked" entry there rather than a new document, since it shares the
+  exact same AI-cost tension — PDL-021 free-only Gemini, P-19 no paid
+  budget without real traffic — that roadmap already reconciled once).
+  Also cross-referenced in `specs/vibe-coding-university/SPEC.md`'s new
+  amendment section.
+- Confirmed: continue hand-authoring the remaining Intermediate/Expert
+  core lessons now; revisit this once the core is further along.
+
+---
+
+---
+
+## PDL-039 — Public developer credit line (amends P-15)
+
+**Date:** 2026-09-15
+
+**Decision:** Director asked for a public developer credit — "Prompt
+Hero Studio" + `ai-hero-studio@outlook.com` — shown in small text in
+the bottom-right corner of every screen. Flagged before implementing:
+P-15 (`CONSTITUTION.md`) already had a "no public display of the admin
+email address elsewhere" clause from when the brand identity was first
+set up, which this directly contradicts. Treated as Director
+explicitly amending her own earlier rule (she owns P-15), not
+overridden silently — updated the Constitution text itself alongside
+the code, per this project's own discipline of writing decisions down
+rather than letting code and doc drift apart.
+
+**Shipped:** `components/SiteCredit.tsx` — small (`text-[10px]`),
+subtle (`text-black/40`), fixed bottom-right, "Prompt Hero Studio™ ·
+ai-hero-studio@outlook.com" with the email as a `mailto:` link.
+Rendered in `app/layout.tsx` site-wide, including `/admin` (unlike
+`SiteNav`, which is gated off admin) — this is a brand/attribution
+mark, not navigation, so the same gating logic doesn't apply. Checked
+for collision with the one other fixed-position element in the app
+(`CoinToast`, `bottom-8 right-8`) — different vertical position, no
+overlap.
+
+**Follow-up same session:** Director asked for the logo mark next to
+the text, naming a specific local file
+(`C:\DAVOR_PRIVATE\AI\Shop\PHS_VS\favicon.png`). Checked before
+copying anything — it's byte-for-byte identical (SHA-256 match) to the
+`public/favicon.png` already in the project (P-15's existing
+browser-tab favicon), so no new asset was needed; just referenced the
+existing file as a 12×12px mark next to the credit text. Deployed and
+confirmed live.
+
+---
+
+## PDL-040 — Intermediate level: fully written and live-verified end to end
+
+**Date:** 2026-09-15
+
+**Decision/outcome:** Wrote all 5 chapters of Intermediate core
+content — Agentic Workflows, Context and Memory, Quality and Process,
+Tools and Integration, Working With Existing Codebases and Teams (25
+lessons, 25 chapter-quiz questions) — plus a 12-question cumulative
+level final test, at the corrected 5-chapters/level standard from
+PDL-037. Used a distinct slug for the reused title "Agentic Coding
+Workflows" (`agentic-coding-workflows-how-they-work`) to avoid
+colliding with the pre-existing supplementary lesson at
+`agentic-coding-workflows` (PDL-033) — confirmed live both coexist
+correctly.
+
+**Fully live-verified on production**, same rigor as Beginner
+(PDL-036): all 25 lessons marked complete one at a time, all 5 chapter
+quizzes taken and passed (5/5 each), each chapter correctly unlocking
+the next, the level final test taken and passed 12/12, ending in
+"LEVEL COMPLETE: INTERMEDIATE". **Both Beginner and Intermediate are
+now complete and proven end to end — only Expert remains.**
+
+---
+
+## PDL-041 — Vibe-Coding University complete: all 3 levels, 75 lessons, fully live-verified
+
+**Date:** 2026-09-15
+
+**Outcome:** Wrote all 5 chapters of the Expert level — Advanced
+Agentic Systems, Architecture and Decisions, Cost/Scale/Operations,
+Evaluation and Leadership, Security/Risk/Governance (25 lessons, 25
+chapter-quiz questions) — plus a 12-question cumulative level final
+test, completing the full 75-lesson/15-chapter curriculum at the
+PDL-037 standard (5 chapters/level) across all 3 levels.
+
+**Fully live-verified on production**, same rigor applied to all three
+levels: every one of the 75 lessons marked complete individually, all
+15 chapter quizzes taken and passed 5/5, each chapter correctly
+unlocking the next, all 3 level final tests (12 questions each) taken
+and passed 12/12 — "LEVEL COMPLETE: BEGINNER", "LEVEL COMPLETE:
+INTERMEDIATE", "LEVEL COMPLETE: EXPERT". One real bug caught during
+this pass: a skipped lesson in Expert Chapter 2 (missed navigating to
+"Refactoring AI-Generated Code at Scale") correctly kept the chapter
+quiz unavailable until it was actually completed — direct evidence the
+"all lessons must be complete" gate has no gaps a skipped click could
+slip through.
+
+**Vibe-Coding University is now content-complete**: 75/75 core
+lessons, 15/15 chapters, 75/75 chapter-quiz questions, 3/3 level final
+tests, all hand-authored, all proven live end to end — not just
+architecturally present. What remains going forward is the
+PDL-038 supplementary-growth roadmap item (parked, not scoped) and
+whatever real-world usage surfaces once Director and real students
+start working through it.
+
+---
+
+---
+
+## PDL-042 — Autonomous supplementary growth: shipped, live-verified
+
+**Date:** 2026-09-15 (overnight, Director offline — same precedent as
+PDL-019's autonomous-work waiver)
+
+**Decision/outcome:** Director picked up the PDL-038 roadmap item
+before going to sleep ("nastavi kreirati naredne korake, samostalni
+rast dopunskog sloja iz sve većeg broja članaka"). Implemented,
+verified, and deployed the same night, with the same real-evidence
+discipline as every other change this session — nothing claimed
+working without live proof.
+
+**What shipped:**
+- `lib/ai/ai-provider.ts` / `gemini-provider.ts`: new
+  `generateSupplementaryLesson` — given unused high-relevance articles
+  and the full list of existing lesson titles (dedup context), proposes
+  a genuinely new topic, classifies its level (beginner/intermediate/
+  expert) by concept complexity, and writes the lesson body — all in
+  one AI call, same free-tier budget as before, no new cost.
+- `features/university/repository.ts`: `getAllLessonTitles`,
+  `getCourseIdByLevel`, `insertSupplementaryLesson` (collision-safe
+  slug generation, always `is_core=false`/`chapter_id=null`/
+  `status='pending_review'`); `getPendingReviewLessons` now joins
+  `courses(slug)` so a reviewer can see the classified level.
+- `app/api/cron/university-generate/route.ts`: restructured into two
+  modes tried in order — retry a rejected stub (unchanged behavior),
+  then fall through to proposing a new supplementary topic instead of
+  stopping at "no stub available." Same weekly idempotency gate, same
+  CRON_SECRET auth, same free-tier ceiling.
+- `app/admin/university/page.tsx`: shows the classified level next to
+  each pending lesson — closed a real pre-existing gap (no course/level
+  context was ever shown here) made load-bearing by this change.
+- **Safety unchanged**: every generated lesson still lands in
+  `pending_review`. Nothing publishes without Director's explicit
+  approval in the existing admin review queue — the autonomy is in
+  proposing content for review, not in publishing it.
+
+**Live-verified with a temp diagnostic route** (deleted after, same
+pattern as every other verification this session — confirmed gone,
+404 on production): real call against production data and the real
+Gemini key produced a genuinely new, previously-uncovered topic
+("Understanding Agent Robustness: Why Some AI Agents Generalize
+Well"), correctly classified as **expert** level, inserted with
+`status='pending_review'`, `is_core=false`, `chapter_id=null`, routed
+to the `expert` course — confirmed both via direct SQL and by loading
+the real `/admin/university` page and seeing it render correctly with
+the new "expert — Supplementary" badge and 5 real candidate Dictionary
+terms. This lesson is left in the review queue, unapproved, for
+Director to review when she's back — deliberately not self-approved,
+since defeating the human review gate would undercut the whole point
+of building it.
+
+**Full verification chain run and clean**: naming-discipline grep (29,
+unchanged baseline), `tsc --noEmit`, `vitest run` (115/115), `npm run
+build` — all before AND after the diagnostic route was removed.
+
+---
+
 *Vibe-Coding Journal — Project Decision Log — updated as decisions are made.*

@@ -491,10 +491,15 @@ this project is not done until:
 - **Logo/favicon:** `public/favicon.png` (already present on disk,
   provided by the Director). Do not regenerate, replace, or modify
   without explicit instruction.
-- **Single contact channel:** a Contact form on the site delivers to
-  `ai-hero-studio@outlook.com`. No public display of the admin email
-  address elsewhere, no separate support alias, unless a future PDL
-  changes this.
+- **Contact channel:** a Contact form on the site delivers to
+  `ai-hero-studio@outlook.com`. No separate support alias.
+- **Developer credit (2026-09-15, PDL-039 — amends the earlier "no
+  public display of the admin email" clause):** `ai-hero-studio@outlook.com`
+  is now shown publicly, alongside the brand name, in a small credit
+  line fixed to the bottom-right corner of every page (`components/
+  SiteCredit.tsx`, rendered site-wide including `/admin`) — this
+  supersedes the prior blanket "no public display" rule, which stands
+  only for any OTHER admin-facing address, not this one.
 
 ---
 
