@@ -1795,4 +1795,117 @@ otherwise.
 
 ---
 
+---
+
+## PDL-044 — Gamification Wave 2: CoinBalance, app-wide rewards context, remaining triggers
+
+**Date:** 2026-09-15/16
+
+**Note:** this entry is written retroactively — the work itself shipped
+(commits `3ddad3c`, `9821160`) but was not logged as its own PDL at the
+time, a real gap in this session's own discipline, caught while writing
+PDL-045 below and worth naming rather than silently backfilling.
+
+**Decision/outcome:** promoted Wave 1's `use-reward-celebration.ts`
+(explicitly flagged in its own comment as "a next-wave concern once
+more trigger points exist") to a shared `RewardsProvider` React
+context, so a persistent `CoinBalance` reflects a coin earned on any
+page, and the celebration UI (toast/confetti/overlay) renders exactly
+once globally instead of duplicated per consuming component.
+
+**Shipped:** `app/api/rewards/state/route.ts` (GET current state);
+`components/rewards/RewardsProvider.tsx` (shared context); one
+consolidated `CoinBalance` pill (coins · level · streak, animated
+count-up, click-to-expand detail) in `SiteNav`, desktop + compact
+mobile variant; `DailyReportOpenTracker` firing `open_daily_report`
+once per report; `onboarding_complete` awarded server-side in
+`registerAction` (no client session exists yet at that exact point to
+call the API from); `ArticleListWithBookmarks` migrated to the shared
+context, its duplicated celebration UI removed; `use-reward-
+celebration.ts` deleted, fully superseded.
+
+**Real bug found and fixed while wiring `streak_milestone`:**
+`COIN_AWARDS.streak_milestone` (100) was defined in Wave 1 but never
+actually paid out — the `open_daily_report` flow only ever detected
+the milestone for the celebration UI; the awarded amount stayed at the
+base 10 regardless. Hitting a real milestone (3/7/30/90/365) now adds
+the bonus on top of the day's award in the same call.
+
+**4 active triggers**: `bookmark_article`, `open_daily_report`,
+`onboarding_complete`, `streak_milestone` (`level_up` remains a
+detected side effect of any award crossing a threshold, per Wave 1's
+own design — never a separate payout).
+
+**Verified live**: real award calls through the actual browser
+session confirmed balance persistence, level-up detection, and the
+click-to-expand summary, all matching backend state exactly.
+
+---
+
+## PDL-045 — Gamification Wave 2.5: official 3D mascot + controlled juicy celebration deviation
+
+**Date:** 2026-09-16
+
+**Decision:** Director's explicit, scoped exception to P-20 (CONSTITUTION.md):
+1. Swiss International stays the law for the entire application.
+2. A "controlled juicy deviation" is permitted, but **only inside the
+   celebration/reward layer** (`CelebrationOverlay.tsx`) — SiteNav,
+   Dashboard, cards, forms, `CoinBalance`, and everywhere else stay
+   100% mechanical Swiss (no soft shadows, no glow, no spring motion,
+   radius 0).
+3. The official brand logo (`public/favicon.png` — bearded profile
+   with the mechanical spiral ear) becomes the **permanent** mascot,
+   replacing the earlier abstract geometric robot-face placeholder
+   (`components/rewards/Mascot.tsx`), which was never actually the
+   real brand mark to begin with.
+4. The mascot renders with genuine perceived volume, not flat.
+
+**Technical approach — resolved via AskUserQuestion equivalent (two
+options proposed, Director confirmed "b") before implementing, not
+guessed:** no image-generation or 3D-rendering tool is available in
+this environment, so a literal AI-rendered 3D asset (option "a") was
+not something this assistant could honestly deliver. Implemented
+option "b" instead: a real CSS layered-extrusion technique — three
+stacked, offset, progressively-darkened copies of the actual
+`favicon.png` (not a recreation — the same file, referenced three
+times), a specular highlight masked to the image's own alpha channel
+so it never spills outside the character's silhouette, a drop-shadow,
+and a slow idle tilt (`perspective`/`rotateY`, smooth ease-in-out, no
+overshoot since this runs everywhere the mascot appears — see
+`app/welcome/page.tsx` — not only inside a celebration).
+
+**Celebration-layer juicy effects, exhaustive list (the actual scope
+boundary, so a future session doesn't have to guess it from the
+code):**
+- Soft red (`#FF3000`) glow/bloom pulsing behind the mascot
+  (`celebration-glow-pulse`) — the **only** blurred glow anywhere in
+  the codebase.
+- Spring/overshoot card entrance (`celebration-spring-in`,
+  `cubic-bezier(.34,1.56,.64,1)`) — the **only** non-ease-out motion
+  curve anywhere in the codebase.
+- Matching pop-in on the coin total (`celebration-coin-pop`).
+- Richer light rays (16→24, slow continuous rotation) — still pure
+  SVG line geometry, never a raster/blur asset.
+- Confetti made richer (`ConfettiSystem.tsx`: 24→40 particles, size/
+  shape variety, horizontal drift) but deliberately **still
+  rectangular**, not `canvas-confetti`'s round particles — the brief
+  asked for richer confetti, not round confetti, and Wave 1's original
+  reasoning for staying rectangular (P-20's `radius: 0`) still applies
+  even inside this permitted deviation.
+- The celebration card's own shape stays Swiss throughout (radius 0,
+  `border-4`, black/white/red palette) — the deviation is motion and
+  glow, never the geometry.
+
+**Verified live, not just deployed:** no bookmarkable article
+currently exists (PDL-043's content-pipeline backlog) to trigger a
+real award through genuine UI interaction, so a temporary test page
+(`app/dev-celebration-check`, deleted after) called the actual
+`useRewards().award()` React context function directly — confirmed the
+real mascot, soft glow, richer rays, and card all render together
+correctly. Confirmed the temp page returns 404 on production after
+removal, same discipline as every other temporary diagnostic route
+this session.
+
+---
+
 *Vibe-Coding Journal — Project Decision Log — updated as decisions are made.*

@@ -685,14 +685,29 @@ this project is not done until:
   build-pipeline fix, prerequisite to this section, not itself a design
   decision — tracked in `DECISION_LOG.md`.
 - **Gamification layer** (coin rewards, celebration screens, streaks,
-  levels — Director's 2026-09-14 brief) is a **separate, additional**
-  proposal layered on top of this design system, not itself part of
-  the Swiss spec above. Requires its own architecture analysis before
-  implementation (Director's own instruction: wait for approval before
-  large code changes) — not yet built as of this section's writing.
-  Must not compromise the Swiss system's core constraints (rectangular,
-  flat, mechanical motion, functional-only red) — gold/yellow reward
-  color is additive, not a palette replacement.
+  levels — Director's 2026-09-14 brief) shipped across Waves 1-2
+  (PDL-030, PDL-044) as a **separate, additional** layer on top of this
+  design system, not itself part of the Swiss spec above. Everywhere
+  it appears OUTSIDE the celebration moment itself (`CoinBalance`,
+  `CoinToast`, the mascot's own idle state) stays fully Swiss —
+  rectangular, flat, mechanical motion, functional-only red, gold/
+  yellow reward color additive, not a palette replacement.
+- **Controlled juicy deviation, celebration layer ONLY (2026-09-16,
+  Director-confirmed, PDL-045)**: `components/rewards/
+  CelebrationOverlay.tsx` is the one deliberate, scoped exception to
+  this section's own rules — permitted there and nowhere else: soft
+  glow/bloom, spring/overshoot motion
+  (`cubic-bezier(.34,1.56,.64,1)`), richer animated light rays and
+  confetti. The exhaustive list of what's permitted and why lives in
+  PDL-045, not duplicated here — read that entry before touching this
+  component or extending the deviation elsewhere. The card's own shape
+  stays radius-0/`border-4`/Swiss palette regardless — the deviation is
+  motion and glow, never geometry. The brand mascot
+  (`components/rewards/Mascot.tsx`) is now the real `public/
+  favicon.png` logo, rendered with genuine perceived depth via a real
+  CSS layered-extrusion technique (not an AI-rendered asset — no
+  image-generation tool is available in this environment, confirmed
+  and disclosed to the Director before implementing, per PDL-045).
 
 ---
 
