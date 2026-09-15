@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
+import { SiteNav } from "@/components/SiteNav";
 
 // P-20 (CONSTITUTION.md) / DESIGN_NOTES.md: Swiss International style
 // specifies Inter as the grotesque sans-serif, weights 400-900.
@@ -18,7 +19,10 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={inter.variable}>
-      <body>{children}</body>
+      <body>
+        <SiteNav />
+        {children}
+      </body>
     </html>
   );
 }
