@@ -2,6 +2,7 @@
 
 import { supabaseAdmin } from "@/lib/db/client";
 import { registerSchema, loginSchema } from "@/lib/validation/schemas";
+import { awardCoins } from "@/features/rewards/repository";
 
 interface AuthResponse {
   success: boolean;
@@ -87,6 +88,25 @@ export async function registerAction(input: unknown): Promise<AuthResponse> {
         success: false,
         error: "Failed to create user profile",
       };
+    }
+
+    // Gamification Wave 2: onboarding_complete awarded here, server-side,
+    // rather than as a client-side award() call from RegisterForm --
+    // registerAction runs via supabaseAdmin.auth.admin.createUser, which
+    // does NOT establish a client-side session, so there is no token
+    // RegisterForm could attach to a fetch call at this point. Awarding
+    // it directly (same dedupeKey=null pattern as any other
+    // at-most-once event) means the coins are already there the moment
+    // the user actually signs in and RewardsProvider loads their state
+    // -- the live celebration just doesn't play on the register page
+    // itself, a reasonable trade-off given there's no session to show
+    // it in. Best-effort: a failed award must never fail registration
+    // itself (M-4 / P-1.1 -- reward feedback is a delight layer).
+    try {
+      await awardCoins(authUser.user.id, "onboarding_complete", null);
+    } catch (rewardError) {
+      const msg = rewardError instanceof Error ? rewardError.message : String(rewardError);
+      console.error(`[ONBOARDING] onboarding_complete award failed (non-fatal): ${msg}`);
     }
 
     // 5. Return

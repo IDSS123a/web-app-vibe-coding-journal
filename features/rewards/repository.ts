@@ -74,7 +74,7 @@ export async function awardCoins(
     throw new Error(`Failed to load user profile for reward: ${profileError.message}`);
   }
 
-  const coins = COIN_AWARDS[eventType];
+  let coins = COIN_AWARDS[eventType];
   const previousLevel = profile.level as number;
 
   let currentStreak = profile.current_streak as number;
@@ -94,6 +94,15 @@ export async function awardCoins(
     lastActiveDate = today;
     if (!result.alreadyCountedToday && isStreakMilestone(currentStreak)) {
       streakMilestoneHit = currentStreak;
+      // Gamification Wave 2 fix: COIN_AWARDS.streak_milestone (100) was
+      // defined but never actually paid out -- this branch only ever
+      // set streakMilestoneHit for the celebration UI, while `coins`
+      // stayed at open_daily_report's base 10 regardless. Hitting a
+      // real milestone (3/7/30/90/365) now adds the milestone bonus on
+      // top of the day's normal award, in the same call -- one
+      // reward_events row, one coherent total, not a second award()
+      // round-trip for what is really one user action.
+      coins += COIN_AWARDS.streak_milestone;
     }
   }
 

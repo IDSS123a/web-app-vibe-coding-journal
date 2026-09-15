@@ -25,6 +25,7 @@ import { useState } from "react";
 import { usePathname } from "next/navigation";
 import { useSession } from "@/lib/auth/use-session";
 import { supabase } from "@/lib/db/client";
+import { CoinBalance } from "@/components/rewards/CoinBalance";
 
 const LOGGED_IN_LINKS = [
   { href: "/dashboard", label: "Dashboard" },
@@ -74,6 +75,7 @@ export function SiteNav() {
                       {link.label}
                     </a>
                   ))}
+                  <CoinBalance />
                   <button
                     type="button"
                     onClick={handleSignOut}
@@ -97,24 +99,27 @@ export function SiteNav() {
               )}
             </div>
 
-            {/* Mobile: hamburger toggle, same links stacked in a dropdown. */}
-            <button
-              type="button"
-              onClick={() => setMobileOpen((open) => !open)}
-              aria-label={mobileOpen ? "Close menu" : "Open menu"}
-              aria-expanded={mobileOpen}
-              className="flex h-10 w-10 shrink-0 items-center justify-center border-2 border-black text-black transition-colors duration-150 ease-out hover:border-[#FF3000] hover:text-[#FF3000] md:hidden"
-            >
-              {mobileOpen ? (
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                  <path d="M1 1L15 15M15 1L1 15" stroke="currentColor" strokeWidth="2" />
-                </svg>
-              ) : (
-                <svg width="18" height="14" viewBox="0 0 18 14" fill="none" aria-hidden="true">
-                  <path d="M0 1H18M0 7H18M0 13H18" stroke="currentColor" strokeWidth="2" />
-                </svg>
-              )}
-            </button>
+            {/* Mobile: coin balance stays visible next to the hamburger; full detail lives behind CoinBalance's own click-to-expand. */}
+            <div className="flex items-center gap-2 md:hidden">
+              {token && <CoinBalance variant="compact" />}
+              <button
+                type="button"
+                onClick={() => setMobileOpen((open) => !open)}
+                aria-label={mobileOpen ? "Close menu" : "Open menu"}
+                aria-expanded={mobileOpen}
+                className="flex h-10 w-10 shrink-0 items-center justify-center border-2 border-black text-black transition-colors duration-150 ease-out hover:border-[#FF3000] hover:text-[#FF3000]"
+              >
+                {mobileOpen ? (
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                    <path d="M1 1L15 15M15 1L1 15" stroke="currentColor" strokeWidth="2" />
+                  </svg>
+                ) : (
+                  <svg width="18" height="14" viewBox="0 0 18 14" fill="none" aria-hidden="true">
+                    <path d="M0 1H18M0 7H18M0 13H18" stroke="currentColor" strokeWidth="2" />
+                  </svg>
+                )}
+              </button>
+            </div>
           </>
         )}
       </nav>

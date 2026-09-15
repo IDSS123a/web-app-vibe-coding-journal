@@ -8,6 +8,7 @@ import { getArticlesForReport } from "@/features/archive/repository";
 import { getRelatedSourcesForArticles } from "@/features/pipeline/repository";
 import { ArticleListWithBookmarks } from "@/components/ArticleListWithBookmarks";
 import { MarkdownContent } from "@/components/MarkdownContent";
+import { DailyReportOpenTracker } from "@/components/rewards/DailyReportOpenTracker";
 
 /**
  * Dashboard — real Daily Report page.
@@ -98,6 +99,7 @@ export default async function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-white px-4 py-12 md:px-12">
+      {!isEmptyState && <DailyReportOpenTracker reportId={report.id} />}
       <div className="mx-auto max-w-4xl">
         {/* Header */}
         <div className="mb-12 border-b-4 border-black pb-8">

@@ -43,10 +43,7 @@
 import { useEffect, useState } from "react";
 import { useSession } from "@/lib/auth/use-session";
 import type { Article } from "@/lib/validation/schemas";
-import { useRewardCelebration } from "@/components/rewards/use-reward-celebration";
-import { CoinToast } from "@/components/rewards/CoinToast";
-import { CelebrationOverlay } from "@/components/rewards/CelebrationOverlay";
-import { ConfettiSystem } from "@/components/rewards/ConfettiSystem";
+import { useRewards } from "@/components/rewards/RewardsProvider";
 
 export function ArticleListWithBookmarks({
   articles,
@@ -58,15 +55,12 @@ export function ArticleListWithBookmarks({
   const { token, loading } = useSession();
   const [bookmarked, setBookmarked] = useState<Set<string>>(new Set());
   const [bookmarksLoaded, setBookmarksLoaded] = useState(false);
-  const {
-    award,
-    toastCoins,
-    clearToast,
-    celebration,
-    dismissCelebration,
-    confettiActive,
-    stopConfetti,
-  } = useRewardCelebration(token);
+  // Gamification Wave 2: the celebration UI (toast/confetti/overlay) is
+  // now rendered once, globally, by RewardsProvider -- not duplicated
+  // in every component that calls award() (see that file's header
+  // comment for why: a level-up triggered here now shows even though
+  // this component itself renders nothing for it).
+  const { award } = useRewards();
 
   useEffect(() => {
     if (loading || !token) return;
@@ -127,7 +121,6 @@ export function ArticleListWithBookmarks({
   if (articles.length === 0) return null;
 
   return (
-    <>
     <div className="mt-6 space-y-0">
       {articles.map((article, i) => {
         const isBookmarked = bookmarked.has(article.id);
@@ -212,17 +205,5 @@ export function ArticleListWithBookmarks({
         );
       })}
     </div>
-    {toastCoins != null && <CoinToast coins={toastCoins} onDone={clearToast} />}
-    <ConfettiSystem active={confettiActive} onDone={stopConfetti} />
-    {celebration && (
-      <CelebrationOverlay
-        open={true}
-        title={celebration.title}
-        subtitle={celebration.subtitle}
-        coins={celebration.coins}
-        onDismiss={dismissCelebration}
-      />
-    )}
-    </>
   );
 }

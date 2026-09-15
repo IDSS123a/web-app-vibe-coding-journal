@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { SiteNav } from "@/components/SiteNav";
 import { SiteCredit } from "@/components/SiteCredit";
+import { RewardsProvider } from "@/components/rewards/RewardsProvider";
 
 // P-20 (CONSTITUTION.md) / DESIGN_NOTES.md: Swiss International style
 // specifies Inter as the grotesque sans-serif, weights 400-900.
@@ -21,9 +22,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={inter.variable}>
       <body>
-        <SiteNav />
-        {children}
-        <SiteCredit />
+        <RewardsProvider>
+          <SiteNav />
+          {children}
+          <SiteCredit />
+        </RewardsProvider>
       </body>
     </html>
   );
