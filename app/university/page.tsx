@@ -1,7 +1,8 @@
 /**
- * Vibe-Coding University — course list. Premium-only (PremiumGuard).
- * Client-rendered like the admin pages -- auth session lives in the
- * browser, so per-user progress has to be fetched client-side against
+ * Vibe-Coding University — course list, now chapter-gated (2026-09-15
+ * amendment). Premium-only (PremiumGuard). Client-rendered like the
+ * admin pages -- auth session lives in the browser, so per-user
+ * progress has to be fetched client-side against
  * /api/university/courses with the session token.
  */
 
@@ -12,22 +13,27 @@ import { useSession } from "@/lib/auth/use-session";
 import { PremiumGuard } from "@/components/PremiumGuard";
 import type { Course } from "@/lib/validation/schemas";
 
-type CourseWithProgress = Course & {
-  publishedLessonCount: number;
-  completedCount: number;
-  status: "not_started" | "in_progress" | "completed";
+interface ChapterWithState {
+  id: string;
+  slug: string;
+  title: string;
+  order_index: number;
+  unlocked: boolean;
+  quizAvailable: boolean;
+  quizPassed: boolean;
   lessons: Array<{ id: string; slug: string; title: string; completed: boolean }>;
-};
+}
 
-const STATUS_LABEL: Record<CourseWithProgress["status"], string> = {
-  not_started: "Not Started",
-  in_progress: "In Progress",
-  completed: "Completed",
+type CourseWithChapters = Course & {
+  chapters: ChapterWithState[];
+  levelTestUnlocked: boolean;
+  levelTestPassed: boolean;
+  supplementaryLessons: Array<{ id: string; slug: string; title: string; completed: boolean }>;
 };
 
 function CourseList() {
   const { token, loading: sessionLoading } = useSession();
-  const [courses, setCourses] = useState<CourseWithProgress[]>([]);
+  const [courses, setCourses] = useState<CourseWithChapters[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -39,7 +45,7 @@ function CourseList() {
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         return r.json();
       })
-      .then((d: { courses: CourseWithProgress[] }) => {
+      .then((d: { courses: CourseWithChapters[] }) => {
         if (active) setCourses(d.courses);
       })
       .catch(() => {
@@ -62,8 +68,8 @@ function CourseList() {
             Vibe-Coding University
           </h1>
           <p className="mt-2 text-sm text-black">
-            From scratch to expert level, one lesson at a time. New lessons added weekly as the
-            article base grows.
+            Minimum 20 core lessons per level, organized into chapters. Pass each chapter's quiz to
+            unlock the next, then clear the level final test.
           </p>
           <a
             href="/dictionary"
@@ -76,10 +82,10 @@ function CourseList() {
         {loading && <p className="text-sm text-black opacity-60">Loading…</p>}
         {error && <p className="border-2 border-[#FF3000] p-3 text-sm text-[#FF3000]">{error}</p>}
 
-        <div className="space-y-12">
+        <div className="space-y-16">
           {courses.map((course) => (
             <div key={course.id}>
-              <div className="mb-4 flex items-center justify-between border-b-2 border-black pb-3">
+              <div className="mb-6 flex items-center justify-between border-b-2 border-black pb-3">
                 <div>
                   <p className="text-xs font-bold uppercase tracking-widest text-[#FF3000]">
                     {course.level}
@@ -88,32 +94,94 @@ function CourseList() {
                     {course.title}
                   </h2>
                 </div>
-                <span className="border-2 border-black px-3 py-1 text-xs font-bold uppercase tracking-widest text-black">
-                  {STATUS_LABEL[course.status]} · {course.completedCount}/{course.publishedLessonCount}
-                </span>
+                {course.levelTestUnlocked && (
+                  <a
+                    href={`/university/level-test/${course.level}`}
+                    className={`border-4 px-4 py-2 text-xs font-bold uppercase tracking-widest transition-colors duration-150 ease-out ${
+                      course.levelTestPassed
+                        ? "border-black text-black"
+                        : "border-black bg-black text-white hover:border-[#FF3000] hover:bg-[#FF3000]"
+                    }`}
+                  >
+                    {course.levelTestPassed ? "Level Test: Passed ✓" : "Take Level Final Test"}
+                  </a>
+                )}
               </div>
-              <p className="text-sm text-black">{course.description}</p>
-              {course.lessons.length === 0 ? (
-                <p className="mt-3 text-xs italic text-black opacity-60">
-                  Lessons for this level are being written — check back soon.
-                </p>
-              ) : (
-                <ul className="mt-4 space-y-2">
-                  {course.lessons.map((lesson) => (
-                    <li key={lesson.id}>
-                      <a
-                        href={`/university/${course.slug}/${lesson.slug}`}
-                        className="flex items-center gap-3 text-sm text-black transition-colors duration-150 ease-out hover:text-[#FF3000]"
-                      >
-                        <span
-                          className={`inline-block h-3 w-3 shrink-0 border-2 border-black ${lesson.completed ? "bg-black" : "bg-white"}`}
-                          aria-hidden
-                        />
-                        {lesson.title}
-                      </a>
-                    </li>
-                  ))}
-                </ul>
+              <p className="mb-6 text-sm text-black">{course.description}</p>
+
+              <div className="space-y-4">
+                {course.chapters.map((chapter) => (
+                  <div
+                    key={chapter.id}
+                    className={`border-4 p-6 ${chapter.unlocked ? "border-black" : "border-black opacity-50"}`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-lg font-black uppercase tracking-tight text-black">
+                        {chapter.order_index}. {chapter.title}
+                      </h3>
+                      {!chapter.unlocked && (
+                        <span className="text-xs font-bold uppercase tracking-widest text-black">🔒 Locked</span>
+                      )}
+                      {chapter.quizPassed && (
+                        <span className="border-2 border-black px-2 py-0.5 text-xs font-bold uppercase tracking-widest text-black">
+                          Quiz Passed ✓
+                        </span>
+                      )}
+                    </div>
+                    {chapter.unlocked && (
+                      <>
+                        <ul className="mt-4 space-y-2">
+                          {chapter.lessons.map((lesson) => (
+                            <li key={lesson.id}>
+                              <a
+                                href={`/university/${course.slug}/${lesson.slug}`}
+                                className="flex items-center gap-3 text-sm text-black transition-colors duration-150 ease-out hover:text-[#FF3000]"
+                              >
+                                <span
+                                  className={`inline-block h-3 w-3 shrink-0 border-2 border-black ${lesson.completed ? "bg-black" : "bg-white"}`}
+                                  aria-hidden
+                                />
+                                {lesson.title}
+                              </a>
+                            </li>
+                          ))}
+                        </ul>
+                        {chapter.quizAvailable && !chapter.quizPassed && (
+                          <a
+                            href={`/university/chapters/${chapter.id}/quiz`}
+                            className="mt-4 inline-flex h-10 items-center justify-center border-4 border-black bg-black px-4 text-xs font-bold uppercase tracking-widest text-white transition-colors duration-150 ease-out hover:border-[#FF3000] hover:bg-[#FF3000]"
+                          >
+                            Take Chapter Quiz
+                          </a>
+                        )}
+                      </>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {course.supplementaryLessons.length > 0 && (
+                <div className="mt-8">
+                  <p className="mb-3 text-xs font-bold uppercase tracking-widest text-[#FF3000]">
+                    Supplementary
+                  </p>
+                  <ul className="space-y-2">
+                    {course.supplementaryLessons.map((lesson) => (
+                      <li key={lesson.id}>
+                        <a
+                          href={`/university/${course.slug}/${lesson.slug}`}
+                          className="flex items-center gap-3 text-sm text-black transition-colors duration-150 ease-out hover:text-[#FF3000]"
+                        >
+                          <span
+                            className={`inline-block h-3 w-3 shrink-0 border-2 border-black ${lesson.completed ? "bg-black" : "bg-white"}`}
+                            aria-hidden
+                          />
+                          {lesson.title}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               )}
             </div>
           ))}

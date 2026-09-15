@@ -238,6 +238,50 @@ export const markLessonCompleteInputSchema = z.object({
 
 export type MarkLessonCompleteInput = z.infer<typeof markLessonCompleteInputSchema>;
 
+// Chapters + quizzes (specs/vibe-coding-university/SPEC.md Amendment,
+// migration 017, confirmed 2026-09-15).
+export const chapterSchema = z.object({
+  id: z.string().uuid(),
+  course_id: z.string().uuid(),
+  slug: z.string().min(1),
+  title: z.string().min(1),
+  order_index: z.number().int(),
+  created_at: z.string().datetime(),
+});
+
+export type Chapter = z.infer<typeof chapterSchema>;
+
+// Client-facing shape deliberately OMITS correct_option_index -- never
+// ship the answer key to the browser before grading (see
+// features/university/repository.ts getQuizQuestionsForChapter).
+export const quizQuestionPublicSchema = z.object({
+  id: z.string().uuid(),
+  question: z.string().min(1),
+  options: z.array(z.string()).length(4),
+  order_index: z.number().int(),
+});
+
+export type QuizQuestionPublic = z.infer<typeof quizQuestionPublicSchema>;
+
+export const submitQuizAnswerSchema = z.object({
+  question_id: z.string().uuid(),
+  selected_option_index: z.number().int().min(0).max(3),
+});
+
+export const submitChapterQuizInputSchema = z.object({
+  chapter_id: z.string().uuid(),
+  answers: z.array(submitQuizAnswerSchema).length(5),
+});
+
+export type SubmitChapterQuizInput = z.infer<typeof submitChapterQuizInputSchema>;
+
+export const submitLevelTestInputSchema = z.object({
+  level: z.enum(["beginner", "intermediate", "expert"]),
+  answers: z.array(submitQuizAnswerSchema).min(1),
+});
+
+export type SubmitLevelTestInput = z.infer<typeof submitLevelTestInputSchema>;
+
 // Hold-gate calibration learning (specs/hold-gate-calibration-learning/) —
 // Phase 1 of the Director's continuous-learning idea, scoped to the P-3/P-6
 // hold gate. One row per analysis run.

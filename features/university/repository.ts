@@ -1,5 +1,5 @@
 import { supabaseAdmin } from "@/lib/db/client";
-import type { Course, Lesson, CourseProgress } from "@/lib/validation/schemas";
+import type { Course, Lesson, CourseProgress, Chapter, QuizQuestionPublic } from "@/lib/validation/schemas";
 
 export async function getAllCourses(): Promise<Course[]> {
   if (!supabaseAdmin) throw new Error("Admin client not available");
@@ -45,6 +45,170 @@ export async function getUserProgress(userId: string): Promise<CourseProgress[]>
   const { data, error } = await supabaseAdmin.from("course_progress").select("*").eq("user_id", userId);
   if (error) throw new Error(`Failed to fetch course progress: ${error.message}`);
   return data as CourseProgress[];
+}
+
+// --- Chapters + quizzes (specs/vibe-coding-university/SPEC.md Amendment, migration 017) ---
+
+export async function getChaptersForCourse(courseId: string): Promise<Chapter[]> {
+  if (!supabaseAdmin) throw new Error("Admin client not available");
+  const { data, error } = await supabaseAdmin
+    .from("chapters")
+    .select("*")
+    .eq("course_id", courseId)
+    .order("order_index");
+  if (error) throw new Error(`Failed to fetch chapters: ${error.message}`);
+  return data as Chapter[];
+}
+
+export async function getCoreLessonsForChapter(chapterId: string): Promise<Lesson[]> {
+  if (!supabaseAdmin) throw new Error("Admin client not available");
+  const { data, error } = await supabaseAdmin
+    .from("lessons")
+    .select("*")
+    .eq("chapter_id", chapterId)
+    .eq("is_core", true)
+    .eq("status", "published")
+    .order("order_index");
+  if (error) throw new Error(`Failed to fetch chapter lessons: ${error.message}`);
+  return data as Lesson[];
+}
+
+/**
+ * Client-facing question shape -- NEVER selects correct_option_index.
+ * Grading happens server-side (submitChapterQuizAttempt below) against
+ * the full row, which this function deliberately cannot see.
+ */
+export async function getQuizQuestionsForChapter(chapterId: string): Promise<QuizQuestionPublic[]> {
+  if (!supabaseAdmin) throw new Error("Admin client not available");
+  const { data, error } = await supabaseAdmin
+    .from("quiz_questions")
+    .select("id, question, options, order_index")
+    .eq("chapter_id", chapterId)
+    .order("order_index");
+  if (error) throw new Error(`Failed to fetch quiz questions: ${error.message}`);
+  return data as QuizQuestionPublic[];
+}
+
+/** Every chapter order_index the user has a PASSING attempt for, across all chapters of one course. */
+export async function getPassedChapterOrderIndexes(
+  userId: string,
+  courseId: string,
+): Promise<Set<number>> {
+  if (!supabaseAdmin) throw new Error("Admin client not available");
+  const { data, error } = await supabaseAdmin
+    .from("chapter_quiz_attempts")
+    .select("passed, chapters!inner(order_index, course_id)")
+    .eq("user_id", userId)
+    .eq("passed", true)
+    .eq("chapters.course_id", courseId);
+  if (error) throw new Error(`Failed to fetch passed chapters: ${error.message}`);
+  const rows = (data ?? []) as unknown as Array<{ chapters: { order_index: number } }>;
+  return new Set(rows.map((r) => r.chapters.order_index));
+}
+
+/**
+ * Grades and records a chapter quiz attempt server-side. Fetches the
+ * REAL questions (with answer key) fresh from the DB rather than
+ * trusting anything about correctness from the client -- only
+ * question_id + selected_option_index are ever accepted as input
+ * (lib/validation/schemas.ts submitChapterQuizInputSchema).
+ */
+export async function submitChapterQuizAttempt(
+  userId: string,
+  chapterId: string,
+  answers: Array<{ question_id: string; selected_option_index: number }>,
+): Promise<{ score: number; passed: boolean }> {
+  if (!supabaseAdmin) throw new Error("Admin client not available");
+
+  const { data: questions, error: qError } = await supabaseAdmin
+    .from("quiz_questions")
+    .select("id, correct_option_index")
+    .eq("chapter_id", chapterId);
+  if (qError) throw new Error(`Failed to fetch quiz answer key: ${qError.message}`);
+
+  const correctById = new Map((questions ?? []).map((q) => [q.id as string, q.correct_option_index as number]));
+  const score = answers.reduce(
+    (count, a) => (correctById.get(a.question_id) === a.selected_option_index ? count + 1 : count),
+    0,
+  );
+  const passed = score >= 4; // CHAPTER_QUIZ_PASSING_SCORE (features/university/domain.ts) -- kept in sync manually, both are the Director's confirmed 4/5
+
+  const { error: insertError } = await supabaseAdmin.from("chapter_quiz_attempts").insert({
+    user_id: userId,
+    chapter_id: chapterId,
+    score,
+    passed,
+    answers,
+  });
+  if (insertError) throw new Error(`Failed to record quiz attempt: ${insertError.message}`);
+
+  return { score, passed };
+}
+
+export async function getLevelTestQuestions(
+  level: "beginner" | "intermediate" | "expert",
+): Promise<QuizQuestionPublic[]> {
+  if (!supabaseAdmin) throw new Error("Admin client not available");
+  const { data, error } = await supabaseAdmin
+    .from("level_test_questions")
+    .select("id, question, options, order_index")
+    .eq("level", level)
+    .order("order_index");
+  if (error) throw new Error(`Failed to fetch level test questions: ${error.message}`);
+  return data as QuizQuestionPublic[];
+}
+
+export async function submitLevelTestAttempt(
+  userId: string,
+  level: "beginner" | "intermediate" | "expert",
+  answers: Array<{ question_id: string; selected_option_index: number }>,
+): Promise<{ score: number; total: number; passed: boolean }> {
+  if (!supabaseAdmin) throw new Error("Admin client not available");
+
+  const { data: questions, error: qError } = await supabaseAdmin
+    .from("level_test_questions")
+    .select("id, correct_option_index")
+    .eq("level", level);
+  if (qError) throw new Error(`Failed to fetch level test answer key: ${qError.message}`);
+
+  const total = (questions ?? []).length;
+  const correctById = new Map((questions ?? []).map((q) => [q.id as string, q.correct_option_index as number]));
+  const score = answers.reduce(
+    (count, a) => (correctById.get(a.question_id) === a.selected_option_index ? count + 1 : count),
+    0,
+  );
+  // Same 80% bar as chapter quizzes, applied to whatever the level
+  // test's real question count is (not hardcoded to 5 -- the level
+  // test is confirmed larger than a chapter quiz).
+  const passed = total > 0 && score / total >= 0.8;
+
+  const { error: insertError } = await supabaseAdmin.from("level_test_attempts").insert({
+    user_id: userId,
+    level,
+    score,
+    total,
+    passed,
+    answers,
+  });
+  if (insertError) throw new Error(`Failed to record level test attempt: ${insertError.message}`);
+
+  return { score, total, passed };
+}
+
+export async function hasPassedLevelTest(
+  userId: string,
+  level: "beginner" | "intermediate" | "expert",
+): Promise<boolean> {
+  if (!supabaseAdmin) throw new Error("Admin client not available");
+  const { data, error } = await supabaseAdmin
+    .from("level_test_attempts")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("level", level)
+    .eq("passed", true)
+    .maybeSingle();
+  if (error) throw new Error(`Failed to check level test status: ${error.message}`);
+  return !!data;
 }
 
 /**

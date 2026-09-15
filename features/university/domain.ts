@@ -40,3 +40,73 @@ export function getIsoWeekString(date: Date = new Date()): string {
   const weekNum = Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
   return `${d.getUTCFullYear()}-W${String(weekNum).padStart(2, "0")}`;
 }
+
+/**
+ * Chapter gating (Director's 2026-09-15 structural requirement,
+ * specs/vibe-coding-university/SPEC.md Amendment): chapter 1 of a
+ * level is always open; chapter N (N>1) unlocks only once chapter
+ * N-1's quiz has been PASSED (chapter_quiz_attempts, migration 017) --
+ * not merely attempted. `passedChapterOrderIndexes` is the set of
+ * order_index values the user has a passing attempt for, scoped to a
+ * single course/level (callers pass one course's data, not a
+ * cross-level set).
+ */
+export function isChapterUnlocked(
+  chapterOrderIndex: number,
+  passedChapterOrderIndexes: ReadonlySet<number>,
+): boolean {
+  if (chapterOrderIndex <= 1) return true;
+  return passedChapterOrderIndexes.has(chapterOrderIndex - 1);
+}
+
+/**
+ * A chapter's quiz becomes available once every core lesson IN that
+ * chapter is marked complete (SPEC: "nakon svakog poglavlja korisnik
+ * mora odgovoriti na 5 pitanja" -- after finishing the chapter, not
+ * partway through it).
+ */
+export function isChapterQuizAvailable(
+  chapterLessonIds: readonly string[],
+  completedLessonIds: ReadonlySet<string>,
+): boolean {
+  if (chapterLessonIds.length === 0) return false;
+  return chapterLessonIds.every((id) => completedLessonIds.has(id));
+}
+
+export const CHAPTER_QUIZ_QUESTION_COUNT = 5;
+/** Confirmed with the Director 2026-09-15: 4 of 5 (80%) to pass. */
+export const CHAPTER_QUIZ_PASSING_SCORE = 4;
+
+export interface QuizGradeResult {
+  score: number;
+  passed: boolean;
+}
+
+/**
+ * Grades a submitted quiz attempt. `answers` and `correctIndexes` are
+ * aligned by question order (both callers -- chapter quiz and level
+ * test API routes -- build them from the same ordered question list,
+ * so index-alignment is safe here without re-matching by question id).
+ */
+export function gradeQuiz(
+  answers: readonly number[],
+  correctIndexes: readonly number[],
+  passingScore: number,
+): QuizGradeResult {
+  const score = answers.reduce(
+    (count, answer, i) => (answer === correctIndexes[i] ? count + 1 : count),
+    0,
+  );
+  return { score, passed: score >= passingScore };
+}
+
+/**
+ * The level final test unlocks once every chapter in that level has a
+ * passing quiz attempt -- which, transitively via isChapterQuizAvailable
+ * above, already implies every core lesson in the level is complete
+ * too (SPEC: "nakon svih... lekcija i svih poglavlja").
+ */
+export function isLevelTestUnlocked(totalChaptersInLevel: number, passedChapterCount: number): boolean {
+  if (totalChaptersInLevel === 0) return false;
+  return passedChapterCount >= totalChaptersInLevel;
+}
