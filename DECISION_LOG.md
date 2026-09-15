@@ -1341,4 +1341,81 @@ its own error message instead of needing a fresh investigation.
 
 ---
 
+## PDL-034 — Director approved a pre-P-0 report by mistake; review-queue now warns before this can happen again
+
+**Date:** 2026-09-15
+
+**Finding:** The Director approved the 2026-09-03 Daily Report (854
+articles, almost entirely off-topic — pea plants, personal peptides,
+an airliner engine failure, central-bank gold reserves — the same
+off-topic pattern PDL-026 already found and corrected once) directly
+through `/admin/review-queue`, the day before this entry (2026-09-14,
+22:53 UTC). The report predates P-0 (the topical-relevance gate,
+shipped 2026-09-11) by nine days and was never checked against it.
+Live for nearly a full day before the Director caught it themselves
+and reported it.
+
+**Root cause, not just the symptom:** the review queue lists hundreds
+of historical held reports with no visual distinction between a
+normal, small, post-P-0 report and a pre-P-0 one hundreds of articles
+large — an easy report to approve by mistake in a long list, exactly
+as happened.
+
+**Fixed:**
+1. Corrected the report's `review_status` back to `rejected` directly
+   in production (same status-correction pattern as PDL-026, not
+   deletion) — verified live, `/dashboard` and `/archive` both show
+   the empty state again.
+2. Both review-queue pages now flag a report dated before P-0 shipped
+   OR with an abnormally large article count (>100 — a normal report
+   is 5-20) with a visible red warning, and the detail page's Approve
+   button requires an explicit `confirm()` acknowledgment before
+   approving a flagged report.
+
+**Consequence:** the ~800-report pre-P-0 backlog this project has
+carried since 2026-09-11 (per PDL-026's own note) is now visually
+distinguishable in the tool the Director actually uses to review it,
+not just a fact recorded in this log that has to be remembered. This
+does not retroactively re-check every pre-P-0 report — it only
+prevents approving one without a clear, hard-to-miss warning.
+
+---
+
+## PDL-035 — Vibe-Coding University: chapters, quizzes, and level tests (SPEC amendment)
+
+**Date:** 2026-09-15
+
+**Decision:** Director specified real structural requirements for the
+University, materially larger than the first version: minimum 20 core
+lessons per level, organized into chapters, each chapter gated by a
+5-question quiz (confirmed: 4/5 to pass), and a cumulative level final
+test after all chapters clear. `specs/vibe-coding-university/SPEC.md`
+amended and `CURRICULUM_DRAFT.md` rewritten (60 lessons, 12 chapters)
+before any schema work, per this project's own FEATURE_LIFECYCLE
+discipline.
+
+**Resolved the one AI-cost-critical question directly**: all 60 core
+lessons and all quiz questions are hand-authored by this assistant, not
+AI-generated — zero ongoing Gemini cost for the core curriculum. The
+weekly generation cron (PDL-032/033) continues producing
+**supplementary** content layered on top of the complete core, not part
+of it.
+
+**Shipped this session:** full schema (migration 017: chapters,
+quiz_questions, chapter_quiz_attempts, level_test_questions,
+level_test_attempts), chapter-gating domain logic (14 new pure-function
+tests), reshaped `/api/university/courses` response, quiz/level-test
+API routes with server-side grading (the answer key is never sent to
+the client), and Chapter 1 of Beginner's first lesson.
+
+**Open, not closed:** 55 of 60 core lessons are still titles only
+(seeded as empty slots), not written — the Director confirmed this
+assistant writes them directly, in subsequent waves, each reviewable
+independently rather than one large unreviewed content dump. Quiz
+questions for every chapter are similarly not yet written. The
+UI for actually taking a quiz (not just seeing it's available) is not
+yet built — the next concrete step.
+
+---
+
 *Vibe-Coding Journal — Project Decision Log — updated as decisions are made.*
