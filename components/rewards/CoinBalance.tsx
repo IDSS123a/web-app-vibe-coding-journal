@@ -19,7 +19,14 @@
 import { useEffect, useRef, useState } from "react";
 import { useRewards } from "./RewardsProvider";
 
-/** Animates a displayed integer toward `target` whenever it changes -- a plain requestAnimationFrame tween, no animation library. */
+/**
+ * Animates a displayed integer toward `target` whenever it changes --
+ * a plain requestAnimationFrame tween, no animation library. Checks
+ * prefers-reduced-motion itself (jumps straight to `target` when set)
+ * -- the global CSS rule in app/globals.css only covers CSS
+ * animation/transition properties, not a JS-driven rAF loop like this
+ * one.
+ */
 function useCountUp(target: number, durationMs = 400): number {
   const [display, setDisplay] = useState(target);
   const fromRef = useRef(target);
@@ -28,6 +35,13 @@ function useCountUp(target: number, durationMs = 400): number {
   useEffect(() => {
     const from = fromRef.current;
     if (from === target) return;
+
+    if (typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      setDisplay(target);
+      fromRef.current = target;
+      return;
+    }
+
     const start = performance.now();
 
     function tick(now: number) {
@@ -63,6 +77,7 @@ export function CoinBalance({ variant = "full" }: { variant?: "full" | "compact"
         type="button"
         onClick={() => setExpanded((v) => !v)}
         aria-expanded={expanded}
+        aria-label={`${state.coinBalance} Vibe Coins, Level ${state.level}, ${state.currentStreak}-day streak. Show details.`}
         className="flex shrink-0 items-center gap-2 border-2 border-black px-3 py-1 text-xs font-bold uppercase tracking-widest text-black transition-colors duration-150 ease-out hover:border-[#FF3000]"
       >
         <span className="inline-block h-2.5 w-2.5 shrink-0 bg-[#D4A017]" aria-hidden />
