@@ -117,3 +117,90 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+/*
+ * Gamification Wave 2.5 (DECISION_LOG.md PDL-044): the mascot's idle
+ * 3D tilt (components/rewards/Mascot.tsx). Deliberately smooth
+ * ease-in-out, no overshoot -- this runs everywhere the mascot
+ * appears (e.g. app/welcome/page.tsx), not only inside a celebration,
+ * so it stays on the "mechanical" side of P-20's animation rule.
+ * Spring/overshoot motion is reserved for the celebration layer itself
+ * (CelebrationOverlay's own keyframes, scoped there specifically).
+ * Covered by the prefers-reduced-motion rule above like any other
+ * `animation` property.
+ */
+@keyframes mascot-idle-tilt {
+  0%,
+  100% {
+    transform: perspective(500px) rotateY(-6deg) rotateX(1deg);
+  }
+  50% {
+    transform: perspective(500px) rotateY(6deg) rotateX(-1deg);
+  }
+}
+
+.mascot-idle-tilt {
+  animation: mascot-idle-tilt 5s ease-in-out infinite;
+  transform-style: preserve-3d;
+}
+
+/*
+ * Gamification Wave 2.5: celebration-layer-only "juicy" motion,
+ * explicitly NOT used anywhere outside CelebrationOverlay.tsx per the
+ * Director's controlled-deviation scope (DECISION_LOG.md PDL-044).
+ * cubic-bezier(.34,1.56,.64,1) is a real spring/overshoot curve -- the
+ * rest of this app never uses one (P-20: mechanical ease-out only).
+ */
+@keyframes celebration-spring-in {
+  0% {
+    transform: scale(0.82) translateY(12px);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.04) translateY(-2px);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+}
+
+.celebration-spring-in {
+  animation: celebration-spring-in 480ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes celebration-glow-pulse {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(1.08);
+  }
+}
+
+.celebration-glow-pulse {
+  animation: celebration-glow-pulse 2.2s ease-in-out infinite;
+}
+
+@keyframes celebration-coin-pop {
+  0% {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+  70% {
+    transform: scale(1.12);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.celebration-coin-pop {
+  animation: celebration-coin-pop 420ms cubic-bezier(0.34, 1.56, 0.64, 1) 200ms both;
+}
