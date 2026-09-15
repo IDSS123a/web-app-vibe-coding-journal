@@ -728,14 +728,23 @@ this project is not done until:
   deploys), and anything else that affects whether the system is
   actually working versus appearing to.
 - **Not yet resolved, per this directive's own founding audit
-  (PDL-043)**: the `MAX_ARTICLES_PER_QUALITY_RUN` 40→20 revert has not
-  been confirmed under a real target-hour invocation; 2026-09-13's
-  zero-article report anomaly is unexplained. Both are the concrete
-  next steps this rule commits to following up on, not closed items.
-- **Automation cadence** (how literally "constantly" is implemented —
-  every session vs. a scheduled recurring check) is a Director decision
-  still open as of this rule's creation — see the open question at the
-  end of this document / raised directly with the Director.
+  (PDL-043)**: the `MAX_ARTICLES_PER_QUALITY_RUN` 40→20 revert had not
+  yet been confirmed under a real target-hour invocation as of this
+  rule's writing — check `DECISION_LOG.md` for whether that's since
+  closed.
+- **2026-09-13's zero-article report anomaly — resolved same audit**:
+  zero articles were collected in the ~26.5h window before that report
+  ran; the 2905-article burst that day arrived later, matching the
+  already-known PDL-027 backlog-discovery event. Not a bug, just
+  report-timing relative to a one-time event. Also found and fixed the
+  same pass: `university_generation_runs` was the only public table
+  missing RLS (migration 014 oversight) — enabled, zero behavior
+  change (service-role-only access path).
+- **Automation cadence — resolved 2026-09-16 (Director, AskUserQuestion):**
+  not a standing background/scheduled process. Backend health review is
+  the **first step of every session that touches this project** — see
+  `CLAUDE.md`'s session-start checklist. No token cost when no session
+  is active; the review actually happens every time real work starts.
 
 ---
 

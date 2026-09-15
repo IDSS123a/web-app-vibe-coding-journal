@@ -27,6 +27,33 @@ Base URL: `https://raw.githubusercontent.com/IDSS123a/commander/main/`
 
 ---
 
+## 🔴 SESSION START — BACKEND HEALTH FIRST (P-21, Director directive 2026-09-16)
+
+Backend is priority zero. Before starting any feature/content work
+this session, run a real backend-health check — evidence, not memory
+of a prior session's summary (that's exactly the gap P-21/PDL-043
+exist to close):
+
+1. `gh run list --workflow=hourly-digest-trigger.yml --limit 10` — any
+   `FUNCTION_INVOCATION_TIMEOUT` or repeated failures?
+2. Direct SQL: does `daily_reports` have a row for every recent
+   calendar day? Any `article_count=0` anomalies?
+3. `git status` — anything deployed via `vercel --prod` but never
+   committed?
+4. `gh run list` on the other workflows (`ci.yml`, `project-guard.yml`,
+   `university-generate-trigger.yml`, `monthly-hold-gate-
+   calibration.yml`) — all green, none silently stale?
+5. Anything flagged "not yet confirmed" in `DECISION_LOG.md`'s most
+   recent PDL entries — check whether it's since resolved.
+
+Found a real issue → fix it with the same real-evidence discipline as
+everything else in `DECISION_LOG.md` (root-cause, fix, verify live,
+log as a new PDL entry) before moving to whatever else the session was
+for. Nothing found → say so briefly and proceed; this is a check, not
+a ritual that has to produce a finding every time.
+
+---
+
 ## 🔴 CRITICAL RULES — ALWAYS IN FORCE
 
 Compressed here for zero-fetch loading; full text in CONSTITUTION.md /
