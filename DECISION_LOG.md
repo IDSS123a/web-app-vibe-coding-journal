@@ -1729,4 +1729,70 @@ build` — all before AND after the diagnostic route was removed.
 
 ---
 
+---
+
+## PDL-043 — Backend health audit: daily-digest full outage found and fixed, git-hygiene gap closed
+
+**Date:** 2026-09-15/16
+
+**Context:** Director asked for a real backend-readiness check
+("Ponovo provjeri u kakvom je stanju backend"), not a status recap
+from memory. Audited via direct evidence (`gh run list`/`gh run view`
+on every scheduled workflow, live SQL against production, `git
+status`) rather than trusting the prior turn's "everything's fine"
+summary.
+
+**Found: an active, full-day production outage.** `daily_reports` had
+no row for 2026-09-15 at all. `gh run view` on every real
+(non-skipped) invocation of `.github/workflows/hourly-digest-
+trigger.yml` that day (05:53, 11:12, 16:23, 20:01 UTC) showed
+`FUNCTION_INVOCATION_TIMEOUT` — Vercel killing the function at its
+300s ceiling. Root cause: `MAX_ARTICLES_PER_QUALITY_RUN` was raised
+5→40 the prior day (PDL-027 follow-up) against Gemini's daily-quota
+headroom, but never against the function's wall-clock budget — the
+per-article quality-engine loop (`app/api/cron/daily-digest/route.ts`)
+is fully sequential, up to 2-3 real Gemini network calls per article,
+zero parallelism. The comment introducing that raise explicitly
+flagged it as unverified ("cannot be re-verified same-day... the
+first real proof is tomorrow's natural daily run") — this audit *is*
+that first real proof, and it failed.
+
+**Fixed:** reverted `MAX_ARTICLES_PER_QUALITY_RUN` to 20 — the last
+value with an actual working track record (used 2026-09-10 through
+-14 before the raise) — rather than guessing a new number. Verified:
+naming-discipline grep (29, unchanged baseline), `tsc --noEmit`,
+`vitest run` (115/115), `npm run build`, all clean; deployed to
+production. **Not yet proven under a real target-hour invocation** —
+the operations-timezone target hour (deliberately private,
+`lib/cron/schedule-gate.ts`) hadn't recurred by the time of this audit;
+a manual GH Actions `workflow_dispatch` correctly no-op'd
+("not_target_hour"), confirming the gate itself still works, but the
+real proof is the next natural invocation. **Flag this explicitly to
+Director and re-check after it fires** — do not claim this fixed
+without watching that happen. Real architectural fix, if 20 also turns
+out too slow: parallelize the quality-engine loop (e.g. batched
+`Promise.all`), not another blind cap number.
+
+**Also found, lower priority:** 2026-09-13's `daily_reports` row has
+`article_count=0` despite 39 non-duplicate articles existing for that
+window — not investigated further this pass (the active full-outage
+took priority); worth a follow-up look, not yet root-caused.
+
+**Also found: a real process gap, now closed.** Every code change
+since commit `b57554f` (2026-09-14, including all of PDL-037/039/042
+and this fix — 13 files) had been deployed directly via `vercel --prod
+--yes` and never committed to git, breaking this project's own
+established commit-per-change discipline (visible in every earlier
+`git log` entry). Committed as `cbe05a6` and pushed; CI and Commander
+Project Guard (E-13) both passed clean on the real diff.
+
+**How to apply going forward:** deploying via `vercel --prod` without
+a matching git commit is a real, recurring risk (uncommitted work is
+invisible to CI, Project Guard, `git log`, and anyone reviewing
+history) — commit before or immediately after each `vercel --prod`
+call, not batched days later, regardless of how the work was verified
+otherwise.
+
+---
+
 *Vibe-Coding Journal — Project Decision Log — updated as decisions are made.*
