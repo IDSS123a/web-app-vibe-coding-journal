@@ -10,6 +10,15 @@ import { useRouter } from "next/navigation";
 import { useSession } from "@/lib/auth/use-session";
 import type { DailyReport, Article } from "@/lib/validation/schemas";
 
+// Found live 2026-09-15 (DECISION_LOG.md): the Director approved a
+// pre-P-0 report (2026-09-03, 854 articles, almost entirely off-topic)
+// from this exact page. Same warning as the list page
+// (app/admin/review-queue/page.tsx), repeated here right next to the
+// actual Approve button -- the list page's badge only helps avoid
+// opening a risky report, not clicking Approve once already inside it.
+const P0_SHIP_DATE = "2026-09-11";
+const ABNORMAL_ARTICLE_COUNT = 100;
+
 export default function ReviewDetailPage({ params }: { params: Promise<{ date: string }> }) {
   const router = useRouter();
   const { token, loading: sessionLoading } = useSession();
@@ -62,6 +71,12 @@ export default function ReviewDetailPage({ params }: { params: Promise<{ date: s
 
   async function handleApprove() {
     if (!report || !date) return;
+    if (isRisky) {
+      const confirmed = window.confirm(
+        `This report is flagged as risky:\n${riskyReasons.join("\n")}\n\nApprove anyway? This will make it publicly visible.`,
+      );
+      if (!confirmed) return;
+    }
     try {
       setApproving(true);
       const response = await fetch(`/api/admin/reports/${date}/approve`, {
@@ -147,8 +162,27 @@ export default function ReviewDetailPage({ params }: { params: Promise<{ date: s
     );
   }
 
+  const riskyReasons: string[] = [];
+  if (date && date < P0_SHIP_DATE) {
+    riskyReasons.push("Dated before the P-0 relevance gate shipped (2026-09-11) — never checked for topical relevance.");
+  }
+  if (report.article_count > ABNORMAL_ARTICLE_COUNT) {
+    riskyReasons.push(`Abnormally large (${report.article_count} articles) — a normal report is 5-20.`);
+  }
+  const isRisky = riskyReasons.length > 0;
+
   return (
     <div className="space-y-6">
+      {isRisky && (
+        <div className="rounded-lg border-2 border-red-400 bg-red-50 p-4 dark:border-red-700 dark:bg-red-950/40">
+          <p className="mb-1 font-bold text-red-900 dark:text-red-100">⚠ This report is flagged as risky</p>
+          <ul className="list-disc space-y-1 pl-5 text-sm text-red-800 dark:text-red-200">
+            {riskyReasons.map((reason) => (
+              <li key={reason}>{reason}</li>
+            ))}
+          </ul>
+        </div>
+      )}
       {/* Header */}
       <div className="flex justify-between items-start">
         <div>

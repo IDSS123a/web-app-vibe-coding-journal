@@ -10,6 +10,18 @@ import Link from "next/link";
 import { useSession } from "@/lib/auth/use-session";
 import type { DailyReport } from "@/lib/validation/schemas";
 
+// Found live 2026-09-15 (DECISION_LOG.md): the Director approved a
+// pre-P-0 report (2026-09-03, 854 articles, almost entirely off-topic)
+// from this exact queue, because nothing here distinguished it from a
+// normal, small, post-P-0 report in the list. P-0 (the topical-
+// relevance gate) shipped 2026-09-11 -- any report dated before that
+// was never checked against it (DECISION_LOG.md PDL-026's own
+// consequence note). A normal report is 5-20 articles; anything in the
+// hundreds is itself a red flag independent of date, since it almost
+// certainly predates the unbounded-growth fix (2026-09-10) too.
+const P0_SHIP_DATE = "2026-09-11";
+const ABNORMAL_ARTICLE_COUNT = 100;
+
 export default function ReviewQueuePage() {
   const { token, loading: sessionLoading } = useSession();
   const [reports, setReports] = useState<DailyReport[]>([]);
@@ -144,29 +156,51 @@ export default function ReviewQueuePage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
-            {reports.map((report) => (
-              <tr key={report.date} className="hover:bg-gray-50 dark:hover:bg-gray-900/50">
-                <td className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-gray-50">
-                  {report.date}
-                </td>
-                <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
-                  {report.article_count}
-                </td>
-                <td className="px-6 py-4 text-sm">
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-200">
-                    {report.review_status}
-                  </span>
-                </td>
-                <td className="px-6 py-4 text-sm">
-                  <Link
-                    href={`/admin/review-queue/${report.date}`}
-                    className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
-                  >
-                    Review →
-                  </Link>
-                </td>
-              </tr>
-            ))}
+            {reports.map((report) => {
+              const isPreP0 = report.date < P0_SHIP_DATE;
+              const isAbnormalCount = report.article_count > ABNORMAL_ARTICLE_COUNT;
+              const isRisky = isPreP0 || isAbnormalCount;
+              return (
+                <tr
+                  key={report.date}
+                  className={
+                    isRisky
+                      ? "bg-red-50 hover:bg-red-100 dark:bg-red-950/30 dark:hover:bg-red-950/50"
+                      : "hover:bg-gray-50 dark:hover:bg-gray-900/50"
+                  }
+                >
+                  <td className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-gray-50">
+                    {report.date}
+                    {isPreP0 && (
+                      <span className="ml-2 inline-flex items-center rounded-full bg-red-200 px-2 py-0.5 text-xs font-bold text-red-900 dark:bg-red-900 dark:text-red-100">
+                        ⚠ PRE-P-0, UNVERIFIED
+                      </span>
+                    )}
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
+                    {report.article_count}
+                    {isAbnormalCount && (
+                      <span className="ml-2 inline-flex items-center rounded-full bg-red-200 px-2 py-0.5 text-xs font-bold text-red-900 dark:bg-red-900 dark:text-red-100">
+                        ⚠ ABNORMAL COUNT
+                      </span>
+                    )}
+                  </td>
+                  <td className="px-6 py-4 text-sm">
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-200">
+                      {report.review_status}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 text-sm">
+                    <Link
+                      href={`/admin/review-queue/${report.date}`}
+                      className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
+                    >
+                      Review →
+                    </Link>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
