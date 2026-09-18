@@ -595,57 +595,48 @@ this project is not done until:
 
 ---
 
-## P-19. Vibe-Coding Assistant Chatbot — Future Scope, Not MVP `[PLANNED]` 🟡 STANDARD
+## P-19. Vibe-Coding Assistant Chatbot — Shipped `[ACTIVE]` 🟡 STANDARD
 
-- **Status: confirmed future feature, explicitly out of current sprint
-  scope.** Do not begin implementation until the Director opens a
-  dedicated sprint for it. This section exists so the commitment is
-  recorded and not lost — not as a green light to build.
+- **Status (updated 2026-09-16, PDL-047):** shipped and live-verified —
+  see `specs/prompt-blueprint-builder/` (SPEC/PLAN/TASKS) and
+  `DECISION_LOG.md` PDL-046 (the decision to resolve this entry) and
+  PDL-047 (what actually shipped + live verification). Live at
+  `/assistant`, product-facing name "Vibe-Coding Assistant". The
+  history below is kept for context; the two superseded decisions are
+  marked explicitly rather than silently deleted.
 - **No RAG, no vector database, no continuously-updated knowledge
-  base.** The Director has explicitly declined this. The chatbot is a
-  conversational agent (system prompt + conversation context), not a
-  retrieval-augmented system querying an embeddings store. This keeps
-  the feature closer to this project's P-1 (Almost-Zero-Maintenance)
-  philosophy than a RAG pipeline would — no embedding pipeline to
-  maintain, no vector index to keep fresh.
-- **Behavior (as described by the Director):** helps a Premium
-  subscriber go from idea to a finished project — analysis, tech stack
-  recommendations, step-by-step planning, prompts, deployment
-  guidance. Exact scope/guardrails (what it will and won't do, rate
-  limits per user, conversation length limits, cost caps) are **not
-  yet decided** — to be resolved when this sprint is actually scoped,
-  not assumed here.
-- **Direct dependency on P-18 / PDL-012 (AI provider ToS risk).** A
-  chatbot generates far higher, far more visible API call volume per
-  user than the daily batch pipeline that PDL-012 was originally
-  weighed against. P-18 already requires the AI provider risk to be
-  resolved or consciously accepted before subscription payments go
-  live (Sprint 08); this requirement applies with materially higher
-  urgency once a chatbot is in scope, since sustained multi-account
-  free-tier rotation is far less viable — both technically (quota
-  exhaustion) and from a ToS-detection standpoint — under
-  chatbot-level traffic than under one daily cron run.
-- **Prompt injection / input sanitization** must be part of the
-  eventual scope document — this is a new attack surface this project
-  has not had before (the pipeline only ever processes content
-  Claude/Gemini summarizes one-way; a chatbot takes direct, repeated
-  user input).
-- **Cost monitoring** for a per-conversation, per-user feature is a
-  new operational concern distinct from the fixed daily-cron cost
-  model the rest of this project assumes — must be designed for before
-  launch, not discovered after Premium subscribers start using it
-  heavily.
-- **Commander as the chatbot's guidance engine (Director, 2026-07-23):**
-  the chatbot's project-creation guidance is governed by the Commander
-  system (github.com/IDSS123a/commander) itself — the same operating
-  system the Director uses for every project — not an ad-hoc prompt.
-  This makes Commander's token efficiency a direct per-conversation
-  product cost (unit economics of the $50 tier), not just internal
-  convenience. Verified content from this journal feeds the chatbot's
-  recommendations **via system prompt / conversation context injection
-  only** — resolved explicitly by the Director 2026-07-23 as compatible
-  with the standing no-RAG decision above; the chatbot does not query
-  or retrieve from the article archive at runtime.
+  base.** Still stands, unchanged. The chatbot is a conversational
+  agent (system prompt + conversation context), not a
+  retrieval-augmented system querying an embeddings store.
+- **Behavior (updated):** a structured wizard (not open-ended chat)
+  that helps a Premium ($50-tier) subscriber go from a project idea to
+  a copy-pasteable initial prompt for Claude Code or a similar AI
+  coding assistant, styled on the Director's own book's "Blueprint"
+  format. See `specs/prompt-blueprint-builder/SPEC.md` for the full,
+  current scope — this entry no longer duplicates it.
+- **Direct dependency on P-18 / PDL-012 (AI provider ToS risk) — still
+  applies, now with concrete mitigation required.** `SPEC.md` makes an
+  enforced per-user generation cap and visible usage/quota monitoring
+  mandatory acceptance criteria, not optional polish, specifically
+  because this feature's traffic pattern is materially riskier for the
+  shared free-tier Gemini quota than the daily batch pipeline.
+- **Prompt injection / input sanitization** — still required, now a
+  mandatory `SPEC.md` acceptance criterion: the user's structured
+  wizard answers must never be interpretable as instructions to the
+  system prompt.
+- **Cost monitoring** — still required, now a mandatory `SPEC.md`
+  acceptance criterion.
+- ~~**Commander as the chatbot's guidance engine (Director,
+  2026-07-23).**~~ **Superseded 2026-09-16 (PDL-046):** the Director's
+  own book, "Mastering Prompt Engineering — A Practical Manual for
+  Advanced Non-Coders," is now the sole canon for the techniques and
+  output format this chatbot produces — not Commander. Commander
+  continues to govern how this *application itself* is built, as for
+  every feature; it is simply no longer the chatbot's internal
+  guidance engine. Journal content is still not queried/retrieved at
+  runtime (consistent with the no-RAG decision above), since the book
+  itself, not the article archive, is now the chatbot's knowledge
+  source.
 
 ---
 

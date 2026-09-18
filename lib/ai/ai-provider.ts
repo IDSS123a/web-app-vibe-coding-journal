@@ -141,6 +141,37 @@ export interface GenerateSupplementaryLessonOutput {
   terms: Array<{ term: string; definition: string }>;
 }
 
+/**
+ * Vibe-Coding Assistant (specs/prompt-blueprint-builder/, resolves
+ * CONSTITUTION.md P-19, DECISION_LOG.md PDL-046). `projectDescription`
+ * through `constraints` arrive here ALREADY wrapped in delimiter tags by
+ * features/prompt-assistant/domain.ts (e.g.
+ * `<user_project_description>...</user_project_description>`) — the
+ * prompt-injection defense the book's own Chapter 2.5/Appendix D
+ * "Adversarial Prompting" entry describes, applied to the call that
+ * teaches it. The provider implementation must not strip these tags.
+ */
+export interface GeneratePromptBlueprintInput {
+  projectDescription: string;
+  projectType: string;
+  targetUser: string;
+  coreGoal: string;
+  experienceLevel: "beginner" | "some_experience" | "comfortable_with_ai_tools";
+  techPreferences: string[];
+  inspiration: string | null;
+  constraints: string | null;
+}
+
+export interface GeneratePromptBlueprintOutput {
+  domain: string;
+  scenario: string;
+  goal: string;
+  explanation: string; // markdown, per-pillar justification
+  promptBlueprint: string; // the copy-pasteable, ### SECTION ### delimited prompt
+  mermaidDiagram: string; // raw mermaid syntax, no code-fence wrapper
+  nextSteps: string; // markdown
+}
+
 export interface AIProvider {
   summarize(input: SummarizeInput): Promise<SummarizeOutput>;
   classify(input: ClassifyInput): Promise<ClassifyOutput>;
@@ -148,6 +179,7 @@ export interface AIProvider {
   assessRelevance(input: AssessRelevanceInput): Promise<AssessRelevanceOutput>;
   generateLesson(input: GenerateLessonInput): Promise<GenerateLessonOutput>;
   generateSupplementaryLesson(input: GenerateSupplementaryLessonInput): Promise<GenerateSupplementaryLessonOutput>;
+  generatePromptBlueprint(input: GeneratePromptBlueprintInput): Promise<GeneratePromptBlueprintOutput>;
   // Additional methods will be added as pipeline stages are implemented
 }
 
@@ -218,6 +250,13 @@ class NoOpProvider implements AIProvider {
   // treats an empty title as a failed generation attempt.
   async generateSupplementaryLesson(): Promise<GenerateSupplementaryLessonOutput> {
     return { title: "", level: "intermediate", body: "", terms: [] };
+  }
+
+  // Fail-closed like generateLesson, not fail-open like assessRelevance:
+  // an empty Blueprint must never be mistaken for a real generation the
+  // caller can persist and bill against the user's daily cap.
+  async generatePromptBlueprint(): Promise<GeneratePromptBlueprintOutput> {
+    return { domain: "", scenario: "", goal: "", explanation: "", promptBlueprint: "", mermaidDiagram: "", nextSteps: "" };
   }
 }
 

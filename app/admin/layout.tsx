@@ -18,6 +18,12 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
             </h1>
             <nav className="flex gap-6 text-xs font-bold uppercase tracking-widest">
               <a
+                href="/admin/users"
+                className="text-black underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]"
+              >
+                Users
+              </a>
+              <a
                 href="/admin/review-queue"
                 className="text-black underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]"
               >

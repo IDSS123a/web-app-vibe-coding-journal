@@ -152,3 +152,56 @@ export async function sendAdminNotification(payload: {
     return false;
   }
 }
+
+/**
+ * Subscription-expiry warning (specs/admin-console-and-subscription-
+ * lifecycle/) -- sent 7 days and again 2 days before
+ * subscription_expires_at (app/api/cron/subscription-expiry-check).
+ * This is the first USER-facing transactional email in this project;
+ * every prior use of Resend (above) notified the admin, not a
+ * subscriber, so this is a genuinely new audience for the `to` field.
+ */
+export async function sendSubscriptionExpiringEmail(payload: {
+  to: string;
+  daysRemaining: 7 | 2;
+  expiresAt: string; // ISO date
+}): Promise<boolean> {
+  if (!resend || !resendApiKey) {
+    console.warn("[EMAIL] Resend not configured — skipping subscription-expiry email");
+    return false;
+  }
+
+  const expiresDateText = new Date(payload.expiresAt).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+
+  try {
+    const { error } = await resend.emails.send({
+      from: fromAddress,
+      to: payload.to,
+      subject:
+        payload.daysRemaining === 7
+          ? "Your Vibe-Coding Journal subscription expires in 7 days"
+          : "Your Vibe-Coding Journal subscription expires in 2 days",
+      html: `
+<h2>Your subscription is about to expire</h2>
+<p>Your annual Vibe-Coding Journal subscription expires on <strong>${expiresDateText}</strong> (in ${payload.daysRemaining} days).</p>
+<p>Renew before then to keep uninterrupted access to your Daily Report, Archive, Bookmarks, and any Premium features on your plan.</p>
+<p>Sign in to your account to renew.</p>
+      `.trim(),
+    });
+
+    if (error) {
+      console.error(`[EMAIL] Failed to send subscription-expiry email to ${payload.to}:`, error);
+      return false;
+    }
+
+    console.log(`[EMAIL] Subscription-expiry (${payload.daysRemaining}-day) email sent to ${payload.to}`);
+    return true;
+  } catch (err) {
+    console.error(`[EMAIL] Error sending subscription-expiry email to ${payload.to}:`, err);
+    return false;
+  }
+}

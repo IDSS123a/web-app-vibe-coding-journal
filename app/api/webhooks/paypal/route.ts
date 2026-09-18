@@ -20,7 +20,7 @@ import {
   getPaymentEventByPaypalId,
   recordPaymentEventIfNew,
 } from "@/features/payments/repository";
-import { classifyPaymentWebhookEvent, computeSubscriptionExpiry } from "@/features/payments/domain";
+import { classifyPaymentWebhookEvent, classifyUpgradeEvent, computeSubscriptionExpiry } from "@/features/payments/domain";
 import { supabaseAdmin } from "@/lib/db/client";
 import { sendPaymentIssueAlert, sendAdminNotification } from "@/lib/email/resend";
 
@@ -85,7 +85,27 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, alreadyProcessed: true });
   }
 
-  const classification = classifyPaymentWebhookEvent(eventType, amountUsd);
+  // Admin Console & Subscription Lifecycle (specs/admin-console-and-
+  // subscription-lifecycle/): a $40 capture is only ever a valid
+  // Basic->Premium upgrade, never a fresh tier purchase -- check the
+  // paying user's CURRENT tier before falling through to the normal
+  // exact-price classifier, which has no concept of "upgrade" at all.
+  let classification;
+  if (amountUsd === 40 && userId && supabaseAdmin) {
+    const { data: payingUser } = await supabaseAdmin
+      .from("user_profiles")
+      .select("subscription_tier")
+      .eq("id", userId)
+      .maybeSingle();
+    const upgradeClassification = classifyUpgradeEvent(
+      eventType,
+      amountUsd,
+      (payingUser?.subscription_tier as "basic" | "premium" | undefined) ?? null,
+    );
+    classification = upgradeClassification ?? classifyPaymentWebhookEvent(eventType, amountUsd);
+  } else {
+    classification = classifyPaymentWebhookEvent(eventType, amountUsd);
+  }
 
   if (classification.kind === "ignored") {
     await recordPaymentEventIfNew({

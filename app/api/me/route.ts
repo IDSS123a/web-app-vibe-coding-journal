@@ -12,7 +12,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { getVerifiedUser } from "@/lib/auth/verify-token";
-import { isBillingExempt, canAccessUniversity } from "@/lib/permissions";
+import { isBillingExempt, canAccessUniversity, canAccessPromptAssistant } from "@/lib/permissions";
 import { evaluateSubscriptionAccess } from "@/features/onboarding/domain";
 
 export async function GET(request: NextRequest) {
@@ -26,6 +26,9 @@ export async function GET(request: NextRequest) {
         hasAccess: false,
         accessReason: "unauthenticated",
         hasUniversityAccess: false,
+        hasAssistantAccess: false,
+        subscriptionTier: null,
+        isBlocked: false,
       },
       { status: 200 },
     );
@@ -35,6 +38,7 @@ export async function GET(request: NextRequest) {
   const subscriptionResult = evaluateSubscriptionAccess({
     subscription_status: user.subscriptionStatus,
     trial_ends_at: user.trialEndsAt,
+    is_blocked: user.isBlocked,
   });
   const hasAccess = exempt || subscriptionResult.hasAccess;
 
@@ -53,6 +57,20 @@ export async function GET(request: NextRequest) {
         subscriptionTier: user.subscriptionTier,
         hasActiveAccess: subscriptionResult.hasAccess,
       }),
+      // Vibe-Coding Assistant (specs/prompt-blueprint-builder/, resolves
+      // CONSTITUTION.md P-19, DECISION_LOG.md PDL-046): same premium-tier
+      // gate as University -- see lib/permissions.ts canAccessPromptAssistant.
+      hasAssistantAccess: canAccessPromptAssistant({
+        role: user.role,
+        subscriptionTier: user.subscriptionTier,
+        hasActiveAccess: subscriptionResult.hasAccess,
+      }),
+      // Admin Console & Subscription Lifecycle (specs/admin-console-and-
+      // subscription-lifecycle/): lets UpgradeToPremiumBanner decide
+      // whether to render without a second endpoint -- the server
+      // already computed this value above for the two checks it made.
+      subscriptionTier: user.subscriptionTier,
+      isBlocked: user.isBlocked,
     },
     { status: 200 },
   );

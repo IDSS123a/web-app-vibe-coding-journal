@@ -38,6 +38,42 @@ const KNOWN_NON_ACTIVATING_EVENT_TYPES = new Set([
   "PAYMENT.CAPTURE.DECLINED",
 ]);
 
+// Admin Console & Subscription Lifecycle (specs/admin-console-and-
+// subscription-lifecycle/): the flat, non-prorated Basic->Premium
+// upgrade price. Separate from TIER_PRICES_USD deliberately -- $40 is
+// never a valid amount for a FRESH tier purchase, only for an upgrade
+// from an existing Basic subscriber, so it must not be folded into
+// mapAmountToTier's exact-match table (that would let a stray $40
+// charge silently activate a "premium" tier purchase for a brand-new
+// or already-premium user with no Basic-tier check at all).
+const UPGRADE_PRICE_USD = 40;
+
+/**
+ * Classifies a capture event as a valid Basic->Premium upgrade, or
+ * returns null if it isn't one -- the caller (the webhook route) falls
+ * through to the normal classifyPaymentWebhookEvent when this returns
+ * null, so an ordinary $10/$50 payment is completely unaffected by this
+ * function's existence.
+ *
+ * Same fail-loud discipline as classifyPaymentWebhookEvent (PDL-014):
+ * a $40 capture only ever activates a premium upgrade when the paying
+ * user's CURRENT tier is exactly "basic" -- any other combination
+ * (already premium, unknown user) is deliberately left unclassified
+ * here so the caller's normal ambiguous-path alert fires, rather than
+ * silently upgrading an account that shouldn't be.
+ */
+export function classifyUpgradeEvent(
+  eventType: string,
+  amountUsd: number | null,
+  currentTier: TierName | null,
+): WebhookClassification | null {
+  if (eventType !== "PAYMENT.CAPTURE.COMPLETED") return null;
+  if (amountUsd !== UPGRADE_PRICE_USD) return null;
+  if (currentTier !== "basic") return null;
+
+  return { kind: "processed", tier: "premium", amountUsd };
+}
+
 export function classifyPaymentWebhookEvent(
   eventType: string,
   amountUsd: number | null,

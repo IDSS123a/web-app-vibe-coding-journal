@@ -105,6 +105,62 @@ export async function createPayPalOrder(
   };
 }
 
+// Admin Console & Subscription Lifecycle (specs/admin-console-and-
+// subscription-lifecycle/): flat Basic->Premium upgrade price, matches
+// features/subscription-lifecycle/domain.ts BASIC_TO_PREMIUM_UPGRADE_PRICE_USD.
+const UPGRADE_PRICE_USD = "40.00";
+
+/**
+ * Creates a PayPal order for the flat $10->$50 upgrade difference, not
+ * a fresh tier purchase. Parallel to createPayPalOrder rather than a
+ * parameter on it -- the two have genuinely different pricing sources
+ * (TIER_PRICES_USD vs. a fixed upgrade amount) and keeping them
+ * separate avoids widening TierName with a third, non-tier value.
+ * capturePayPalOrder below is unchanged and works for either order
+ * type, since it only needs the orderId.
+ */
+export async function createPayPalUpgradeOrder(
+  userId: string,
+): Promise<{ orderId: string; approveUrl: string | null }> {
+  const accessToken = await getAccessToken();
+
+  const response = await fetch(`${PAYPAL_API_BASE}/v2/checkout/orders`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      intent: "CAPTURE",
+      purchase_units: [
+        {
+          custom_id: userId,
+          description: "Vibe-Coding Journal — Basic to Premium upgrade (annual)",
+          amount: {
+            currency_code: "USD",
+            value: UPGRADE_PRICE_USD,
+          },
+        },
+      ],
+    }),
+  });
+
+  if (!response.ok) {
+    const body = await response.text();
+    throw new Error(`PayPal create-upgrade-order failed: HTTP ${response.status} ${body}`);
+  }
+
+  const data = await response.json();
+  const approveLink = (data.links as Array<{ rel: string; href: string }> | undefined)?.find(
+    (l) => l.rel === "approve",
+  );
+
+  return {
+    orderId: data.id as string,
+    approveUrl: approveLink?.href ?? null,
+  };
+}
+
 /**
  * Captures a buyer-approved order. Without this, an approved order just
  * sits in APPROVED status forever -- PayPal only emits

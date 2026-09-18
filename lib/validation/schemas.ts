@@ -36,6 +36,10 @@ export const userProfileSchema = z.object({
   trial_ends_at: z.string().datetime().nullable(),
   subscription_expires_at: z.string().datetime().nullable(),
   subscription_tier: z.enum(["basic", "premium"]),
+  // Admin Console & Subscription Lifecycle (specs/admin-console-and-
+  // subscription-lifecycle/, migration 020)
+  is_blocked: z.boolean().default(false),
+  created_by_admin_id: z.string().uuid().nullable().default(null),
   // Gamification (DECISION_LOG.md PDL-030, migration 013)
   coin_balance: z.number().int().min(0).default(0),
   current_streak: z.number().int().min(0).default(0),
@@ -359,3 +363,42 @@ export const assessRelevanceOutputSchema = z.object({
 });
 
 export type AssessRelevanceOutput = z.infer<typeof assessRelevanceOutputSchema>;
+
+// Vibe-Coding Assistant wizard input (specs/prompt-blueprint-builder/,
+// resolves CONSTITUTION.md P-19, DECISION_LOG.md PDL-046). E-2: every
+// free-text field is length-capped here at the system boundary -- this
+// is both a UX guard and the first line of prompt-injection defense
+// (features/prompt-assistant/domain.ts wraps these in delimiter tags
+// before they ever reach the AI call).
+export const promptAssistantWizardSchema = z.object({
+  projectDescription: z.string().trim().min(1, "Required").max(200),
+  projectType: z.enum([
+    "web_app",
+    "mobile_app",
+    "browser_extension",
+    "cli_tool",
+    "api_backend",
+    "data_pipeline_automation",
+    "other",
+  ]),
+  projectTypeOtherText: z.string().trim().max(100).optional(),
+  targetUser: z.string().trim().min(1, "Required").max(200),
+  coreGoal: z.string().trim().min(1, "Required").max(600),
+  experienceLevel: z.enum(["beginner", "some_experience", "comfortable_with_ai_tools"]),
+  techPreferences: z.array(z.string().trim().max(50)).max(10).default([]),
+  noTechPreference: z.boolean().default(false),
+  inspiration: z.string().trim().max(300).optional(),
+  constraints: z.string().trim().max(300).optional(),
+});
+
+export type PromptAssistantWizardInput = z.infer<typeof promptAssistantWizardSchema>;
+
+// Admin Console & Subscription Lifecycle (specs/admin-console-and-
+// subscription-lifecycle/): admin-initiated account creation. Reuses
+// the same email validator as registerSchema.
+export const adminCreateUserSchema = z.object({
+  email: z.string().email("Invalid email address"),
+  tier: z.enum(["basic", "premium"]),
+});
+
+export type AdminCreateUserInput = z.infer<typeof adminCreateUserSchema>;

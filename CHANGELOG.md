@@ -6,6 +6,31 @@ reconstructed here retroactively — this file covers from its own start
 date forward). One entry per user-visible or operationally significant
 change, newest first.
 
+## 2026-09-18
+
+- **Feature:** Admin Console & Subscription Lifecycle — `/admin/users`
+  (list, usage and payment history, block/unblock, create accounts by
+  invite into the $10 or $50 tier), 7-day and 2-day subscription-expiry
+  emails (daily cron), and a Basic→Premium upgrade for the $40
+  difference. See `specs/admin-console-and-subscription-lifecycle/` and
+  `DECISION_LOG.md` PDL-048 (includes what is not yet live-tested).
+- **Fix:** Assistant generation no longer aborts on the shared 25s Gemini
+  timeout (own 90s limit for that single call only).
+
+## 2026-09-16
+
+- **Feature:** shipped the Vibe-Coding Assistant (`/assistant`, Premium
+  $50-tier only) — resolves the long-standing P-19 "Future Scope"
+  entry. A structured wizard turns a vibe-coder's project idea into a
+  copy-pasteable initial prompt for Claude Code, following the
+  Director's book's "Blueprint" format (Domain/Scenario/Goal →
+  per-pillar explanation → delimited prompt → Mermaid diagram →
+  next steps). Generation history is saved per user. Bounded to a
+  daily per-user and global generation cap to protect the shared
+  free-tier Gemini quota; usage is visible to admins via
+  `/api/admin/assistant-usage`. See `specs/prompt-blueprint-builder/`
+  and `DECISION_LOG.md` PDL-046/PDL-047.
+
 ## 2026-09-13
 
 - **Sources:** grew active content sources from 2 to 14 — added Reddit

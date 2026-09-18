@@ -21,6 +21,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "@/lib/auth/use-session";
+import { loadPayPalSdk } from "@/lib/payments/load-paypal-sdk";
 
 type GuardState = "checking" | "anon" | "blocked" | "ok";
 type TierName = "basic" | "premium";
@@ -29,31 +30,6 @@ interface MeResponse {
   authenticated: boolean;
   hasAccess: boolean;
   accessReason: string;
-}
-
-let paypalSdkPromise: Promise<void> | null = null;
-
-function loadPayPalSdk(): Promise<void> {
-  if (paypalSdkPromise) return paypalSdkPromise;
-
-  const clientId = process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID;
-  paypalSdkPromise = new Promise((resolve, reject) => {
-    if (!clientId) {
-      reject(new Error("NEXT_PUBLIC_PAYPAL_CLIENT_ID is not configured"));
-      return;
-    }
-    if (document.getElementById("paypal-sdk")) {
-      resolve();
-      return;
-    }
-    const script = document.createElement("script");
-    script.id = "paypal-sdk";
-    script.src = `https://www.paypal.com/sdk/js?client-id=${clientId}&currency=USD&intent=capture`;
-    script.onload = () => resolve();
-    script.onerror = () => reject(new Error("Failed to load PayPal SDK"));
-    document.body.appendChild(script);
-  });
-  return paypalSdkPromise;
 }
 
 function PayPalTierButton({
@@ -225,6 +201,24 @@ export function SubscriptionGuard({ children }: { children: ReactNode }) {
 
   if (state === "blocked") {
     const isTrialExpired = accessReason === "trial_expired";
+    // Admin Console & Subscription Lifecycle (specs/admin-console-and-
+    // subscription-lifecycle/): a real admin block is NOT a billing
+    // problem -- showing the "Subscribe" paywall below would be
+    // actively misleading (paying again wouldn't fix it), so this gets
+    // its own distinct message instead of falling into the generic path.
+    if (accessReason === "blocked") {
+      return (
+        <div className="mx-auto max-w-2xl px-4 py-16 text-center">
+          <p className="mb-2 text-xs font-bold uppercase tracking-widest text-[#FF3000]">Access</p>
+          <h2 className="mb-2 text-3xl font-black uppercase tracking-tighter text-black">
+            Account Blocked
+          </h2>
+          <p className="text-sm text-black">
+            Your account has been blocked. Contact support if you believe this is a mistake.
+          </p>
+        </div>
+      );
+    }
 
     if (awaitingWebhook) {
       return (

@@ -65,6 +65,24 @@ export function isBillingExempt(user: { role: string } | null): boolean {
   return user.role === "admin";
 }
 
+// M-7: single source of truth for the "$50/year premium tier or admin"
+// boolean, shared by every premium-gated feature (University, the
+// Vibe-Coding Assistant chatbot, and any future one). Individual
+// features still get their own named wrapper below rather than calling
+// this directly -- callers read "canAccessUniversity" or
+// "canAccessPromptAssistant" and know exactly what's being gated
+// without re-deriving it from a generic tier check, and the two can
+// diverge later (e.g. a future tier split) without every call site
+// needing to change.
+function hasPremiumTierAccess(user: {
+  role: string;
+  subscriptionTier: "basic" | "premium";
+  hasActiveAccess: boolean;
+}): boolean {
+  if (isBillingExempt({ role: user.role })) return true;
+  return user.hasActiveAccess && user.subscriptionTier === "premium";
+}
+
 // Vibe-Coding University + Dictionary (specs/vibe-coding-university/
 // SPEC.md, confirmed 2026-09-14): Premium-only, distinct from the
 // general subscription-access check (/api/me's hasAccess) which does
@@ -75,6 +93,17 @@ export function canAccessUniversity(user: {
   subscriptionTier: "basic" | "premium";
   hasActiveAccess: boolean;
 }): boolean {
-  if (isBillingExempt({ role: user.role })) return true;
-  return user.hasActiveAccess && user.subscriptionTier === "premium";
+  return hasPremiumTierAccess(user);
+}
+
+// Vibe-Coding Assistant chatbot (specs/prompt-blueprint-builder/,
+// resolves CONSTITUTION.md P-19, DECISION_LOG.md PDL-046): same
+// $50/year premium-tier gate as University -- confirmed with the
+// Director as the SAME tier, not a separate one (PDL-046).
+export function canAccessPromptAssistant(user: {
+  role: string;
+  subscriptionTier: "basic" | "premium";
+  hasActiveAccess: boolean;
+}): boolean {
+  return hasPremiumTierAccess(user);
 }

@@ -1908,4 +1908,129 @@ this session.
 
 ---
 
+## PDL-046 — Vibe-Coding Assistant chatbot: P-19 resolved into `prompt-blueprint-builder`, book replaces Commander as guidance engine
+
+**Date:** 2026-09-16
+
+**Context:** Director asked for a chatbot that helps a vibe-coder build
+an initial project prompt from her book, "Mastering Prompt Engineering
+— A Practical Manual for Advanced Non-Coders" (declared KANON). While
+writing `specs/prompt-blueprint-builder/SPEC.md`, discovered this is
+not a new feature — it is `CONSTITUTION.md` P-19 ("Vibe-Coding
+Assistant Chatbot — Future Scope, Not MVP"), already named and already
+promised on the live pricing page (`components/SubscriptionGuard.tsx`:
+"Everything in Basic, plus the Vibe-Coding Assistant chatbot"). Flagged
+this conflict to the Director explicitly rather than silently treating
+it as either the same feature or a separate one.
+
+**Decisions (Director, 2026-09-16):**
+
+1. **This resolves P-19**, not a parallel/separate feature. P-19's
+   status changes from `[PLANNED]` "Future Scope, Not MVP" to
+   `[IN PROGRESS]`, now pointing at `specs/prompt-blueprint-builder/`.
+   Product-facing name stays "Vibe-Coding Assistant" (matches existing
+   pricing copy the Director had already approved); internal spec
+   folder stays `prompt-blueprint-builder`.
+2. **The book supersedes Commander as the chatbot's guidance engine.**
+   P-19 previously recorded (2026-07-23) that the chatbot's
+   project-creation guidance would be governed by the Commander system
+   itself. That is now superseded: the book is the sole canon for the
+   techniques and output format this chatbot produces. Commander still
+   governs how the *application* is built (unchanged, as for every VCJ
+   feature) — it is no longer referenced inside the shipped product.
+3. **P-19's flagged risks (P-18 quota/ToS exposure, prompt injection,
+   cost monitoring) are made mandatory `SPEC.md` acceptance criteria**,
+   not deferred — an enforced per-user generation cap, admin-visible
+   usage/quota monitoring, and an explicit prompt-injection defense
+   (the user's structured wizard answers must never be interpretable
+   as instructions to the AI system prompt) must all exist before
+   launch.
+4. Access is gated to the **$50/year 'premium' tier specifically**
+   (`subscription_tier = 'premium'`), the same mechanism
+   `lib/permissions.ts`'s `canAccessUniversity` already implements for
+   University — not a generic "any active subscription" check.
+   Whether `/plan-feature` reuses/generalizes that function or adds a
+   new one is left open (SPEC.md), per M-7 (single source of truth for
+   authorization).
+5. Canon-source implementation: a condensed reference document
+   distilled from the book (Five Pillars, Appendix B Blueprint format,
+   Appendix C Markdown delimiter conventions, Appendix D Techniques
+   Quick Reference) goes into the system prompt — not the full
+   ~555KB/10,500-line book text, and not RAG (P-19's no-RAG decision
+   still stands). Source file:
+   `C:\DAVOR_PRIVATE\AI\My_Books\Manual - Prompt Engineering
+   ADVANCED\Mastering_Prompt_Engineering.md` (Director-provided,
+   canonical).
+6. Interaction is a structured wizard (selections/short text), not
+   free-form chat — bounds AI token cost predictably per the
+   Director's explicit instruction to limit token spend.
+7. Output mirrors the book's full Blueprint format (Domain/Scenario/
+   Goal → per-pillar justification → delimited prompt → Mermaid
+   diagram → suggested next steps), and the feature saves a history of
+   each user's previously generated prompts.
+8. All wizard questions, AI output, and UI copy are English-only,
+   matching the rest of the application.
+
+**Why this matters:** without this reconciliation, the project would
+have ended up with two disconnected records of the same feature — a
+stale P-19 entry describing a Commander-driven open chatbot nobody was
+building, and a new spec describing a book-driven wizard, with no link
+between them and a live pricing page promising a third thing neither
+fully matched. `/plan-feature` is next.
+
+---
+
+## PDL-047 — Vibe-Coding Assistant: shipped and live-verified (specs/prompt-blueprint-builder/)
+
+**Date:** 2026-09-16
+
+**What shipped**, following PDL-046's plan through `/plan-feature` and `/tasks`:
+
+- Migration `019_prompt_assistant.sql` — `prompt_blueprint_generations` table, RLS, indexes for the daily-cap count queries.
+- `lib/ai/prompt-canon.ts` — the condensed, hand-distilled Five Pillars / Blueprint format / Techniques reference, built from the Director's canonical `Mastering_Prompt_Engineering.md` (2026-09-16 version).
+- `lib/ai/ai-provider.ts` + `lib/ai/gemini-provider.ts` — `generatePromptBlueprint` added to the `AIProvider` interface and implemented for Gemini (`PROMPT_BLUEPRINT_MAX_OUTPUT_TOKENS = 16384`).
+- `lib/permissions.ts` — `hasPremiumTierAccess` extracted as the shared boolean behind both `canAccessUniversity` and the new `canAccessPromptAssistant` (M-7).
+- `features/prompt-assistant/domain.ts` + `repository.ts` — delimiter-tag injection defense, daily cap constants (`ASSISTANT_DAILY_CAP_PER_USER = 5`, `ASSISTANT_DAILY_GLOBAL_CAP = 30`, both still pending real-usage confirmation per PLAN.md), generation CRUD.
+- `app/api/assistant/{generate,history,history/[id]}` + `app/api/admin/assistant-usage` — all four E-6-sequenced.
+- `/api/me` — new `hasAssistantAccess` field.
+- `components/PremiumGuard.tsx` — generalized to accept `accessKey`/`blockedMessage` props instead of being University-specific, so the Assistant page reuses it rather than duplicating it.
+- `app/assistant/page.tsx` — the wizard + history UI, Swiss-styled, reusing `MarkdownContent` for the explanation/next-steps prose.
+- `components/SiteNav.tsx` — "Assistant" nav link added.
+
+**Live verification (not just build-passing):** `npm run typecheck` and `npm run build` both clean. Then tested in the real browser preview against the actual logged-in test account (admin, premium tier): submitted a real project idea ("markdown-based recipe box app") through the live wizard, got a real Gemini-generated Blueprint back — correct Domain/Scenario/Goal, a genuinely per-pillar-justified Explanation (including correctly *omitting* the Examples pillar with the stated reason "the book explicitly states to never invent a fake example"), a complete `### CONTEXT ### / ### INSTRUCTIONS ### / ### CONSTRAINTS ### / ### DELIMITERS ###` prompt, valid Mermaid syntax, and next steps. Confirmed the row persisted and is retrievable via both `/api/assistant/history` and `/api/assistant/history/[id]`. Confirmed `/api/admin/assistant-usage` reports accurate today/global-cap/per-user counts. Checked the mobile viewport (375px) — no overflow, form fully usable.
+
+**Bug found and fixed during this verification, not left for later:** the `/generate` route initially returned an empty result on every real request — root cause was a missing `ensureAIProviderInitialized()` call (every other AI-calling route in this codebase calls it before `getAIProvider()`; this route silently fell through to the `NoOpProvider` instead of throwing, so it looked like a fast, "successful" empty response rather than an obvious failure). Fixed by adding the same initialization call used elsewhere, then re-verified live.
+
+**Also found live, unrelated to this feature, fixed in passing:** running `npm run build` (production) while the dev server was also running against the same `.next` directory corrupted it (`ENOENT: vendor-chunks/next.js`) — not a code bug, a local-environment gotcha from running both against one build output directory simultaneously. Fixed by stopping the dev server, deleting `.next`, and restarting clean. Not a project rule change, just noted here in case a future session hits the same confusing error.
+
+**Not yet done, explicitly deferred, not silently dropped:**
+- `CONSTITUTION.md` P-19 status updated to `[ACTIVE]` in this same session (below) — the entry's risk items (P-18 cap, injection defense, cost monitoring) are now real, shipped code, not just a plan.
+- The daily cap numbers (5/user, 30/global) are still an initial proposal per PLAN.md — needs Director sign-off against real Premium-subscriber volume once it exists, same category of open item as the University plan's own budget.
+- No live-rendered Mermaid diagrams (plain copyable syntax only) — a deliberate scope cut (PLAN.md Risks/Deviations), not an oversight.
+
+---
+
+## PDL-048 — Admin Console & Subscription Lifecycle (specs/admin-console-and-subscription-lifecycle/)
+
+**Date:** 2026-09-18
+
+**Director's directive (2026-09-16):** admin panel with full authority over subscribers (list, usage + payment history, block/unblock, create new accounts directly into the $10 or $50 tier), automatic expiry warnings 7 and 2 days before the annual licence ends, and a Basic→Premium upgrade that requires paying the $40 difference first.
+
+**Scope decisions confirmed with the Director:** "track consumption" = both per-user feature usage AND payment history; "add users" = a genuinely NEW account (invite by email), not only tier assignment for an existing one.
+
+**Data changes:** two accounts assigned directly by SQL on request — `mulalic71@gmail.com` → basic/active, `direktor@idss.ba` → premium/active, both expiring 2027-09-16 (the request said "50%" for the second; read as $50/premium given the rest of the message). Migration `020` adds `user_profiles.is_blocked`, `created_by_admin_id`, and table `subscription_expiry_notifications` (idempotent per exact expiry timestamp).
+
+**Design decisions (PLAN.md has the reasoning):**
+- Blocking is a separate boolean, enforced in the single function every guard already uses (`evaluateSubscriptionAccess`, M-7) plus a Supabase Auth ban. Disclosed limitation (E-4): an already-issued session token stays valid up to its own expiry.
+- Admin-created accounts use `inviteUserByEmail` — the admin never sets or sees a password. Onboarding fields get fixed defaults.
+- The $40 upgrade is a parallel order endpoint; the webhook only accepts a $40 capture when the payer is currently Basic (otherwise "ambiguous" alert, same fail-loud rule as PDL-014). **Deliberate simplification:** the upgrade restarts the annual clock from the upgrade date (same activation path as any purchase) rather than preserving the old expiry — flag if proration is wanted.
+
+**Verified:** typecheck, 117 unit tests (incl. new blocked-access cases), production build. Live: `/admin/users` lists real accounts, detail view shows usage/payment history, block worked at both layers (DB flag + Auth ban until 2126) and the unblock logic lifted both (verified by running the same operations via a script — the browser admin session had expired and credentials are not entered by the assistant).
+
+**NOT yet verified live (Director will test personally):** PayPal $40 upgrade end-to-end (sandbox), the two expiry emails and the cron/workflow (`subscription-expiry-trigger.yml` never run yet), account creation via invite, the "Account Blocked" screens as the blocked user, the Upgrade banner as a Basic user.
+
+**Operational note found while working:** the Supabase Management API token in `.env.local` now returns 401 (expired/revoked) — direct migrations via that route need a new token; the service-role key still works for the app.
+
+---
+
 *Vibe-Coding Journal — Project Decision Log — updated as decisions are made.*

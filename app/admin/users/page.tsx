@@ -1,0 +1,271 @@
+"use client";
+
+/**
+ * Admin user management (specs/admin-console-and-subscription-lifecycle/).
+ * List every account, drill into one for usage + payment history, block/
+ * unblock, and create a brand-new account directly into a tier. Client-
+ * rendered like every other admin page -- auth session lives in the
+ * browser (app/admin/layout.tsx's AdminGuard already gates this route).
+ */
+
+import { useEffect, useState, type FormEvent } from "react";
+import { useSession } from "@/lib/auth/use-session";
+
+interface UserSummary {
+  id: string;
+  email: string;
+  role: string;
+  subscriptionStatus: string;
+  subscriptionTier: string;
+  isBlocked: boolean;
+  subscriptionExpiresAt: string | null;
+  createdAt: string;
+}
+
+interface PaymentEvent {
+  id: string;
+  event_type: string;
+  tier: string | null;
+  amount_usd: number | null;
+  status: string;
+  created_at: string;
+}
+
+interface UserDetail extends UserSummary {
+  trialEndsAt: string | null;
+  createdByAdminId: string | null;
+  usage: { assistantGenerations: number; lessonsCompleted: number };
+  payments: PaymentEvent[];
+}
+
+export default function AdminUsersPage() {
+  const { token } = useSession();
+  const [users, setUsers] = useState<UserSummary[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const [selected, setSelected] = useState<UserDetail | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [actionMessage, setActionMessage] = useState<string | null>(null);
+
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [createEmail, setCreateEmail] = useState("");
+  const [createTier, setCreateTier] = useState<"basic" | "premium">("basic");
+  const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
+
+  function loadUsers() {
+    if (!token) return;
+    setLoading(true);
+    setError(null);
+    fetch("/api/admin/users", { headers: { authorization: `Bearer ${token}` } })
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
+      .then((d: { data: UserSummary[] }) => setUsers(d.data))
+      .catch(() => setError("Failed to load users."))
+      .finally(() => setLoading(false));
+  }
+
+  useEffect(loadUsers, [token]);
+
+  function openUser(id: string) {
+    if (!token) return;
+    setDetailLoading(true);
+    setActionMessage(null);
+    fetch(`/api/admin/users/${id}`, { headers: { authorization: `Bearer ${token}` } })
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
+      .then((d: { data: UserDetail }) => setSelected(d.data))
+      .catch(() => setError("Failed to load user detail."))
+      .finally(() => setDetailLoading(false));
+  }
+
+  function toggleBlock(user: UserDetail) {
+    if (!token) return;
+    const action = user.isBlocked ? "unblock" : "block";
+    fetch(`/api/admin/users/${user.id}/${action}`, {
+      method: "POST",
+      headers: { authorization: `Bearer ${token}` },
+    })
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
+      .then((d: { warning?: string }) => {
+        setActionMessage(d.warning ?? `User ${action}ed.`);
+        openUser(user.id);
+        loadUsers();
+      })
+      .catch(() => setActionMessage(`Failed to ${action} user.`));
+  }
+
+  async function handleCreate(e: FormEvent) {
+    e.preventDefault();
+    if (!token) return;
+    setCreating(true);
+    setCreateError(null);
+    try {
+      const res = await fetch("/api/admin/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", authorization: `Bearer ${token}` },
+        body: JSON.stringify({ email: createEmail, tier: createTier }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setCreateError(data.error || "Failed to create account");
+        return;
+      }
+      setCreateEmail("");
+      setShowCreateForm(false);
+      loadUsers();
+    } catch {
+      setCreateError("Network error. Please try again.");
+    } finally {
+      setCreating(false);
+    }
+  }
+
+  return (
+    <div>
+      <div className="mb-8 flex items-center justify-between border-b-4 border-black pb-6">
+        <h1 className="text-2xl font-black uppercase tracking-tight text-black">Users</h1>
+        <button
+          type="button"
+          onClick={() => setShowCreateForm((v) => !v)}
+          className="h-11 border-4 border-black bg-black px-4 text-xs font-bold uppercase tracking-widest text-white transition-colors duration-150 ease-out hover:border-[#FF3000] hover:bg-[#FF3000]"
+        >
+          {showCreateForm ? "Cancel" : "+ New Account"}
+        </button>
+      </div>
+
+      {showCreateForm && (
+        <form onSubmit={handleCreate} className="mb-8 border-4 border-black p-6">
+          <div className="flex flex-wrap items-end gap-4">
+            <label className="flex-1">
+              <span className="mb-1 block text-xs font-bold uppercase tracking-widest text-black">Email</span>
+              <input
+                required
+                type="email"
+                value={createEmail}
+                onChange={(e) => setCreateEmail(e.target.value)}
+                className="h-11 w-full border-4 border-black px-3 text-sm text-black"
+              />
+            </label>
+            <label>
+              <span className="mb-1 block text-xs font-bold uppercase tracking-widest text-black">Tier</span>
+              <select
+                value={createTier}
+                onChange={(e) => setCreateTier(e.target.value as "basic" | "premium")}
+                className="h-11 border-4 border-black px-3 text-sm text-black"
+              >
+                <option value="basic">$10 Basic</option>
+                <option value="premium">$50 Premium</option>
+              </select>
+            </label>
+            <button
+              type="submit"
+              disabled={creating}
+              className="h-11 border-4 border-black bg-black px-4 text-xs font-bold uppercase tracking-widest text-white transition-colors duration-150 ease-out hover:border-[#FF3000] hover:bg-[#FF3000] disabled:opacity-50"
+            >
+              {creating ? "Creating…" : "Create & Invite"}
+            </button>
+          </div>
+          <p className="mt-3 text-xs text-black opacity-60">
+            Sends an email invite — no password is set here (E-4). The account is active on the
+            chosen tier immediately.
+          </p>
+          {createError && <p className="mt-2 text-sm text-[#FF3000]">{createError}</p>}
+        </form>
+      )}
+
+      {loading && <p className="text-sm text-black opacity-60">Loading…</p>}
+      {error && <p className="border-2 border-[#FF3000] p-3 text-sm text-[#FF3000]">{error}</p>}
+
+      <div className="grid gap-8 md:grid-cols-2">
+        <div className="overflow-x-auto">
+          <table className="w-full border-4 border-black text-left text-sm">
+            <thead>
+              <tr className="border-b-4 border-black text-xs font-bold uppercase tracking-widest">
+                <th className="p-3">Email</th>
+                <th className="p-3">Tier</th>
+                <th className="p-3">Status</th>
+                <th className="p-3">Expires</th>
+              </tr>
+            </thead>
+            <tbody>
+              {users.map((u) => (
+                <tr
+                  key={u.id}
+                  onClick={() => openUser(u.id)}
+                  className={`cursor-pointer border-b-2 border-black transition-colors duration-150 ease-out hover:bg-[#F2F2F2] ${
+                    u.isBlocked ? "opacity-50" : ""
+                  }`}
+                >
+                  <td className="p-3">
+                    {u.email}
+                    {u.isBlocked && <span className="ml-2 text-xs font-bold text-[#FF3000]">BLOCKED</span>}
+                  </td>
+                  <td className="p-3 uppercase">{u.subscriptionTier}</td>
+                  <td className="p-3">{u.subscriptionStatus}</td>
+                  <td className="p-3">
+                    {u.subscriptionExpiresAt ? new Date(u.subscriptionExpiresAt).toLocaleDateString() : "—"}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <div>
+          {detailLoading && <p className="text-sm text-black opacity-60">Loading…</p>}
+          {actionMessage && (
+            <p className="mb-4 border-2 border-black p-3 text-sm text-black">{actionMessage}</p>
+          )}
+          {selected && (
+            <div className="border-4 border-black p-6">
+              <h2 className="mb-1 text-lg font-black uppercase tracking-tight text-black">
+                {selected.email}
+              </h2>
+              <p className="mb-4 text-xs uppercase tracking-widest text-black opacity-60">
+                {selected.role} · {selected.subscriptionTier} · {selected.subscriptionStatus}
+                {selected.isBlocked && " · BLOCKED"}
+              </p>
+
+              <button
+                type="button"
+                onClick={() => toggleBlock(selected)}
+                className={`mb-6 h-11 border-4 px-4 text-xs font-bold uppercase tracking-widest transition-colors duration-150 ease-out ${
+                  selected.isBlocked
+                    ? "border-black bg-black text-white hover:border-[#FF3000] hover:bg-[#FF3000]"
+                    : "border-[#FF3000] text-[#FF3000] hover:bg-[#FF3000] hover:text-white"
+                }`}
+              >
+                {selected.isBlocked ? "Unblock User" : "Block User"}
+              </button>
+
+              <h3 className="mb-2 text-xs font-bold uppercase tracking-widest text-black">Usage</h3>
+              <ul className="mb-6 text-sm text-black">
+                <li>Assistant generations: {selected.usage.assistantGenerations}</li>
+                <li>Lessons completed: {selected.usage.lessonsCompleted}</li>
+              </ul>
+
+              <h3 className="mb-2 text-xs font-bold uppercase tracking-widest text-black">
+                Payment History
+              </h3>
+              {selected.payments.length === 0 ? (
+                <p className="text-sm text-black opacity-60">No payment events.</p>
+              ) : (
+                <ul className="space-y-2 text-sm text-black">
+                  {selected.payments.map((p) => (
+                    <li key={p.id} className="border-b border-black pb-2">
+                      {new Date(p.created_at).toLocaleDateString()} — {p.event_type} — $
+                      {p.amount_usd ?? "?"} — {p.tier ?? "?"} — {p.status}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+          {!selected && !detailLoading && (
+            <p className="text-sm text-black opacity-60">Select a user to see their detail.</p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

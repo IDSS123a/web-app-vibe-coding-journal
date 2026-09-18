@@ -9,6 +9,7 @@ import { getRelatedSourcesForArticles } from "@/features/pipeline/repository";
 import { ArticleListWithBookmarks } from "@/components/ArticleListWithBookmarks";
 import { MarkdownContent } from "@/components/MarkdownContent";
 import { DailyReportOpenTracker } from "@/components/rewards/DailyReportOpenTracker";
+import { UpgradeToPremiumBanner } from "@/components/UpgradeToPremiumBanner";
 
 /**
  * Dashboard — real Daily Report page.
@@ -113,6 +114,8 @@ export default async function DashboardPage() {
             Automated daily intelligence digest for vibe-coders
           </p>
         </div>
+
+        <UpgradeToPremiumBanner />
 
         {/* Daily Report Card */}
         <div className="border-4 border-black p-8 md:p-12">

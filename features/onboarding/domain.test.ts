@@ -43,4 +43,25 @@ describe("evaluateSubscriptionAccess", () => {
     );
     expect(result.hasAccess).toBe(false);
   });
+
+  it("blocks access even for an otherwise-active subscription (Admin Console, migration 020)", () => {
+    const result = evaluateSubscriptionAccess({
+      subscription_status: "active",
+      trial_ends_at: null,
+      is_blocked: true,
+    });
+    expect(result).toEqual({ hasAccess: false, reason: "blocked" });
+  });
+
+  it("is unaffected by is_blocked: false (explicit) or omitted", () => {
+    const explicit = evaluateSubscriptionAccess({
+      subscription_status: "active",
+      trial_ends_at: null,
+      is_blocked: false,
+    });
+    expect(explicit).toEqual({ hasAccess: true, reason: "active_subscription" });
+
+    const omitted = evaluateSubscriptionAccess({ subscription_status: "active", trial_ends_at: null });
+    expect(omitted).toEqual({ hasAccess: true, reason: "active_subscription" });
+  });
 });

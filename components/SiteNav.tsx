@@ -33,6 +33,7 @@ const LOGGED_IN_LINKS = [
   { href: "/bookmarks", label: "Bookmarks" },
   { href: "/university", label: "University" },
   { href: "/dictionary", label: "Dictionary" },
+  { href: "/assistant", label: "Assistant" },
 ];
 
 export function SiteNav() {

@@ -1,0 +1,25 @@
+name: Subscription Expiry Trigger
+
+# Daily 7-day/2-day subscription-expiry warning emails (specs/admin-
+# console-and-subscription-lifecycle/). Idempotent per (user_id,
+# notification_type, subscription_expires_at) -- migration 020's unique
+# constraint -- so a missed or duplicate firing is safe, same principle
+# as university-generate-trigger.yml.
+
+on:
+  schedule:
+    # 08:00 UTC -- arbitrary, low-traffic timing; separate Gemini-free
+    # budget concern doesn't apply here (no AI calls), so no coordination
+    # needed with the other crons' timing.
+    - cron: "0 8 * * *"
+  workflow_dispatch: {}
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call subscription-expiry-check endpoint
+        run: |
+          curl --fail-with-body -sS -X POST \
+            "${{ secrets.DIGEST_ENDPOINT_URL }}/api/cron/subscription-expiry-check" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"

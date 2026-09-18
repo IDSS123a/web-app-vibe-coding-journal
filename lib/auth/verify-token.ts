@@ -25,6 +25,9 @@ export interface VerifiedToken {
   subscriptionStatus: "trial" | "active" | "expired";
   trialEndsAt: string | null;
   subscriptionTier: "basic" | "premium";
+  // Admin Console & Subscription Lifecycle (specs/admin-console-and-
+  // subscription-lifecycle/, migration 020).
+  isBlocked: boolean;
 }
 
 /**
@@ -91,7 +94,7 @@ export async function getVerifiedUser(
 
   const { data: profile, error } = await supabaseAdmin
     .from("user_profiles")
-    .select("role, subscription_status, trial_ends_at, subscription_tier")
+    .select("role, subscription_status, trial_ends_at, subscription_tier, is_blocked")
     .eq("id", decoded.sub)
     .single();
 
@@ -111,6 +114,7 @@ export async function getVerifiedUser(
     subscriptionStatus: (profile.subscription_status as VerifiedToken["subscriptionStatus"]) || "expired",
     trialEndsAt: (profile.trial_ends_at as string | null) ?? null,
     subscriptionTier: (profile.subscription_tier as VerifiedToken["subscriptionTier"]) || "basic",
+    isBlocked: (profile.is_blocked as boolean) ?? false,
   };
 }
 

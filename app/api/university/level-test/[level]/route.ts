@@ -26,6 +26,7 @@ async function authorize(request: NextRequest) {
   const access = evaluateSubscriptionAccess({
     subscription_status: user.subscriptionStatus,
     trial_ends_at: user.trialEndsAt,
+    is_blocked: user.isBlocked,
   });
   const allowed = canAccessUniversity({
     role: user.role,

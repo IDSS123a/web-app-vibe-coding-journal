@@ -24,6 +24,8 @@ function makeUser(overrides: Partial<UserProfile> = {}): UserProfile {
     trial_ends_at: null,
     subscription_expires_at: null,
     subscription_tier: "basic",
+    is_blocked: false,
+    created_by_admin_id: null,
     coin_balance: 0,
     current_streak: 0,
     longest_streak: 0,

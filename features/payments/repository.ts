@@ -73,6 +73,30 @@ export async function getRecentPaymentEvents(limit = 50): Promise<PaymentEventWi
   );
 }
 
+/**
+ * A single user's payment history, newest first -- powers the Admin
+ * Console's per-user detail view (specs/admin-console-and-subscription-
+ * lifecycle/). Unlike getRecentPaymentEvents (global, admin payments
+ * feed), this is scoped to one user_id and doesn't need the email join.
+ */
+export async function getPaymentEventsForUser(userId: string): Promise<PaymentEvent[]> {
+  if (!supabaseAdmin) {
+    throw new Error("Admin client not available");
+  }
+
+  const { data, error } = await supabaseAdmin
+    .from("payment_events")
+    .select("*")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    throw new Error(`Failed to fetch payment events for user: ${error.message}`);
+  }
+
+  return data as PaymentEvent[];
+}
+
 export async function getPaymentEventByPaypalId(
   paypalEventId: string,
 ): Promise<PaymentEvent | null> {
