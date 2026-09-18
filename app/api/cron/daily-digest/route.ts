@@ -113,8 +113,22 @@ export async function POST(request: NextRequest) {
     ensureAIProviderInitialized();
 
     // 4. EXECUTE
+    // Per-phase wall-clock timing (2026-09-18, P-21 diagnosis): real runs
+    // were measured at ~290s of the 300s Vercel budget with no way to
+    // tell which phase consumed it -- recorded in `phaseDurationsMs` in
+    // the response so the next run's own log answers that. Diagnostic
+    // only; pipeline behavior is unchanged.
+    const phaseDurationsMs: Record<string, number> = {};
+    let phaseStart = Date.now();
+    const endPhase = (name: string): void => {
+      phaseDurationsMs[name] = Date.now() - phaseStart;
+      console.log(`[CRON]   ⏱ ${name} took ${phaseDurationsMs[name]}ms (total so far ${Date.now() - startTime}ms)`);
+      phaseStart = Date.now();
+    };
+
     console.log("[CRON] Phase 1: Source Collector (fetch + parse)");
     const collectResult = await collectArticlesFromAllSources();
+    endPhase("sourceCollector");
 
     console.log(`[CRON]   ✓ Collected ${collectResult.articlesAdded} articles from ${collectResult.sourcesProcessed} sources`);
     if (collectResult.errors.length > 0) {
@@ -160,11 +174,13 @@ export async function POST(request: NextRequest) {
     // Phase 2: Duplicate Engine
     console.log("[CRON] Phase 2: Duplicate Engine (deduplication)");
     const dedupeResult = await deduplicateArticles();
+    endPhase("duplicateEngine");
     console.log(`[CRON]   ✓ Deduplicated: ${dedupeResult.duplicatesFound} duplicates marked`);
 
     // Phase 3: Quality Engine + Classifier + AI Summary
     console.log("[CRON] Phase 3: Quality Engine & Classifier");
     const qualityResult = await runQualityEngine();
+    endPhase("qualityEngine");
     console.log(
       `[CRON]   ✓ Quality scored: ${qualityResult.articlesScored}, Classified: ${qualityResult.articlesClassified}, AI-summarized: ${qualityResult.articlesSummarized}`,
     );
@@ -186,6 +202,7 @@ export async function POST(request: NextRequest) {
       qualityResult.aiSuspectedSuspension,
       qualityResult.aiModelDeprecated,
     );
+    endPhase("dailyReport");
     console.log(
       `[CRON]   ✓ Report generated: ${reportResult.articleCount} articles, status: ${reportResult.reviewStatus}`,
     );
@@ -210,6 +227,7 @@ export async function POST(request: NextRequest) {
         reportResult.success,
       timestamp: new Date().toISOString(),
       durationMs: duration,
+      phaseDurationsMs,
       phases: {
         sourceCollector: {
           articlesAdded: collectResult.articlesAdded,
