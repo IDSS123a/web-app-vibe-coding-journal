@@ -8,6 +8,8 @@ change, newest first.
 
 ## 2026-09-18
 
+- **SECURITY (critical):** fixed an authentication bypass — the server accepted hand-built tokens with an invalid signature and treated them as the user (or admin) named inside. Tokens are now verified by Supabase Auth. See PDL-050.
+
 - **Critical fix (P-0):** off-topic articles that the relevance gate had
   excluded were still being published in Daily Reports and were also
   holding every report for review, so no report had ever auto-published.

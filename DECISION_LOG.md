@@ -2047,4 +2047,20 @@ fully matched. `/plan-feature` is next.
 
 ---
 
+## PDL-050 — SECURITY: authentication bypass (forged JWT accepted) — found and fixed
+
+**Date:** 2026-09-18
+
+**Found by:** the Director-requested full stress test, first live probe.
+
+**Vulnerability (🔴 CRITICAL, was live in production):**  "verified" access tokens with , which only base64-decodes a token and never checks its signature. A comment claimed signature verification was "delegated to Supabase" but nothing ever called Supabase. The server then loaded the role from  by the  claim, so anyone who knew (or obtained) a user's id could hand-build a token with a garbage signature and act as that user — including the admin — on EVERY protected route. Proven against production before the fix: a forged token returned  from /api/me and the full user list from /api/admin/users. User ids are not secret (they appear e.g. in admin notification emails and PayPal correlation ids). Engineering rule E-4 explicitly requires testing a forged token live; that test had never been done.
+
+**Fix:**  now authenticates through Supabase Auth (: signature, expiry, user exists).  is kept only to read  from an already-verified token. Verified with real Supabase before deploy: forged token rejected, real-token-with-tampered-payload rejected, legitimate token accepted. Regression tests added (134 pass).
+
+**Exposure window and impact — UNKNOWN, stated honestly:** the weakness existed since token handling was first written. There are no request logs available to establish whether anyone exploited it. Admin-created accounts record , and the 7 current accounts are all known, so no rogue account is visible — but read access to user data, payment history and admin actions would leave no trace. Treat data reachable via the admin API (emails, tiers, payment events) as possibly exposed. Recommend rotating the credentials that were pasted into chat during this session.
+
+**Follow-up:** the same stress test surfaced further findings — see the plan document for the next session.
+
+---
+
 *Vibe-Coding Journal — Project Decision Log — updated as decisions are made.*
