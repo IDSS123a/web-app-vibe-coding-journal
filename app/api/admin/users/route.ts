@@ -57,6 +57,19 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     console.error(`[ADMIN_USERS] create failed: ${message}`);
+    // The caller here is an admin acting on a known cause, so the two
+    // failure modes that actually occurred in live testing get their own
+    // precise, actionable answer (E-5: specific status for anticipatable
+    // failures) instead of one generic 500. Anything else stays generic.
+    if (/rate limit/i.test(message)) {
+      return NextResponse.json(
+        { error: "The email provider's sending limit was reached. Wait a while (up to an hour) and try again." },
+        { status: 429 },
+      );
+    }
+    if (/already (been )?registered|already exists/i.test(message)) {
+      return NextResponse.json({ error: "An account with this email already exists." }, { status: 409 });
+    }
     return NextResponse.json({ error: "Failed to create account" }, { status: 500 });
   }
 }

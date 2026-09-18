@@ -188,6 +188,30 @@ export async function createAdminInvitedUser(
 }
 
 /**
+ * Admin override of a user's tier. Changes ONLY subscription_tier --
+ * status and expiry are left exactly as they are, so this neither grants
+ * a new year nor reactivates a lapsed account (an admin who wants that
+ * uses the invite/renewal flow, not this). Returns false when no such
+ * user exists so the route can answer 404 instead of a silent no-op.
+ */
+export async function setUserTier(userId: string, tier: "basic" | "premium"): Promise<boolean> {
+  if (!supabaseAdmin) {
+    throw new Error("Admin client not available");
+  }
+
+  const { data, error } = await supabaseAdmin
+    .from("user_profiles")
+    .update({ subscription_tier: tier, updated_at: new Date().toISOString() })
+    .eq("id", userId)
+    .select("id");
+
+  if (error) {
+    throw new Error(`Failed to update tier: ${error.message}`);
+  }
+  return (data ?? []).length > 0;
+}
+
+/**
  * Sets `is_blocked` (the single source of truth every access guard
  * flows through, features/onboarding/domain.ts) AND bans at the
  * Supabase Auth layer (defense-in-depth: stops new sign-ins

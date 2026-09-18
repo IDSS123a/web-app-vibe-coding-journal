@@ -417,3 +417,11 @@ export const adminCreateUserSchema = z.object({
 });
 
 export type AdminCreateUserInput = z.infer<typeof adminCreateUserSchema>;
+
+// Admin changing an existing user's tier (specs/admin-console-and-
+// subscription-lifecycle/) -- the tier only; status/expiry are untouched.
+export const adminSetTierSchema = z.object({
+  tier: z.enum(["basic", "premium"]),
+});
+
+export type AdminSetTierInput = z.infer<typeof adminSetTierSchema>;

@@ -14,6 +14,14 @@ change, newest first.
   Excluded articles are now kept out of the report. The approved
   2026-09-18 report was cleaned of its 6 off-topic articles. See PDL-049.
 - **Feature:** `/set-password` for admin-invited accounts.
+- **Feature:** admin can change an existing user's tier from
+  `/admin/users` (tier only; status and expiry untouched, with a
+  confirmation). Account creation now reports the real reason for the two
+  failures seen in testing (email sending limit reached, email already
+  registered) instead of a generic error.
+- **Ops (Supabase Auth config, no code):** custom SMTP via Resend
+  (`noreply@idss.ba`), production Site URL, email limit raised to 30/hour,
+  branded invite email template.
 
 - **Feature:** Admin Console & Subscription Lifecycle — `/admin/users`
   (list, usage and payment history, block/unblock, create accounts by

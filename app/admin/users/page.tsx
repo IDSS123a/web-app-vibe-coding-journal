@@ -94,6 +94,26 @@ export default function AdminUsersPage() {
       .catch(() => setActionMessage(`Failed to ${action} user.`));
   }
 
+  function changeTier(user: UserDetail, tier: "basic" | "premium") {
+    if (!token || tier === user.subscriptionTier) return;
+    const label = tier === "premium" ? "$50 Premium" : "$10 Basic";
+    // Changing a tier is an admin override that does not touch payment
+    // records, status or expiry -- confirm before doing it.
+    if (!window.confirm(`Change ${user.email} to ${label}? Status and expiry date stay as they are.`)) return;
+    fetch(`/api/admin/users/${user.id}/tier`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", authorization: `Bearer ${token}` },
+      body: JSON.stringify({ tier }),
+    })
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
+      .then(() => {
+        setActionMessage(`Tier changed to ${label}.`);
+        openUser(user.id);
+        loadUsers();
+      })
+      .catch(() => setActionMessage("Failed to change tier."));
+  }
+
   async function handleCreate(e: FormEvent) {
     e.preventDefault();
     if (!token) return;
@@ -237,6 +257,18 @@ export default function AdminUsersPage() {
               >
                 {selected.isBlocked ? "Unblock User" : "Block User"}
               </button>
+
+              <label className="mb-6 block">
+                <span className="mb-1 block text-xs font-bold uppercase tracking-widest text-black">Tier</span>
+                <select
+                  value={selected.subscriptionTier}
+                  onChange={(e) => changeTier(selected, e.target.value as "basic" | "premium")}
+                  className="h-11 w-full border-4 border-black px-3 text-sm text-black"
+                >
+                  <option value="basic">$10 Basic</option>
+                  <option value="premium">$50 Premium</option>
+                </select>
+              </label>
 
               <h3 className="mb-2 text-xs font-bold uppercase tracking-widest text-black">Usage</h3>
               <ul className="mb-6 text-sm text-black">
