@@ -8,6 +8,13 @@ change, newest first.
 
 ## 2026-09-18
 
+- **Critical fix (P-0):** off-topic articles that the relevance gate had
+  excluded were still being published in Daily Reports and were also
+  holding every report for review, so no report had ever auto-published.
+  Excluded articles are now kept out of the report. The approved
+  2026-09-18 report was cleaned of its 6 off-topic articles. See PDL-049.
+- **Feature:** `/set-password` for admin-invited accounts.
+
 - **Feature:** Admin Console & Subscription Lifecycle — `/admin/users`
   (list, usage and payment history, block/unblock, create accounts by
   invite into the $10 or $50 tier), 7-day and 2-day subscription-expiry

@@ -2033,4 +2033,18 @@ fully matched. `/plan-feature` is next.
 
 ---
 
+## PDL-049 — P-0 leak: relevance-excluded articles were published in reports and held every report
+
+**Date:** 2026-09-18
+
+**Found while checking why subscribers saw an empty dashboard:** no Daily Report had ever been published — every one (2026-09-06 → 09-18) sat in `held_for_review`, always for "N article(s) below confidence threshold (60%)". Root cause was a wiring bug, not a too-strict threshold: the relevance gate (P-0) marks an off-topic article as excluded by forcing `confidence_score` to 0, but `getArticlesForDailyReport` selected every scored article, so excluded items (relevance 10–30: fashion, IPO-law, "AI for societal impact") were (a) put into the report and (b) counted by `evaluateReportHold` as below-threshold, holding the whole report. When the Director manually approved the 09-18 report, those off-topic articles went live to subscribers — a P-0 (🔴 CRITICAL) violation.
+
+**Fix:** `isReportEligible()` (features/pipeline/quality-engine.ts) is applied in `getArticlesForDailyReport`; excluded articles no longer enter the report or the hold count. Regression tests added (128 tests pass). Genuinely low-confidence articles (0 < score < 0.6) still trigger a hold — that remains a legitimate reason.
+
+**Data correction (Director-approved "A i B"):** removed the 6 off-topic articles from the already-approved 2026-09-18 report (links, markdown, `article_count` 11→5, reading time); status stays `manually_approved`. Original row backed up locally before the edit.
+
+**Expected effect (unverified until the next digest run after deploy):** reports containing only relevant, well-scored articles can now auto-publish instead of always being held. Whether a real day's mix clears every remaining check (hype words, low-confidence items) is not yet known.
+
+---
+
 *Vibe-Coding Journal — Project Decision Log — updated as decisions are made.*

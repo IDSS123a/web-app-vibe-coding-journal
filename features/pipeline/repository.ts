@@ -1,5 +1,6 @@
 import { supabaseAdmin } from "@/lib/db/client";
 import type { Article } from "@/lib/validation/schemas";
+import { isReportEligible } from "./quality-engine";
 
 /**
  * Get article by hash (fast lookup for exact duplicate detection)
@@ -297,5 +298,7 @@ export async function getArticlesForDailyReport(): Promise<Article[]> {
     throw new Error(`Failed to fetch articles for daily report: ${error.message}`);
   }
 
-  return data as Article[];
+  // P-0: relevance-excluded articles (confidence_score forced to 0) must not
+  // reach the report -- see isReportEligible in quality-engine.ts.
+  return (data as Article[]).filter(isReportEligible);
 }

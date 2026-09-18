@@ -5,6 +5,7 @@ import {
   classifyArticle,
   containsHypeWords,
   evaluateReportHold,
+  isReportEligible,
   scoreArticleConfidence,
   shouldHoldForReview,
 } from "./quality-engine";
@@ -189,5 +190,33 @@ describe("classifyArticle", () => {
     if (result !== null) {
       expect(ARTICLE_CATEGORIES).toContain(result);
     }
+  });
+});
+
+describe('isReportEligible (P-0: relevance-excluded articles stay out of the report)', () => {
+  it('excludes an article whose confidence was forced to 0 by the relevance gate', () => {
+    expect(isReportEligible({ confidence_score: 0 })).toBe(false);
+  });
+
+  it('excludes an unscored article', () => {
+    expect(isReportEligible({ confidence_score: null })).toBe(false);
+    expect(isReportEligible({})).toBe(false);
+  });
+
+  it('keeps any genuinely scored article, even a low-confidence one (that one is a legitimate hold reason, not an exclusion)', () => {
+    expect(isReportEligible({ confidence_score: 0.5 })).toBe(true);
+    expect(isReportEligible({ confidence_score: 0.9 })).toBe(true);
+  });
+
+  it('regression: a report of only relevant articles is no longer held just because off-topic items were also collected', () => {
+    const collected = [
+      { title: 'Vercel AI SDK update', summary: null, raw_summary: null, confidence_score: 0.8 },
+      { title: 'Show HN: agent tool', summary: null, raw_summary: null, confidence_score: 0.9 },
+      { title: 'Fashion with Google', summary: null, raw_summary: null, confidence_score: 0 },
+    ];
+    const before = evaluateReportHold(collected);
+    const after = evaluateReportHold(collected.filter(isReportEligible));
+    expect(before.hold).toBe(true);
+    expect(after.hold).toBe(false);
   });
 });

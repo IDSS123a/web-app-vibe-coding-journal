@@ -116,6 +116,21 @@ export function scoreArticleConfidence(article: Article): number {
 }
 
 /**
+ * P-0 report eligibility (fixed 2026-09-18). An article the relevance
+ * gate judged off-topic (RELEVANCE_THRESHOLD above) gets confidence_score
+ * forced to 0 -- that IS the "excluded" mechanism. Until this fix nothing
+ * downstream honoured it: getArticlesForDailyReport pulled every scored
+ * article, so excluded off-topic items (e.g. fashion, IPO-law posts scored
+ * relevance 10-30) were published in the Daily Report AND counted by
+ * evaluateReportHold as "below confidence threshold", which held every
+ * single report since the relevance gate shipped -- nothing ever
+ * auto-published. Excluded articles must stay out of the report entirely.
+ */
+export function isReportEligible(article: { confidence_score?: number | null }): boolean {
+  return article.confidence_score !== undefined && article.confidence_score !== null && article.confidence_score > 0;
+}
+
+/**
  * Check if text contains hype words
  * P-3: Editorial voice enforcement
  */
