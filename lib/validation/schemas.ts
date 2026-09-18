@@ -1,13 +1,28 @@
 import { z } from "zod";
 
+// Single definition of the password rules, shared by self-registration
+// and the invited-user set-password page (app/set-password) so the two
+// can never drift apart.
+export const passwordSchema = z
+  .string()
+  .min(8, "Password must be at least 8 characters")
+  .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+  .regex(/[0-9]/, "Password must contain at least one number");
+
+export const setPasswordSchema = z
+  .object({
+    password: passwordSchema,
+    confirmPassword: z.string(),
+  })
+  .refine((v) => v.password === v.confirmPassword, {
+    message: "Passwords do not match",
+    path: ["confirmPassword"],
+  });
+
 // Auth & User Registration
 export const registerSchema = z.object({
   email: z.string().email("Invalid email address"),
-  password: z
-    .string()
-    .min(8, "Password must be at least 8 characters")
-    .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
-    .regex(/[0-9]/, "Password must contain at least one number"),
+  password: passwordSchema,
   tools_used: z.array(z.enum(["no_code_low_code", "ai_assisted_ide", "agent_based_coding", "other"])).min(1, "Select at least one tool"),
   depth_preference: z.enum(["simple", "technical_when_needed", "deep_technical"]),
   other_tools_freetext: z.string().optional(),

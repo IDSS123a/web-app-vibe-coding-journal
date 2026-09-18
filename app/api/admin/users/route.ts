@@ -47,7 +47,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Email already registered" }, { status: 409 });
     }
 
-    const { userId } = await createAdminInvitedUser(parsed.data.email, parsed.data.tier, admin.sub);
+    // The invite link must land on the set-password page of THIS site
+    // (derived from the request, not a hardcoded host, so it stays right
+    // across production/preview domains).
+    const redirectTo = `${new URL(request.url).origin}/set-password`;
+    const { userId } = await createAdminInvitedUser(parsed.data.email, parsed.data.tier, admin.sub, redirectTo);
 
     return NextResponse.json({ success: true, data: { userId } });
   } catch (error) {

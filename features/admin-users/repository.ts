@@ -149,12 +149,19 @@ export async function createAdminInvitedUser(
   email: string,
   tier: "basic" | "premium",
   createdByAdminId: string,
+  // Where the emailed invite link sends the user (app/set-password, where
+  // they choose their own password). Must be in Supabase's Redirect URLs
+  // allow-list, otherwise Supabase silently falls back to the Site URL.
+  redirectTo?: string,
 ): Promise<{ userId: string }> {
   if (!supabaseAdmin) {
     throw new Error("Admin client not available");
   }
 
-  const { data: invited, error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(email);
+  const { data: invited, error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(
+    email,
+    redirectTo ? { redirectTo } : undefined,
+  );
   if (inviteError || !invited.user) {
     throw new Error(`Failed to invite user: ${inviteError?.message ?? "unknown error"}`);
   }
