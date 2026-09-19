@@ -27,6 +27,14 @@ Base URL: `https://raw.githubusercontent.com/IDSS123a/commander/main/`
 
 ---
 
+## 🔴 READ FIRST — open stress-test plan (2026-09-18)
+
+`sprints/STRESS_TEST_2026-09-18_AND_PLAN.md` holds the full stress-test
+findings and the agreed order of work (two critical security holes were
+fixed that night; further HIGH items — content readable by any registered
+user, no database backups, Gemini key rotation — are still open). Read it
+before starting; update or remove items as they are closed.
+
 ## 🔴 SESSION START — BACKEND HEALTH FIRST (P-21, Director directive 2026-09-16)
 
 Backend is priority zero. Before starting any feature/content work

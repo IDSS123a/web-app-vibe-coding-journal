@@ -8,6 +8,7 @@ change, newest first.
 
 ## 2026-09-18
 
+- **SECURITY (critical):** fixed a database-policy hole that let any signed-in user set their own role/tier/status (migration 021). See PDL-051. Full stress-test report and next-session plan: `sprints/STRESS_TEST_2026-09-18_AND_PLAN.md`.
 - **SECURITY (critical):** fixed an authentication bypass — the server accepted hand-built tokens with an invalid signature and treated them as the user (or admin) named inside. Tokens are now verified by Supabase Auth. See PDL-050.
 
 - **Critical fix (P-0):** off-topic articles that the relevance gate had

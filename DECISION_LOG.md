@@ -2053,13 +2053,29 @@ fully matched. `/plan-feature` is next.
 
 **Found by:** the Director-requested full stress test, first live probe.
 
-**Vulnerability (🔴 CRITICAL, was live in production):**  "verified" access tokens with , which only base64-decodes a token and never checks its signature. A comment claimed signature verification was "delegated to Supabase" but nothing ever called Supabase. The server then loaded the role from  by the  claim, so anyone who knew (or obtained) a user's id could hand-build a token with a garbage signature and act as that user — including the admin — on EVERY protected route. Proven against production before the fix: a forged token returned  from /api/me and the full user list from /api/admin/users. User ids are not secret (they appear e.g. in admin notification emails and PayPal correlation ids). Engineering rule E-4 explicitly requires testing a forged token live; that test had never been done.
+**Vulnerability (🔴 CRITICAL, was live in production):** `lib/auth/verify-token.ts` "verified" access tokens with `jwt-decode`, which only base64-decodes a token and never checks its signature. A comment claimed signature verification was "delegated to Supabase" but nothing ever called Supabase. The server then loaded the role from `user_profiles` by the `sub` claim, so anyone who knew (or obtained) a user's id could hand-build a token with a garbage signature and act as that user — including the admin — on EVERY protected route. Proven against production before the fix: a forged token returned `isAdmin: true` from /api/me and the full user list from /api/admin/users. User ids are not secret (they appear e.g. in admin notification emails and PayPal correlation ids). Engineering rule E-4 explicitly requires testing a forged token live; that test had never been done.
 
-**Fix:**  now authenticates through Supabase Auth (: signature, expiry, user exists).  is kept only to read  from an already-verified token. Verified with real Supabase before deploy: forged token rejected, real-token-with-tampered-payload rejected, legitimate token accepted. Regression tests added (134 pass).
+**Fix:** `getVerifiedUser` now authenticates through Supabase Auth (`auth.getUser(token)`: signature, expiry, user exists). `jwt-decode` is kept only to read `exp` from an already-verified token. Verified with real Supabase before deploy: forged token rejected, real-token-with-tampered-payload rejected, legitimate token accepted. Regression tests added (134 pass).
 
-**Exposure window and impact — UNKNOWN, stated honestly:** the weakness existed since token handling was first written. There are no request logs available to establish whether anyone exploited it. Admin-created accounts record , and the 7 current accounts are all known, so no rogue account is visible — but read access to user data, payment history and admin actions would leave no trace. Treat data reachable via the admin API (emails, tiers, payment events) as possibly exposed. Recommend rotating the credentials that were pasted into chat during this session.
+**Exposure window and impact — UNKNOWN, stated honestly:** the weakness existed since token handling was first written. There are no request logs available to establish whether anyone exploited it. Admin-created accounts record `created_by_admin_id`, and the 7 current accounts are all known, so no rogue account is visible — but read access to user data, payment history and admin actions would leave no trace. Treat data reachable via the admin API (emails, tiers, payment events) as possibly exposed. Recommend rotating the credentials that were pasted into chat during this session.
 
-**Follow-up:** the same stress test surfaced further findings — see the plan document for the next session.
+**Follow-up:** the same stress test surfaced further findings — see `sprints/STRESS_TEST_2026-09-18_AND_PLAN.md` for the next session.
+
+---
+
+## PDL-051 — SECURITY: any signed-in user could make themselves admin (RLS) — found and fixed
+
+**Date:** 2026-09-18
+
+**Found by:** the same stress test, while auditing database policies right after PDL-050.
+
+**Vulnerability (🔴 CRITICAL, was live in production):** the policy `Users can update own profile` on `user_profiles` (`USING auth.uid() = id`, no column restriction) let any signed-in user PATCH their own row directly through Supabase's always-on REST API and set ANY column — `role`, `subscription_tier`, `subscription_status`, `subscription_expires_at`, `is_blocked`, `coin_balance`. Proven with a real non-admin session: `role` was changed to `admin` (HTTP 200) and reverted immediately. This bypassed the application, the payment flow and the admin panel entirely, and is independent of PDL-050 (token verification vs. database policy).
+
+**Fix:** migration `021_drop_self_update_policy_on_user_profiles.sql` drops the policy. Nothing in the app used it — every write to `user_profiles` goes through server routes with the service role, which bypasses RLS. Verified after applying: self-promotion to admin, self-upgrade of tier/status/expiry, self-unblock and coin edits all return no rows and leave the state unchanged; a user still reads only their own row.
+
+**Related exposure found in the same pass, NOT yet fixed (plan item S1):** any registered user can read, via the same REST API, all University lessons and quiz/level-test questions including `correct_option_index`, and every Daily Report including held-for-review and rejected ones.
+
+**Lesson (process):** E-4 already required a live forged-token/RBAC test, and there were no tests at any layer that exercised RLS or the API from a hostile client. A post-deploy security probe script is on the plan.
 
 ---
 
