@@ -96,6 +96,6 @@ Load/concurrency, full mobile and accessibility pass across every screen, cross-
 3. **S3 + S4** delete/lock test accounts; rotate the two pasted credentials.
 4. ~~**R1** Gemini 5xx rotation~~ — DONE 2026-09-19 (PDL-054). D3 (progress feedback, plain "busy, nothing counted" message, 503 instead of 500) DONE the same day; a live production check after deploy is still owed.
 5. ~~**S5, S6, S8, D1**~~ — DONE 2026-09-19 (PDL-054), awaiting push and a production check. Open follow-up: switch the CSP from Report-Only to enforced after observing real login / checkout / Assistant / University sessions.
-5b. **D2 dashboard scroll cue** (Director chose V1, 2026-09-19: headline list at the top + "N more below" cue — next up) and ~~**D4 responsive audit + fixes**~~ — DONE 2026-09-19 (PDL-055, `npm run audit:responsive`); Chromium only, real-device / Safari / Firefox checks stay with the Director.
+5b. ~~**D2 dashboard scroll cue**~~ (Director chose V1, 2026-09-19) — DONE the same day (PDL-056) — and ~~**D4 responsive audit + fixes**~~ — DONE 2026-09-19 (PDL-055, `npm run audit:responsive`); Chromium only, real-device / Safari / Firefox checks stay with the Director.
 6. **Decisions from the Director:** paywall for the Daily Report/Archive (S1b), backups (S2), Gemini model migration and key 7 (R2), dashboard empty-state policy (B1), upgrade clock (B7), Assistant caps (B8).
 7. Then R3–R6, B2–B4, hygiene batch, and the security-probe script into CI.

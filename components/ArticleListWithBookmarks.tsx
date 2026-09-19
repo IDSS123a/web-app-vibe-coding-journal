@@ -45,6 +45,95 @@ import { useSession } from "@/lib/auth/use-session";
 import type { Article } from "@/lib/validation/schemas";
 import { useRewards } from "@/components/rewards/RewardsProvider";
 
+/**
+ * Stress-test item D2 (Director, 2026-09-19: "the user does not see that there
+ * is more content to read by scrolling"): a report is one long card and nothing
+ * said so. Two cues, no new data: a numbered index of the headlines at the top
+ * (each jumps to its article) and a small "N more below" button pinned to the
+ * bottom of the screen once the reader has started scrolling, while any article is
+ * still below the fold. It disappears once the last article is on screen, and
+ * scrolls to the next one.
+ */
+const articleAnchor = (id: string) => `article-${id}`;
+
+function HeadlineIndex({ articles }: { articles: Article[] }) {
+  if (articles.length < 2) return null;
+  return (
+    <nav aria-label="Articles in this report" className="mt-6 border-2 border-black bg-[#F2F2F2] p-4 sm:p-6">
+      <h2 className="mb-3 text-xs font-bold uppercase tracking-widest text-[#FF3000]">
+        In this report — {articles.length} articles
+      </h2>
+      <ol className="space-y-0">
+        {articles.map((article, i) => (
+          <li key={article.id} className="border-t border-black/20 first:border-t-0">
+            <a
+              href={`#${articleAnchor(article.id)}`}
+              className="flex min-h-11 items-start gap-3 py-2 text-sm font-bold text-black transition-colors duration-150 ease-out hover:text-[#FF3000]"
+            >
+              <span className="w-6 shrink-0 text-xs tabular-nums text-black/60">{String(i + 1).padStart(2, "0")}</span>
+              <span className="break-words">{article.title}</span>
+            </a>
+          </li>
+        ))}
+      </ol>
+    </nav>
+  );
+}
+
+function MoreBelowCue({ articles }: { articles: Article[] }) {
+  const [below, setBelow] = useState(0);
+
+  useEffect(() => {
+    let frame = 0;
+    const measure = () => {
+      frame = 0;
+      let count = 0;
+      for (const article of articles) {
+        const el = document.getElementById(articleAnchor(article.id));
+        if (el && el.getBoundingClientRect().top > window.innerHeight - 8) count += 1;
+      }
+      // Not on the first screen: there the headline index (and the card being cut off
+      // at the fold) is the cue, and a floating button would only cover it.
+      setBelow(window.scrollY > 200 ? count : 0);
+    };
+    const schedule = () => {
+      if (!frame) frame = requestAnimationFrame(measure);
+    };
+    schedule();
+    window.addEventListener("scroll", schedule, { passive: true });
+    window.addEventListener("resize", schedule);
+    return () => {
+      window.removeEventListener("scroll", schedule);
+      window.removeEventListener("resize", schedule);
+      if (frame) cancelAnimationFrame(frame);
+    };
+  }, [articles]);
+
+  if (below === 0) return null;
+
+  function goToNext() {
+    for (const article of articles) {
+      const el = document.getElementById(articleAnchor(article.id));
+      if (el && el.getBoundingClientRect().top > window.innerHeight - 8) {
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
+        return;
+      }
+    }
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={goToNext}
+      aria-label={`Scroll to the next article — ${below} more below`}
+      className="fixed bottom-10 left-1/2 z-30 inline-flex min-h-11 -translate-x-1/2 items-center gap-2 whitespace-nowrap border-2 border-black bg-black px-4 text-xs font-bold uppercase tracking-widest text-white transition-colors duration-150 ease-out hover:border-[#FF3000] hover:bg-[#FF3000]"
+    >
+      <span aria-hidden="true">↓</span>
+      {below} more below
+    </button>
+  );
+}
+
 export function ArticleListWithBookmarks({
   articles,
   relatedSources,
@@ -121,89 +210,94 @@ export function ArticleListWithBookmarks({
   if (articles.length === 0) return null;
 
   return (
-    <div className="mt-6 space-y-0">
-      {articles.map((article, i) => {
-        const isBookmarked = bookmarked.has(article.id);
-        return (
-          <div
-            key={article.id}
-            className={`border-black p-4 sm:p-6 md:p-8 ${i === 0 ? "border-2" : "border-2 border-t-0"}`}
-          >
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
-              <a
-                href={article.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="break-words text-lg font-black uppercase tracking-tight text-black transition-colors duration-150 ease-out hover:text-[#FF3000]"
-              >
-                {article.title}
-              </a>
-              {!loading && (
-                <button
-                  type="button"
-                  onClick={() => (token ? toggleBookmark(article.id) : undefined)}
-                  disabled={!token || !bookmarksLoaded}
-                  title={token ? (isBookmarked ? "Remove bookmark" : "Bookmark") : "Sign in to bookmark"}
-                  className={`min-h-11 shrink-0 self-start border-2 px-3 py-1 text-xs font-bold uppercase tracking-widest transition-colors duration-150 ease-out ${
-                    isBookmarked
-                      ? "border-[#FF3000] bg-[#FF3000] text-white"
-                      : "border-black bg-white text-black"
-                  } ${token ? "hover:border-[#FF3000] hover:bg-[#FF3000] hover:text-white" : "cursor-not-allowed opacity-40"}`}
+    <>
+      <HeadlineIndex articles={articles} />
+      <MoreBelowCue articles={articles} />
+      <div className="mt-6 space-y-0">
+        {articles.map((article, i) => {
+          const isBookmarked = bookmarked.has(article.id);
+          return (
+            <div
+              key={article.id}
+              id={articleAnchor(article.id)}
+              className={`scroll-mt-20 border-black p-4 sm:p-6 md:p-8 ${i === 0 ? "border-2" : "border-2 border-t-0"}`}
+            >
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+                <a
+                  href={article.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="break-words text-lg font-black uppercase tracking-tight text-black transition-colors duration-150 ease-out hover:text-[#FF3000]"
                 >
-                  {isBookmarked ? "★ Bookmarked" : "☆ Bookmark"}
-                </button>
+                  {article.title}
+                </a>
+                {!loading && (
+                  <button
+                    type="button"
+                    onClick={() => (token ? toggleBookmark(article.id) : undefined)}
+                    disabled={!token || !bookmarksLoaded}
+                    title={token ? (isBookmarked ? "Remove bookmark" : "Bookmark") : "Sign in to bookmark"}
+                    className={`min-h-11 shrink-0 self-start border-2 px-3 py-1 text-xs font-bold uppercase tracking-widest transition-colors duration-150 ease-out ${
+                      isBookmarked
+                        ? "border-[#FF3000] bg-[#FF3000] text-white"
+                        : "border-black bg-white text-black"
+                    } ${token ? "hover:border-[#FF3000] hover:bg-[#FF3000] hover:text-white" : "cursor-not-allowed opacity-40"}`}
+                  >
+                    {isBookmarked ? "★ Bookmarked" : "☆ Bookmark"}
+                  </button>
+                )}
+              </div>
+              {(article.summary || article.raw_summary) && (
+                <p className="mt-3 text-sm leading-relaxed text-black">
+                  {article.summary || article.raw_summary}
+                </p>
+              )}
+              {article.why_it_matters && (
+                <p className="mt-3 text-sm text-black">
+                  <span className="font-bold uppercase tracking-wide">Why it matters: </span>
+                  {article.why_it_matters}
+                  {article.who_it_affects ? ` (${article.who_it_affects})` : ""}
+                </p>
+              )}
+              {article.what_to_watch && (
+                <p className="mt-3 text-sm text-black">
+                  <span className="font-bold uppercase tracking-wide">What to watch: </span>
+                  {article.what_to_watch}
+                </p>
+              )}
+              <div className="mt-4 flex flex-wrap gap-2 text-xs font-bold uppercase tracking-wide text-black">
+                {article.category && (
+                  <span className="border-2 border-black px-2 py-0.5">{article.category}</span>
+                )}
+                {article.source && (
+                  <span className="border-2 border-black px-2 py-0.5">{article.source}</span>
+                )}
+                {article.confidence_score != null && (
+                  <span className="border-2 border-black px-2 py-0.5">
+                    {Math.round(article.confidence_score * 100)}% confidence
+                  </span>
+                )}
+                {article.worth_trying && (
+                  <span
+                    className={`border-2 px-2 py-0.5 ${
+                      article.worth_trying === "yes"
+                        ? "border-[#FF3000] text-[#FF3000]"
+                        : "border-black text-black"
+                    }`}
+                  >
+                    Worth trying: {article.worth_trying === "yes" ? "Yes" : article.worth_trying === "no" ? "No" : "Maybe"}
+                  </span>
+                )}
+              </div>
+              {relatedSources?.[article.id] && relatedSources[article.id]!.length > 0 && (
+                <p className="mt-3 text-xs italic text-black opacity-60">
+                  Also covered by: {relatedSources[article.id]!.join(", ")}
+                </p>
               )}
             </div>
-            {(article.summary || article.raw_summary) && (
-              <p className="mt-3 text-sm leading-relaxed text-black">
-                {article.summary || article.raw_summary}
-              </p>
-            )}
-            {article.why_it_matters && (
-              <p className="mt-3 text-sm text-black">
-                <span className="font-bold uppercase tracking-wide">Why it matters: </span>
-                {article.why_it_matters}
-                {article.who_it_affects ? ` (${article.who_it_affects})` : ""}
-              </p>
-            )}
-            {article.what_to_watch && (
-              <p className="mt-3 text-sm text-black">
-                <span className="font-bold uppercase tracking-wide">What to watch: </span>
-                {article.what_to_watch}
-              </p>
-            )}
-            <div className="mt-4 flex flex-wrap gap-2 text-xs font-bold uppercase tracking-wide text-black">
-              {article.category && (
-                <span className="border-2 border-black px-2 py-0.5">{article.category}</span>
-              )}
-              {article.source && (
-                <span className="border-2 border-black px-2 py-0.5">{article.source}</span>
-              )}
-              {article.confidence_score != null && (
-                <span className="border-2 border-black px-2 py-0.5">
-                  {Math.round(article.confidence_score * 100)}% confidence
-                </span>
-              )}
-              {article.worth_trying && (
-                <span
-                  className={`border-2 px-2 py-0.5 ${
-                    article.worth_trying === "yes"
-                      ? "border-[#FF3000] text-[#FF3000]"
-                      : "border-black text-black"
-                  }`}
-                >
-                  Worth trying: {article.worth_trying === "yes" ? "Yes" : article.worth_trying === "no" ? "No" : "Maybe"}
-                </span>
-              )}
-            </div>
-            {relatedSources?.[article.id] && relatedSources[article.id]!.length > 0 && (
-              <p className="mt-3 text-xs italic text-black opacity-60">
-                Also covered by: {relatedSources[article.id]!.join(", ")}
-              </p>
-            )}
-          </div>
-        );
-      })}
-    </div>
+          );
+        })}
+      </div>
+    </>
   );
 }

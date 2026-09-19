@@ -8,6 +8,8 @@ change, newest first.
 
 ## 2026-09-19
 
+- **Dashboard (PDL-056):** the Daily Report now opens with a numbered list of the day's headlines (tap one to jump to it), and while you read, a "↓ N more below" button shows how many articles are left and takes you to the next one.
+
 - **Every screen size (PDL-055):** the site was audited in a real browser at phone, tablet, laptop and wide-screen sizes. Fixed: the top menu overflowing on tablets and phones held sideways (now a hamburger below 1024 px), the admin menu running off a phone screen, the home-page headline being cut off on phones, article cards leaving a narrow text column on phones, tables clipped on small screens, and — on devices set to dark mode — admin pages showing dark boxes and an invisible heading (the app is now consistently light). All buttons and links are at least 44 px to tap. The audit is repeatable: `npm run audit:responsive`.
 
 - **Reliability (PDL-054):** the Vibe-Coding Assistant (and the daily pipeline) no longer fails outright when one Gemini key answers "service unavailable" — the next key is tried. Cron endpoints now refuse every request if their secret is not configured (previously a built-in default). Security headers added (framing blocked, no MIME sniffing, referrer/permissions policies; a Content-Security-Policy in report-only mode). Dead login code and `bcryptjs` removed. The browser tab now shows the site icon (favicon + Apple touch icon). The Vibe-Coding Assistant now shows live progress while generating (it takes 20–40 s), says plainly when the AI service is busy and that nothing was counted against the daily limit, and keeps your answers in the form after a failure.

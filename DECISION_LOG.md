@@ -2153,4 +2153,14 @@ fully matched. `/plan-feature` is next.
 
 ---
 
+## PDL-056 — Dashboard shows that there is more to read (D2)
+
+**Date:** 2026-09-19. **Problem (Director):** a report is one long card; the user does not realise there is more content below.
+
+**Decision (Director chose variant V1 of two proposed):** two cues, no new data. (1) A numbered "In this report — N articles" index at the top of the report, each headline linking to its article (anchored, offset for the sticky header). (2) Once the reader has scrolled, a small "↓ N more below" button pinned at the bottom of the screen; it scrolls to the next article and disappears when the last one is on screen. It is deliberately hidden on the first screen, where the index and the card cut off at the fold already say "there is more" and a floating button would only cover them (first version did cover list items — caught in the screenshot). Lives in `components/ArticleListWithBookmarks.tsx`, so `/dashboard` and `/archive/[date]` both get it. The rejected variant V2 (sticky side index with "article 3 of 9") stays an option if reports grow long.
+
+**Verified in Chrome against the production build** at 375 and 1440 px as a Premium test user: index has 5 items; no button on the first screen; after scrolling it shows "4 more below" and counts down as the button is used; gone at the bottom; index link puts the article 80 px from the top (below the sticky header). Responsive audit re-run: 152 checks, 0 overflow / errors, tap targets ≥ 44 px.
+
+---
+
 *Vibe-Coding Journal — Project Decision Log — updated as decisions are made.*
