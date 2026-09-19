@@ -31,10 +31,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { ensureAIProviderInitialized } from "@/lib/ai/init";
 import { getAIProvider } from "@/lib/ai/ai-provider";
 import { GeminiKeysExhaustedError } from "@/lib/ai/gemini-provider";
-import { getIsoWeekString } from "@/features/university/domain";
+import { getGenerationRunKey, MAX_PENDING_REVIEW_LESSONS } from "@/features/university/domain";
 import { isValidCronSecret } from "@/lib/cron/auth";
 import {
   hasGenerationRunThisWeek,
+  countPendingReviewLessons,
   getNextStubLesson,
   getUnusedHighRelevanceArticles,
   getAllLessonTitles,
@@ -57,12 +58,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const isoWeek = getIsoWeekString();
+    const isoWeek = getGenerationRunKey();
 
     const alreadyRan = await hasGenerationRunThisWeek(isoWeek);
     if (alreadyRan) {
       console.log(`[UNIVERSITY_CRON] Already ran for ${isoWeek}, skipping`);
-      return NextResponse.json({ success: true, skipped: true, reason: "already_ran_this_week" });
+      return NextResponse.json({ success: true, skipped: true, reason: "already_ran_this_period" });
+    }
+
+    // Daily generation would otherwise pile up unreviewed lessons the admin has not got to yet.
+    const pending = await countPendingReviewLessons();
+    if (pending >= MAX_PENDING_REVIEW_LESSONS) {
+      console.log(`[UNIVERSITY_CRON] ${pending} lessons already await review, not generating more`);
+      return NextResponse.json({ success: true, skipped: true, reason: "review_queue_full", pending });
     }
 
     const stub = await getNextStubLesson();

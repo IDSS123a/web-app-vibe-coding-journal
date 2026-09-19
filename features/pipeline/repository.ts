@@ -142,6 +142,51 @@ export async function getNonDuplicateArticles(limit?: number): Promise<Article[]
 }
 
 /**
+ * Queue 1 of the enrichment step: articles that still have no relevance score, newest
+ * first. Not duplicates. (2026-09-19; the single "no confidence score" queue this replaces
+ * let a pile of relevant articles waiting for a summary block the unscored ones behind them.)
+ */
+export async function getArticlesNeedingRelevance(limit: number): Promise<Article[]> {
+  if (!supabaseAdmin) {
+    throw new Error("Admin client not available");
+  }
+  const { data, error } = await supabaseAdmin
+    .from("articles")
+    .select("*")
+    .is("duplicate_of", null)
+    .is("relevance_score", null)
+    .order("published_at", { ascending: false })
+    .limit(limit);
+  if (error) {
+    throw new Error(`Failed to fetch articles needing relevance: ${error.message}`);
+  }
+  return data as Article[];
+}
+
+/**
+ * Queue 2: relevant (score at or above the P-0 threshold) but not finished, meaning no
+ * confidence score yet, best first. These are the candidates for summaries.
+ */
+export async function getRelevantUnfinishedArticles(limit: number): Promise<Article[]> {
+  if (!supabaseAdmin) {
+    throw new Error("Admin client not available");
+  }
+  const { data, error } = await supabaseAdmin
+    .from("articles")
+    .select("*")
+    .is("duplicate_of", null)
+    .is("confidence_score", null)
+    .gte("relevance_score", 60)
+    .order("relevance_score", { ascending: false })
+    .order("published_at", { ascending: false })
+    .limit(limit);
+  if (error) {
+    throw new Error(`Failed to fetch relevant unfinished articles: ${error.message}`);
+  }
+  return data as Article[];
+}
+
+/**
  * Update article confidence score (Quality Engine output)
  */
 export async function updateArticleConfidence(

@@ -25,7 +25,8 @@ import { supabaseAdmin } from "@/lib/db/client";
 import { getAIProvider, ASSESS_RELEVANCE_BATCH_SIZE } from "@/lib/ai/ai-provider";
 import { GeminiKeysExhaustedError } from "@/lib/ai/gemini-provider";
 import {
-  getNonDuplicateArticles,
+  getArticlesNeedingRelevance,
+  getRelevantUnfinishedArticles,
   updateArticleConfidence,
   updateArticleRelevance,
   updateArticleCategory,
@@ -66,6 +67,13 @@ export interface EnrichmentOptions {
    * Undefined means no ceiling (the report run itself).
    */
   maxAiCalls?: number;
+  /**
+   * How many relevant articles may get the per-article summary calls in this run. A report
+   * holds at most MAX_ARTICLES_PER_REPORT, so summarising every relevant article of thirty
+   * sources would spend most of the day's AI budget on text nobody reads. The best (highest
+   * relevance, then newest) go first; the rest wait, unsummarised, for a later run.
+   */
+  maxSummaries?: number;
 }
 
 const BATCH_SAFETY_MS = 15_000;
@@ -120,8 +128,14 @@ export async function runEnrichment(options: EnrichmentOptions): Promise<Enrichm
   const canSpend = () => options.maxAiCalls === undefined || result.aiCalls < options.maxAiCalls;
 
   try {
-    const articles = await getNonDuplicateArticles(options.limit);
-    console.log(`[ENRICH] ${articles.length} queued article(s)`);
+    // Two queues, so a pile of relevant-but-not-yet-summarised articles can never crowd out
+    // the articles that still have no relevance score at all:
+    //   1. no relevance score yet (newest first)
+    //   2. relevant (P-0) but not finished, best first
+    const unscored = await getArticlesNeedingRelevance(options.limit);
+    const unfinished = await getRelevantUnfinishedArticles(options.maxSummaries ?? 30);
+    const articles: Article[] = [...unscored, ...unfinished.filter((u) => !unscored.some((a) => a.id === u.id))];
+    console.log(`[ENRICH] ${unscored.length} awaiting relevance, ${unfinished.length} relevant awaiting summary`);
     const ai = getAIProvider();
     const classBySource = await loadSourceClasses();
 
@@ -184,7 +198,10 @@ export async function runEnrichment(options: EnrichmentOptions): Promise<Enrichm
     }
 
     // Stage 2: only relevant articles get a confidence score, a category and a summary.
-    const relevant = articles.filter((a) => (relevance.get(a.id) ?? -1) >= RELEVANCE_THRESHOLD);
+    const relevant = articles
+      .filter((a) => (relevance.get(a.id) ?? -1) >= RELEVANCE_THRESHOLD)
+      .sort((a, b) => (relevance.get(b.id) ?? 0) - (relevance.get(a.id) ?? 0) || (a.published_at < b.published_at ? 1 : -1))
+      .slice(0, options.maxSummaries ?? 30);
     const stopped = await mapPool(relevant, options.summaryConcurrency ?? 3, options.deadlineAt, SUMMARY_SAFETY_MS, async (article) => {
       if (!canSpend()) {
         result.stoppedForBudget = true;

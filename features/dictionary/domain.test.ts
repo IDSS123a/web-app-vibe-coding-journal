@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
+  applyDictionaryFilters,
+  EMPTY_FILTERS,
+  facetCounts,
   computeRelatedTerms,
   DICTIONARY_GROUPS,
   groupFromSectionTitle,
@@ -163,5 +166,45 @@ describe("document parsers", () => {
     const out = parseBookB(md);
     expect(out).toHaveLength(2);
     expect(out[0]).toMatchObject({ term: "Human-in-the-loop", aliases: ["HITL"], definition: "A person reviews each step, in real time." });
+  });
+});
+
+describe("dictionary page filters", () => {
+  const now = new Date("2026-09-19T12:00:00Z");
+  const base = { definition: "d", aliases: [] as string[] };
+  const terms = [
+    { ...base, term: "Agent loop", category_group: "agents", level: "intermediate", tier: "core", mention_count: 5, last_seen_at: "2026-09-18T00:00:00Z", origin: "book_a" },
+    { ...base, term: "Paxos", category_group: "architecture", level: "advanced", tier: "adjacent", mention_count: 0, last_seen_at: null, origin: "book_b" },
+    { ...base, term: "Vibe check", category_group: "vibe-coding", level: "beginner", tier: "core", mention_count: 9, last_seen_at: "2026-09-17T00:00:00Z", first_seen_at: "2026-09-15T00:00:00Z", origin: "discovered" },
+    { ...base, term: "Webhook", category_group: "tools", level: "beginner", tier: null, mention_count: 0, last_seen_at: null, origin: "book_a" },
+  ];
+  const f = (over: Partial<import("./domain").DictionaryFilters>) => ({ ...EMPTY_FILTERS, ...over });
+  const names = (over: Partial<import("./domain").DictionaryFilters>) => applyDictionaryFilters(terms, f(over), now).map((t) => t.term);
+
+  it("hides advanced and adjacent terms by default and shows them when asked", () => {
+    expect(names({})).toEqual(["Agent loop", "Vibe check", "Webhook"]);
+    expect(names({ includeAdjacent: true })).toEqual(["Agent loop", "Paxos", "Vibe check", "Webhook"]);
+  });
+
+  it("never hides a term that has no tier yet", () => {
+    expect(names({ query: "webhook" })).toEqual(["Webhook"]);
+  });
+
+  it("filters by topic, level and letter together", () => {
+    expect(names({ group: "agents" })).toEqual(["Agent loop"]);
+    expect(names({ level: "beginner" })).toEqual(["Vibe check", "Webhook"]);
+    expect(names({ letter: "V" })).toEqual(["Vibe check"]);
+    expect(names({ level: "beginner", letter: "W" })).toEqual(["Webhook"]);
+  });
+
+  it("shows only new and only trending terms, trending ordered by mentions", () => {
+    expect(names({ onlyNew: true })).toEqual(["Vibe check"]);
+    expect(names({ onlyTrending: true })).toEqual(["Vibe check", "Agent loop"]);
+  });
+
+  it("counts facets on the visible set", () => {
+    const counts = facetCounts(applyDictionaryFilters(terms, EMPTY_FILTERS, now));
+    expect(counts.groups).toEqual({ agents: 1, "vibe-coding": 1, tools: 1 });
+    expect(counts.letters).toEqual({ A: 1, V: 1, W: 1 });
   });
 });

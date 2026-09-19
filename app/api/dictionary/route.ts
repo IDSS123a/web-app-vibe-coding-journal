@@ -39,7 +39,9 @@ export async function GET(request: NextRequest) {
     const terms = await getAllTerms();
 
     // 5. RETURN
-    return NextResponse.json({ terms });
+    // About 2,600 terms: let the browser keep the list for a few minutes (it is private,
+    // per user, and the page filters it locally, so there is no reason to refetch on every visit).
+    return NextResponse.json({ terms }, { headers: { "Cache-Control": "private, max-age=300" } });
   } catch (err) {
     const errorMsg = err instanceof Error ? err.message : String(err);
     console.error(`[DICTIONARY] Error fetching terms: ${errorMsg}`);

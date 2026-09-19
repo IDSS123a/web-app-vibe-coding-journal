@@ -2189,4 +2189,26 @@ fully matched. `/plan-feature` is next.
 
 ---
 
+## PDL-059 Dictionary of 2,639 terms, market learning, wider sources, clean-up of stored articles
+
+**Date:** 2026-09-19. Director's four requests, part 1 to 3 (part 4 is PDL-057).
+
+**Analysis of the two documents.** Document A: 820 terms in 28 sections (two of them, "Quick Distinctions" and "Principles", are not terms but are kept as entries). Document B: 2,042 terms, of which 1,889 sit in one unstructured section. Union 2,639 unique (212 overlap, 11 repeats). Document B contains much that is not vibe-coding at all (Paxos, MAML, measured boot, human rights impact assessment), so importing everything as one flat list would contradict P-0. The definitions of both are plain and short; 35 em dashes were removed on import.
+
+**Organisation for a large glossary.** Every term has: one of 14 topic groups, a level (beginner, intermediate, advanced) and a tier (core, related, adjacent). The page (`/dictionary`) offers instant search (name, abbreviation, then definition, ranked), topic tiles with counts, an A to Z rail (a native select on phones), level chips, "new" and "trending" markers, "see also" links, and 60 cards at a time. Adjacent terms (deep ML, infrastructure internals, compliance) sit behind one toggle, so the default view stays on topic. Checked in Chrome at 320 to 1920 px against real data: about 1.7 s to load 2,639 terms, no overflow, no errors; responsive audit 152 checks, 0 issues.
+
+**Import.** `scripts/import-dictionary.ts` stores all terms at once; those not yet classified carry `classified=false` and a section hint, and the hourly cycle files them in small budgeted steps (80 per AI request, at most 2 requests an hour, inside the 100 request daily budget). 480 were classified at hand over, the rest finish within about a day. Existing terms keep their approved definition. Migrations 025, 027.
+
+**Learning from the market** (`features/dictionary/`, loop D in LEARNING_LOOPS.md). Mention counts without AI (143 known terms appeared in the last week's relevant articles), and discovery of new vocabulary with at most one AI request an hour. A candidate needs 3 articles from 2 independent sources within 14 days before it is published, so one blog post cannot coin a term. Tests: 34 in the dictionary domain, 10 in discovery.
+
+**Sources.** 20 verified feeds added (all fetched, parsed and fresh on this date; class and trust set per feed): GitHub Changelog, Vercel Changelog, Google DeepMind, Hugging Face, VS Code, JetBrains AI, Zed, Replit, Supabase, Cloudflare, Simon Willison, Latent Space, The Pragmatic Engineer, Stack Overflow Blog, Import AI, Lobsters vibecoding, Hacker News "vibe coding", DEV vibecoding and claudecode, Ars Technica AI. Enabled sources: 32. Not usable: Anthropic, Cursor, Windsurf, Netlify (404), Microsoft AI (410), OpenAI Developers (stale). Reddit answers 403 or 429 from cloud servers.
+
+**University.** Generation of supplementary lessons moved from weekly to daily (`UNIVERSITY_CADENCE=weekly` to go back) and pauses at 5 lessons waiting for review. The admin gate is unchanged, so what readers see still depends on approval. This is why the Director saw nothing new for days: one lesson a week, then waiting for approval.
+
+**Clean-up of stored articles** (`scripts/cleanup-articles.ts`, backup first). Full backup to `C:\DAVOR_PRIVATE\AI\backups\vcj-cleanup-2026-09-19T15-33-37-189Z` (25 MB, outside the repository). 309 scored off-topic articles deleted with tombstones (`rejected_articles`, hash only) so feeds do not bring them back. 40 reports deleted: reports of 2026-08-02 to 09-09 were each a pile of 900+ articles from the unbounded-report bug, never linked to articles, mostly off topic and never shown to readers (P-6). Note: the 2026-09-09 hold-gate calibration had already analysed them; only the raw corpus is gone, the learned suggestions are kept. 3 reports had off-topic entries cut. Published reports and bookmarked articles were never touched. **Not yet done:** 3,502 articles still have no relevance score (94 percent of the backlog); the hourly cycle scores them within 2 to 4 days under the daily budget, and the same script is then re-run to remove what turns out off topic. Re-populating the Archive from the good remainder waits for that scoring, and needs summaries that cost AI requests.
+
+**Capacity note.** See PDL-058: everything here is sized to about 100 to 240 AI requests a day.
+
+---
+
 *Vibe-Coding Journal — Project Decision Log — updated as decisions are made.*

@@ -59,8 +59,8 @@ async function dynamicPaths() {
     .from("daily_reports").select("report_date").in("review_status", ["auto_published", "manually_approved"])
     .order("report_date", { ascending: false }).limit(1);
   out.reportDate = rep?.[0]?.report_date;
-  const { data: lesson } = await admin.from("lessons").select("slug, chapter_id").limit(1);
-  const { data: course } = await admin.from("courses").select("slug").limit(1);
+  const { data: lesson } = await admin.from("lessons").select("slug, chapter_id, course_id").eq("status", "published").eq("is_core", true).limit(1);
+  const { data: course } = lesson?.[0] ? await admin.from("courses").select("slug").eq("id", lesson[0].course_id) : { data: null };
   out.lessonPath = lesson?.[0] && course?.[0] ? `/university/${course[0].slug}/${lesson[0].slug}` : null;
   out.chapterId = lesson?.[0]?.chapter_id;
   return out;

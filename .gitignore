@@ -56,3 +56,6 @@ test-*.js
 
 # Responsive audit output (scripts/responsive-audit.mjs)
 /.responsive-audit/
+
+# Dictionary import cache (scripts/import-dictionary.ts)
+/.dictionary-import-cache.json

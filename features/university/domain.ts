@@ -42,6 +42,21 @@ export function getIsoWeekString(date: Date = new Date()): string {
 }
 
 /**
+ * Key that makes a generation run idempotent (stored in university_generation_runs.iso_week,
+ * a column that predates the daily cadence and simply holds this key). Generation used to
+ * run once per ISO week, so the supplementary layer produced at most one lesson a week and
+ * looked frozen between Mondays (Director, 2026-09-19: "no new questions since a few days
+ * ago"). It now runs once per UTC day; set UNIVERSITY_CADENCE=weekly to go back.
+ */
+export function getGenerationRunKey(date: Date = new Date(), cadence: string | undefined = process.env.UNIVERSITY_CADENCE): string {
+  if (cadence === "weekly") return getIsoWeekString(date);
+  return date.toISOString().slice(0, 10);
+}
+
+/** Lessons waiting for the admin. Generation pauses at this many so the queue cannot grow unbounded. */
+export const MAX_PENDING_REVIEW_LESSONS = 5;
+
+/**
  * Chapter gating (Director's 2026-09-15 structural requirement,
  * specs/vibe-coding-university/SPEC.md Amendment): chapter 1 of a
  * level is always open; chapter N (N>1) unlocks only once chapter

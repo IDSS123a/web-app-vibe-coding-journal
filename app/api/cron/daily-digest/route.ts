@@ -16,6 +16,9 @@ import { collectArticlesFromAllSources } from "@/features/sources/actions";
 import { runEnrichment } from "@/features/pipeline/enrichment";
 import { acquireCronLock, releaseCronLock } from "@/lib/cron/lock";
 import { aiCallsInLast24h, recordAiCalls } from "@/lib/ai/usage";
+import { stripAiTells } from "@/lib/text/no-ai-tells";
+import { classifyPendingTerms } from "@/features/dictionary/classify-pending";
+import { runDictionaryLearning } from "@/features/dictionary/run-learning";
 import {
   getArticleByHash,
   markArticleAsDuplicate,
@@ -171,6 +174,7 @@ export async function POST(request: NextRequest) {
     const qualityResult = await runEnrichment({
       limit: MAX_ARTICLES_PER_ENRICHMENT_RUN,
       deadlineAt: startTime + ENRICHMENT_DEADLINE_MS,
+      maxSummaries: MAX_SUMMARIES_REPORT_RUN,
     });
     endPhase("qualityEngine");
     console.log(
@@ -414,12 +418,17 @@ const ENRICHMENT_DEADLINE_MS = 215_000;
 // Off-target hours do backlog work only, with the same ceiling.
 const BACKLOG_DEADLINE_MS = 230_000;
 const MAX_ARTICLES_PER_ENRICHMENT_RUN = 150;
+// Per-article summary calls are the expensive part. A report holds at most 20 articles.
+const MAX_SUMMARIES_REPORT_RUN = 30;
+const MAX_SUMMARIES_BACKLOG_RUN = 8;
 // Background enrichment may spend this many AI requests per trailing 24 hours. Measured
 // 2026-09-19: the free tier allows about 20 requests per day per key per model, roughly
 // 100 to 240 in all across the live keys and the two models, and that pool also has to
 // cover the report itself (about 40), the Assistant (cap 30) and the University.
 const BACKLOG_DAILY_AI_CALL_BUDGET = 100;
 const BACKLOG_PURPOSE = "backlog_enrichment";
+const MAX_DICTIONARY_CALLS_PER_RUN = 2;
+const MAX_DISCOVERY_CALLS_PER_RUN = 1;
 const DIGEST_LOCK = "digest";
 const DIGEST_LOCK_TTL_MS = 290_000;
 
@@ -439,10 +448,33 @@ async function runBacklogCycle(startTime: number) {
     limit: MAX_ARTICLES_PER_ENRICHMENT_RUN,
     deadlineAt: startTime + BACKLOG_DEADLINE_MS,
     maxAiCalls: remaining,
+    maxSummaries: MAX_SUMMARIES_BACKLOG_RUN,
   });
-  await recordAiCalls(BACKLOG_PURPOSE, enrichment.aiCalls);
+  // Whatever budget the articles left goes to filing imported dictionary terms (a few calls
+  // an hour until none are pending; features/dictionary/classify-pending.ts).
+  const leftForDictionary = Math.max(0, remaining - enrichment.aiCalls);
+  const dictionary = await classifyPendingTerms({
+    maxCalls: Math.min(MAX_DICTIONARY_CALLS_PER_RUN, leftForDictionary),
+    deadlineAt: startTime + BACKLOG_DEADLINE_MS,
+  });
+  // The Dictionary learns from the day's articles: mention counts (no AI, so always), and one
+  // discovery call when budget is left (features/dictionary/run-learning.ts).
+  const learning = await runDictionaryLearning({
+    maxAiCalls: Math.min(MAX_DISCOVERY_CALLS_PER_RUN, Math.max(0, leftForDictionary - dictionary.calls)),
+    deadlineAt: startTime + BACKLOG_DEADLINE_MS,
+  });
+  const aiCallsThisRun = enrichment.aiCalls + dictionary.calls + learning.aiCalls;
+  await recordAiCalls(BACKLOG_PURPOSE, aiCallsThisRun);
   return {
-    aiBudget: { dailyBudget: BACKLOG_DAILY_AI_CALL_BUDGET, usedBefore: usedToday, usedThisRun: enrichment.aiCalls },
+    aiBudget: { dailyBudget: BACKLOG_DAILY_AI_CALL_BUDGET, usedBefore: usedToday, usedThisRun: aiCallsThisRun },
+    learning: {
+      termsWithMentions: learning.termsWithMentions,
+      articlesRead: learning.articlesRead,
+      candidatesSeen: learning.candidatesSeen,
+      promoted: learning.promoted,
+      errors: learning.errors.length,
+    },
+    dictionary: { classified: dictionary.classified, calls: dictionary.calls, pendingBefore: dictionary.pendingBefore, errors: dictionary.errors.length },
     collected: { articlesAdded: collect.articlesAdded, sourcesProcessed: collect.sourcesProcessed, errors: collect.errors.length },
     duplicates: dedupe.duplicatesFound,
     enrichment: {
@@ -576,7 +608,8 @@ async function generateDailyReport(
 
     // Upsert report
     const savedReport = await upsertDailyReport(date, {
-      markdown: markdown ?? "",
+      // Whole report passes the writing rule once more at the last moment (PDL-057).
+      markdown: stripAiTells(markdown ?? ""),
       article_count: articles.length,
       reading_time_minutes: Math.ceil(articles.length * 2),
       sections: ["Summary", "Articles"],

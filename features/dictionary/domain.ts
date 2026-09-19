@@ -155,6 +155,8 @@ export function searchTerms<T extends SearchableTerm>(terms: T[], query: string)
 const DAY_MS = 86_400_000;
 export const NEW_TERM_WINDOW_DAYS = 14;
 export const TRENDING_WINDOW_DAYS = 7;
+/** A term is trending when it appears in at least this many distinct recent articles. */
+export const TRENDING_MIN_MENTIONS = 3;
 
 /** A term learned from the market recently. Only auto-discovered terms count as new. */
 export function isNewTerm(t: { origin?: string | null; first_seen_at?: string | null }, now: Date): boolean {
@@ -164,7 +166,7 @@ export function isNewTerm(t: { origin?: string | null; first_seen_at?: string | 
 
 /** Mentioned in the articles collected inside the trending window. */
 export function isTrendingTerm(t: { mention_count?: number | null; last_seen_at?: string | null }, now: Date): boolean {
-  if (!t.mention_count || t.mention_count < 1 || !t.last_seen_at) return false;
+  if (!t.mention_count || t.mention_count < TRENDING_MIN_MENTIONS || !t.last_seen_at) return false;
   return now.getTime() - new Date(t.last_seen_at).getTime() <= TRENDING_WINDOW_DAYS * DAY_MS;
 }
 
@@ -250,4 +252,68 @@ export function computeRelatedTerms(
     out.set(t.term, found);
   }
   return out;
+}
+
+export interface FilterableTerm extends SearchableTerm {
+  category_group?: string | null;
+  level?: string | null;
+  tier?: string | null;
+  mention_count?: number | null;
+  last_seen_at?: string | null;
+  first_seen_at?: string | null;
+  origin?: string | null;
+}
+
+export interface DictionaryFilters {
+  query: string;
+  group: string | null;
+  level: DictionaryLevel | null;
+  letter: string | null;
+  /** Off by default: adjacent (deep ML, infrastructure, compliance) stays behind a toggle, P-0. */
+  includeAdjacent: boolean;
+  onlyNew: boolean;
+  onlyTrending: boolean;
+}
+
+export const EMPTY_FILTERS: DictionaryFilters = {
+  query: "",
+  group: null,
+  level: null,
+  letter: null,
+  includeAdjacent: false,
+  onlyNew: false,
+  onlyTrending: false,
+};
+
+/**
+ * The one place that decides what the Dictionary page shows. Facet filters first, then
+ * search ranking (or alphabetical when there is no query), trending first when asked.
+ * A term with no tier yet (imported before classification) counts as related, so it is
+ * never hidden by the adjacent toggle.
+ */
+export function applyDictionaryFilters<T extends FilterableTerm>(terms: T[], f: DictionaryFilters, now: Date): T[] {
+  let out = terms.filter((t) => {
+    if (!f.includeAdjacent && t.tier === "adjacent") return false;
+    if (f.group && t.category_group !== f.group) return false;
+    if (f.level && t.level !== f.level) return false;
+    if (f.letter && letterOf(t.term) !== f.letter) return false;
+    if (f.onlyNew && !isNewTerm(t, now)) return false;
+    if (f.onlyTrending && !isTrendingTerm(t, now)) return false;
+    return true;
+  });
+  out = f.query.trim() ? searchTerms(out, f.query) : [...out].sort((a, b) => a.term.localeCompare(b.term));
+  if (f.onlyTrending) out = [...out].sort((a, b) => (b.mention_count ?? 0) - (a.mention_count ?? 0));
+  return out;
+}
+
+/** Counts per facet value for the tiles and the A to Z rail, computed on the visible set. */
+export function facetCounts<T extends FilterableTerm>(terms: T[]): { groups: Record<string, number>; letters: Record<string, number> } {
+  const groups: Record<string, number> = {};
+  const letters: Record<string, number> = {};
+  for (const t of terms) {
+    if (t.category_group) groups[t.category_group] = (groups[t.category_group] ?? 0) + 1;
+    const l = letterOf(t.term);
+    letters[l] = (letters[l] ?? 0) + 1;
+  }
+  return { groups, letters };
 }

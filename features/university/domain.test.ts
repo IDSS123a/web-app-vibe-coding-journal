@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   computeCourseStatus,
   getIsoWeekString,
+  getGenerationRunKey,
   isChapterUnlocked,
   isChapterQuizAvailable,
   gradeQuiz,
@@ -110,5 +111,16 @@ describe("isLevelTestUnlocked", () => {
 
   it("is never unlocked for a level with no chapters defined", () => {
     expect(isLevelTestUnlocked(0, 0)).toBe(false);
+  });
+});
+
+describe("getGenerationRunKey", () => {
+  it("is one key per UTC day by default, so generation can run daily", () => {
+    expect(getGenerationRunKey(new Date("2026-09-19T23:59:00Z"), undefined)).toBe("2026-09-19");
+    expect(getGenerationRunKey(new Date("2026-09-20T00:01:00Z"), "daily")).toBe("2026-09-20");
+  });
+
+  it("falls back to the ISO week when weekly cadence is chosen", () => {
+    expect(getGenerationRunKey(new Date("2026-09-14T12:00:00Z"), "weekly")).toBe("2026-W38");
   });
 });

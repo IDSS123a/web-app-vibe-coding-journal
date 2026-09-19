@@ -196,3 +196,21 @@ describe("model fallback (each free-tier model has its own daily quota per key)"
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 });
+
+describe("malformed JSON from a model that finished normally", () => {
+  const bad = { candidates: [{ finishReason: "STOP", content: { parts: [{ text: '{ "relevanceScore": 80, , "reasoning": "x" }' }] } }] };
+  const truncated = { candidates: [{ finishReason: "MAX_TOKENS", content: { parts: [{ text: '{ "relevanceScore": 80, "reasoning": "unter' }] } }] };
+
+  it("retries once on the next key and succeeds", async () => {
+    fetchMock.mockResolvedValueOnce(res(200, bad)).mockResolvedValueOnce(res(200, OK_BODY));
+    const out = await (await provider()).assessRelevance({ title: "t", summary: "s" });
+    expect(out.relevanceScore).toBe(80);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("does not retry a response truncated by MAX_TOKENS (that needs a bigger budget, not another key)", async () => {
+    fetchMock.mockResolvedValue(res(200, truncated));
+    await expect((await provider()).assessRelevance({ title: "t", summary: "s" })).rejects.toThrow(/MAX_TOKENS/);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+});

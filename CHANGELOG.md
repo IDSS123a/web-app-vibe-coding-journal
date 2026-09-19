@@ -8,6 +8,10 @@ change, newest first.
 
 ## 2026-09-19
 
+- **Dictionary (PDL-059).** The Dictionary now holds 2,639 terms (was 13), organised so it stays easy to use: instant search that also finds abbreviations, 14 topic tiles with counts, an A to Z list, beginner / intermediate / advanced filters, "see also" links, and a switch that keeps deep machine learning and infrastructure vocabulary out of the default view. It also learns: terms that appear repeatedly in the day's articles from several sources are added automatically and marked "new", and terms mentioned a lot this week are marked "trending".
+- **More sources (PDL-059).** 20 verified feeds added (32 in total): vendor changelogs, independent analysts and developer communities. University lessons are now generated daily instead of weekly.
+- **Clean-up (PDL-059).** 309 off-topic stored articles and 40 pile-up reports from before the relevance gate were removed (full backup kept), and removed items cannot come back from their feeds.
+
 - **The daily pipeline now finishes (PDL-058).** Today's report did not appear because collecting from the sources took minutes and the run was killed. Collection now takes about half a minute, dead sources come back on their own after a pause, every hour does useful background work, and two triggers can no longer run at once. Articles are judged for relevance in batches, so the free AI quota stretches much further, and a second Gemini model is used when the first one's daily quota is spent.
 - **No AI writing tells anywhere (PDL-057).** The spaced em dash is replaced by a comma everywhere a reader can see it: pages, emails, AI answers (cleaned before they are stored) and every stored article, report, lesson and quiz. A build check keeps it that way.
 

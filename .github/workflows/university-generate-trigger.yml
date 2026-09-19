@@ -1,6 +1,6 @@
 name: University Generate Trigger
 
-# Weekly Vibe-Coding University lesson generation (specs/vibe-coding-
+# Vibe-Coding University lesson generation, now DAILY (2026-09-19, was weekly) (specs/vibe-coding-
 # university/PLAN.md, DECISION_LOG.md PDL-032). Unlike the daily
 # digest's hourly-digest-trigger.yml, this endpoint is idempotent per
 # ISO WEEK (features/university/domain.ts getIsoWeekString), not per
@@ -11,12 +11,12 @@ name: University Generate Trigger
 
 on:
   schedule:
-    # Monday 06:00 UTC -- arbitrary, low-traffic timing; not
+    # 06:00 UTC every day -- arbitrary, low-traffic timing; not
     # coordinated with the daily digest's own (deliberately private,
     # see lib/cron/schedule-gate.ts) target hour, since the two crons
     # already have separate Gemini key budgets and don't need to avoid
     # each other.
-    - cron: "0 6 * * 1"
+    - cron: "0 6 * * *"
   workflow_dispatch: {}
 
 jobs:

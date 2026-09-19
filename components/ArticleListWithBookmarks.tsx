@@ -227,7 +227,7 @@ export function ArticleListWithBookmarks({
                   href={article.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="break-words text-lg font-black uppercase tracking-tight text-black transition-colors duration-150 ease-out hover:text-[#FF3000]"
+                  className="inline-block break-words py-2 text-lg font-black uppercase tracking-tight text-black transition-colors duration-150 ease-out hover:text-[#FF3000] lg:py-0"
                 >
                   {article.title}
                 </a>

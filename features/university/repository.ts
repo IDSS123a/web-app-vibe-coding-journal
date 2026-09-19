@@ -496,6 +496,13 @@ export async function insertSupplementaryLesson(input: {
  * should count as "done" for the week; failed/no-stub-available
  * attempts must allow retry the same week.
  */
+export async function countPendingReviewLessons(): Promise<number> {
+  if (!supabaseAdmin) throw new Error("Admin client not available");
+  const { count, error } = await supabaseAdmin.from("lessons").select("*", { count: "exact", head: true }).eq("status", "pending_review");
+  if (error) throw new Error(`Failed to count pending lessons: ${error.message}`);
+  return count ?? 0;
+}
+
 export async function hasGenerationRunThisWeek(isoWeek: string): Promise<boolean> {
   if (!supabaseAdmin) throw new Error("Admin client not available");
   const { data, error } = await supabaseAdmin

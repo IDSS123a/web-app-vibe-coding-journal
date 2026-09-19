@@ -11,6 +11,7 @@ import Parser from "rss-parser";
 import { getEnabledSources, updateSource } from "./repository";
 import { computeSourceFailure, SOURCE_HEALTH_CONFIG, SOURCE_RECOVERED } from "./domain";
 import { supabaseAdmin } from "@/lib/db/client";
+import { stripAiTells } from "@/lib/text/no-ai-tells";
 
 // Sprint 06 (PDL logged in DECISION_LOG.md, M-12 pattern): rss-parser
 // replaces the hand-rolled regex parser. Uses a real XML parser under the
@@ -159,14 +160,24 @@ export async function collectArticlesFromAllSources(): Promise<{
       for (const article of fresh) {
         const hash = generateArticleHash(article.title, article.url);
         byHash.set(hash, {
-          title: article.title,
+          // Stored text follows the writing rule too (2026-09-19): a feed title such as
+          // "Tool X - what changed" with an en dash must not reach a report. The hash is
+          // computed from the ORIGINAL title so de-duplication of stored rows is unchanged.
+          title: stripAiTells(article.title),
           url: article.url,
           source_id: source.id,
           source: source.name,
           published_at: article.published_at,
-          raw_summary: article.summary,
+          raw_summary: stripAiTells(article.summary),
           hash,
         });
+      }
+
+      // Items removed earlier as off topic (rejected_articles, migration 029) are not brought
+      // back by the next poll of the same feed.
+      if (byHash.size > 0) {
+        const { data: rejected } = await supabaseAdmin.from("rejected_articles").select("hash").in("hash", [...byHash.keys()]);
+        for (const r of rejected ?? []) byHash.delete(r.hash as string);
       }
 
       let added = 0;

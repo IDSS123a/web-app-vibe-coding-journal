@@ -447,6 +447,15 @@ async function callGeminiJSONForModel(
                 return ` | context around position ${pos}: ...${snippet}...`;
               })()
             : "";
+          // A model that FINISHED normally but produced malformed JSON (a stray comma,
+          // an unescaped quote) usually answers correctly on a second sample. Seen live
+          // 2026-09-19: one batched relevance call lost 15 articles this way. Try the
+          // next key once before giving up; truncation (MAX_TOKENS) is deterministic and
+          // is not retried, it needs a bigger budget.
+          if (finishReason !== "MAX_TOKENS" && i < keys.length - 1) {
+            console.warn(`[GEMINI] key ${i + 1} returned malformed JSON (${parseMsg.slice(0, 60)}), trying key ${i + 2}`);
+            continue;
+          }
           throw new Error(`Gemini response was not valid JSON: ${parseMsg}${hint}${contextHint}`);
         }
       }
@@ -547,6 +556,10 @@ Calibration:
 - 0-20: unrelated (general tech/AI/science news, aviation/aerospace, pure math/physics, hardware nostalgia, music/education, business/industry not about AI coding, etc.), even if it appeared on a tech-adjacent site like Hacker News`;
 
 const ASSESS_RELEVANCE_BATCH_MAX_OUTPUT_TOKENS = 8192;
+// A batch answer (15 scores, 80 classified terms) is a much longer output than a single
+// verdict, and the thinking tokens come first: the shared 25 s limit aborted a real
+// 80 term classification call (2026-09-19). Batch calls get their own, longer limit.
+const BATCH_FETCH_TIMEOUT_MS = 60000;
 const CLASSIFY_TERMS_MAX_OUTPUT_TOKENS = 8192;
 const EXTRACT_TERMS_MAX_OUTPUT_TOKENS = 8192;
 
@@ -695,7 +708,7 @@ ${listing}
 
 Return ONLY a JSON object: { "scores": [ { "n": integer article number, "relevanceScore": integer 0-100, "reasoning": string (at most 12 words) } ] } with exactly one entry per article number.`;
 
-    const result = await callGeminiJSON(this.keys, prompt, ASSESS_RELEVANCE_BATCH_MAX_OUTPUT_TOKENS);
+    const result = await callGeminiJSON(this.keys, prompt, ASSESS_RELEVANCE_BATCH_MAX_OUTPUT_TOKENS, BATCH_FETCH_TIMEOUT_MS);
 
     const scores = Array.isArray(result.scores) ? result.scores : [];
     const results: AssessRelevanceBatchOutput["results"] = [];
@@ -750,7 +763,7 @@ ${listing}
 
 Return ONLY a JSON object: { "items": [ { "n": integer term number, "group": group id, "level": "beginner"|"intermediate"|"advanced", "tier": "core"|"related"|"adjacent" } ] } with exactly one entry per term number.`;
 
-    const result = await callGeminiJSON(this.keys, prompt, CLASSIFY_TERMS_MAX_OUTPUT_TOKENS);
+    const result = await callGeminiJSON(this.keys, prompt, CLASSIFY_TERMS_MAX_OUTPUT_TOKENS, BATCH_FETCH_TIMEOUT_MS);
 
     const groupIds = new Set(input.groups.map((g) => g.id));
     const numbers = new Set(input.terms.map((t) => t.n));
@@ -800,7 +813,7 @@ ${listing}
 
 Return ONLY a JSON object: { "terms": [ { "term": string (the name people use), "definition": string (one plain sentence, at most 30 words, no hype), "group": topic group id, "level": "beginner"|"intermediate"|"advanced", "articleNumbers": [integers of the articles that mention it] } ] }. Return an empty list if nothing qualifies. At most 12 terms.`;
 
-    const result = await callGeminiJSON(this.keys, prompt, EXTRACT_TERMS_MAX_OUTPUT_TOKENS);
+    const result = await callGeminiJSON(this.keys, prompt, EXTRACT_TERMS_MAX_OUTPUT_TOKENS, BATCH_FETCH_TIMEOUT_MS);
 
     const groupIds = new Set(input.groups.map((g) => g.id));
     const numbers = new Set(input.articles.map((a) => a.n));

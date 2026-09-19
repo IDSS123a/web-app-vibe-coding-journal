@@ -237,6 +237,29 @@ export const dictionaryTermSchema = z.object({
 
 export type DictionaryTerm = z.infer<typeof dictionaryTermSchema>;
 
+/**
+ * What GET /api/dictionary returns for each term (specs/knowledge-growth-and-dictionary/).
+ * A compact projection of dictionary_terms: no internal ids beyond the row id, no
+ * timestamps a reader has no use for. Facet vocabularies live in features/dictionary/domain.ts.
+ */
+export const publicDictionaryTermSchema = z.object({
+  id: z.string().uuid(),
+  term: z.string().min(1),
+  slug: z.string().nullable(),
+  definition: z.string().min(1),
+  category_group: z.string().nullable(),
+  level: z.enum(["beginner", "intermediate", "advanced"]).nullable(),
+  tier: z.enum(["core", "related", "adjacent"]).nullable(),
+  aliases: z.array(z.string()),
+  related_terms: z.array(z.string()),
+  origin: z.enum(["book_a", "book_b", "lesson", "discovered"]),
+  mention_count: z.number().int(),
+  last_seen_at: z.string().nullable(),
+  first_seen_at: z.string().nullable(),
+});
+
+export type PublicDictionaryTerm = z.infer<typeof publicDictionaryTermSchema>;
+
 export const courseProgressSchema = z.object({
   id: z.string().uuid(),
   user_id: z.string().uuid(),
