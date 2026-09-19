@@ -2109,4 +2109,22 @@ fully matched. `/plan-feature` is next.
 
 ---
 
+## PDL-054 — Stress-test batch: Gemini 5xx rotation (R1), fail-closed cron secret (S5), security headers (S6), dead auth code removed (S8), favicon (D1)
+
+**Date:** 2026-09-19
+
+**R1 — Gemini 5xx rotation (`lib/ai/gemini-provider.ts`).** Every call started at key 1 and a 5xx there ended the whole request, although six other keys were healthy — the Assistant's intermittent "Failed to generate prompt". A new failure kind, `overloaded` (HTTP 500/502/503/504, status `UNAVAILABLE`/`INTERNAL`), now moves on to the next key exactly like a rate limit. If every key only answered with overloads, the error is a plain "Gemini is temporarily unavailable" (not `GeminiKeysExhaustedError`, which means quota), so callers can tell "try again in a minute" from "we are out of quota". A 400 still surfaces immediately: it is our request, and no key would change it. 7 mocked-fetch tests, proven to fail on the old code.
+
+**S5 — cron secret fails closed (`lib/cron/auth.ts`).** Four routes (daily-digest, subscription-expiry-check, university-generate, hold-gate-calibration/run) each carried `process.env.CRON_SECRET || "dev-secret-change-in-production"`. Production was not exposed (that default returns 401 there), but a missing variable in any new environment would have opened all four to anyone who had read the repository. One shared `isValidCronSecret` now refuses every request when the secret is unset, compares in constant time, and accepts only `Bearer <secret>`. 5 tests.
+
+**S8 — dead auth code deleted.** `loginAction` (returned success for any existing email without checking a password — "simplified for the scaffold"), `loginSchema`/`LoginInput`, `lib/auth/password.ts` and the `bcryptjs` dependencies. None was reachable; authentication is Supabase's. Removed rather than left as a trap for the next reader.
+
+**S6 — security headers (`next.config.js`).** Enforced now: `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy` (no camera/microphone/geolocation), `Strict-Transport-Security` (1 year, deliberately no `includeSubDomains`/`preload`), and `X-Powered-By` removed. `Content-Security-Policy` ships as **Report-Only**: it allow-lists PayPal (script, iframes, XHR) and Supabase (REST + websocket) and denies framing and `object-src`. It is not enforced yet because a blind CSP on a page that loads the PayPal SDK could silently break checkout. **Follow-up (open):** watch the browser console for `[Report Only]` violations during a real login, checkout, Assistant and University session, then switch the header to `Content-Security-Policy`. `'unsafe-inline'` for scripts remains until nonces are worth the cost of making every page dynamic.
+
+**D1 — favicon.** Root cause: `public/favicon.png` (640×640, 107 KB) existed but nothing in `<head>` pointed at it; browsers requested `/favicon.ico`, got 404 and showed no tab icon. Added `app/icon.png` (192 px), `app/apple-icon.png` (180 px, white background) and `app/favicon.ico` (48 px), cropped so the head fills the small icon; Next links all three automatically. `public/favicon.png` stays — the Mascot and footer credit render it in-page.
+
+**Verified locally:** typecheck clean, 12 test files / 150 tests pass; response headers and the three icon `<link>` tags confirmed on the dev server; `/favicon.ico` 200 `image/x-icon`; no CSP violations reported on `/login`. **Not yet verified:** production (after deploy), and the PayPal/Supabase pages under the Report-Only CSP.
+
+---
+
 *Vibe-Coding Journal — Project Decision Log — updated as decisions are made.*

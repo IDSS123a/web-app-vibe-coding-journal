@@ -36,5 +36,4 @@ export type {
   UserProfile,
   Bookmark,
   RegisterInput,
-  LoginInput,
 } from "@/lib/validation/schemas";

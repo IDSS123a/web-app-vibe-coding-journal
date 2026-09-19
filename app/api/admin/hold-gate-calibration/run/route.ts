@@ -35,14 +35,10 @@ import {
   buildSummaryMarkdown,
 } from "@/features/hold-gate-calibration/domain";
 import { supabaseAdmin } from "@/lib/db/client";
-
-const CRON_SECRET = process.env.CRON_SECRET || "dev-secret-change-in-production";
+import { isValidCronSecret } from "@/lib/cron/auth";
 
 function validateCronAuth(request: NextRequest): boolean {
-  const authHeader = request.headers.get("authorization");
-  if (!authHeader) return false;
-  const [scheme, token] = authHeader.split(" ");
-  return scheme === "Bearer" && token === CRON_SECRET;
+  return isValidCronSecret(request.headers.get("authorization"));
 }
 
 export async function POST(request: NextRequest) {

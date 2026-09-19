@@ -14,14 +14,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { expiryWarningWindow, type ExpiryNotificationType } from "@/features/subscription-lifecycle/domain";
 import { findSubscribersDueForNotification, recordNotificationSent } from "@/features/subscription-lifecycle/repository";
 import { sendSubscriptionExpiringEmail } from "@/lib/email/resend";
-
-const CRON_SECRET = process.env.CRON_SECRET || "dev-secret-change-in-production";
+import { isValidCronSecret } from "@/lib/cron/auth";
 
 function validateCronAuth(request: NextRequest): boolean {
-  const authHeader = request.headers.get("authorization");
-  if (!authHeader) return false;
-  const [scheme, token] = authHeader.split(" ");
-  return scheme === "Bearer" && token === CRON_SECRET;
+  return isValidCronSecret(request.headers.get("authorization"));
 }
 
 async function processNotificationType(notificationType: ExpiryNotificationType): Promise<number> {

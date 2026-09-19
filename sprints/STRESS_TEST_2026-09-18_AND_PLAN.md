@@ -45,6 +45,13 @@ was reverted and verified.
 - **R5 (MED) Mermaid diagrams are intermittently invalid:** two of the first live generations put parentheses inside unquoted `[labels]`, which Mermaid rejects (later stress cases were clean, so it is intermittent). Add a canon rule (quote every label) and a server-side validator/sanitizer.
 - **R6 (MED) Assistant input handling:** vague input ("app / people / make it good") yields a generic prompt with no warning; a harmful request is refused by the model (good) but still consumes a generation and relies entirely on model behaviour — add a server-side guard and do not charge the daily cap for a refusal.
 
+### Director's additions, 2026-09-19
+
+- **D1 Favicon missing (root cause found).** `public/favicon.png` exists (640×640 PNG, fine) but `app/layout.tsx` declares no `icons` in `metadata`, and `/favicon.ico` returns 404 — browsers ask for `/favicon.ico`, find nothing, show a blank tab icon. The PNG is only used inside pages (mascot, preload). Fix: declare icons in metadata (plus small, properly sized icon files instead of serving the 107 KB original), add an Apple touch icon.
+- **D2 Dashboard does not show that there is more to scroll to.** The report is a long single card; nothing hints at content below the fold. Needs a design pass (e.g. visible article count / jump list of headlines at the top, a "N more below" cue, sticky section index, clearer card separation) — propose 2 variants to the Director before building.
+- **D3 "The chatbot does not work" (Assistant).** Reproduced as intermittent, not permanent: two live generations succeeded today (31 s and 22 s), but every call starts at Gemini key 1 and a 5xx there fails the whole request (R1). On top of that 20–30 s with only a "Generating…" label feels broken. Fix: R1 (rotate keys on 5xx + bounded retry), progress feedback and a clear retry message in the UI, and a live check after deploy. If the Director meant a free-form chat rather than the structured wizard, that is a scope question (the SPEC chose the wizard on purpose, to cap token cost).
+- **D4 Responsive UI on every device.** All screens must adapt to any screen size, OS, browser and platform. Plan: audit every page at phone/tablet/desktop/ultrawide widths (320, 375, 768, 1024, 1440, 1920+) and in landscape; fix overflow, tap-target sizes (≥44 px), fixed widths, tables/`pre` blocks, the admin tables (`/admin/users`), the wizard, the PayPal buttons, safe-area insets (notch), text scaling/zoom, `prefers-reduced-motion`, dark-mode conflict (app is light-only) and touch vs. hover; test in real Chromium/WebKit/Firefox engines (Playwright) so it is a repeatable check, not a one-off look. Honest limit: real-device testing (iOS Safari, Android Chrome/Samsung, Windows/macOS/Linux browsers) can only be partly emulated here — the Director's own devices are the final check.
+
 ### P2 — product / business decisions
 
 - **B1 Empty dashboard:** since no report has ever auto-published, paying subscribers see "No Daily Report is available right now", with a placeholder wrongly badged "AUTO-PUBLISHED" and today's date. Decide the policy (auto-publish threshold, fall back to last published, honest empty state).
@@ -87,7 +94,8 @@ Load/concurrency, full mobile and accessibility pass across every screen, cross-
 1. **Start-of-session P-21 check** (CLAUDE.md): digest run/timings, latest report status.
 2. ~~**S1** drop the content SELECT policies~~ — DONE 2026-09-19 (migration 022, F3, PDL-052).
 3. **S3 + S4** delete/lock test accounts; rotate the two pasted credentials.
-4. **R1** Gemini 5xx rotation (+ friendly error) — restores Assistant reliability.
-5. **S5, S6, S8** cron fail-closed, security headers (CSP report-only), delete dead auth code.
+4. ~~**R1** Gemini 5xx rotation~~ — DONE 2026-09-19 (PDL-054). The rest of D3 (progress feedback and a friendly retry message in the Assistant UI) is still open.
+5. ~~**S5, S6, S8, D1**~~ — DONE 2026-09-19 (PDL-054), awaiting push and a production check. Open follow-up: switch the CSP from Report-Only to enforced after observing real login / checkout / Assistant / University sessions.
+5b. **D2 dashboard scroll cue** and **D4 responsive audit + fixes** (needs the Director to pick a dashboard variant first; D4 gets its own Playwright check).
 6. **Decisions from the Director:** paywall for the Daily Report/Archive (S1b), backups (S2), Gemini model migration and key 7 (R2), dashboard empty-state policy (B1), upgrade clock (B7), Assistant caps (B8).
 7. Then R3–R6, B2–B4, hygiene batch, and the security-probe script into CI.

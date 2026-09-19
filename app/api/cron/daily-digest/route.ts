@@ -39,19 +39,14 @@ import { ensureAIProviderInitialized } from "@/lib/ai/init";
 import { getAIProvider } from "@/lib/ai/ai-provider";
 import { GeminiKeysExhaustedError } from "@/lib/ai/gemini-provider";
 import { assessRelevanceOutputSchema, type Article } from "@/lib/validation/schemas";
-
-const CRON_SECRET = process.env.CRON_SECRET || "dev-secret-change-in-production";
+import { isValidCronSecret } from "@/lib/cron/auth";
 
 /**
  * Authenticate cron request via Bearer token
  * E-6: Five-step sequence (auth → authorize → validate → execute → return)
  */
 function validateCronAuth(request: NextRequest): boolean {
-  const authHeader = request.headers.get("authorization");
-  if (!authHeader) return false;
-
-  const [scheme, token] = authHeader.split(" ");
-  return scheme === "Bearer" && token === CRON_SECRET;
+  return isValidCronSecret(request.headers.get("authorization"));
 }
 
 /**

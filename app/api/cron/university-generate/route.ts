@@ -32,6 +32,7 @@ import { ensureAIProviderInitialized } from "@/lib/ai/init";
 import { getAIProvider } from "@/lib/ai/ai-provider";
 import { GeminiKeysExhaustedError } from "@/lib/ai/gemini-provider";
 import { getIsoWeekString } from "@/features/university/domain";
+import { isValidCronSecret } from "@/lib/cron/auth";
 import {
   hasGenerationRunThisWeek,
   getNextStubLesson,
@@ -43,13 +44,8 @@ import {
   recordGenerationRun,
 } from "@/features/university/repository";
 
-const CRON_SECRET = process.env.CRON_SECRET || "dev-secret-change-in-production";
-
 function validateCronAuth(request: NextRequest): boolean {
-  const authHeader = request.headers.get("authorization");
-  if (!authHeader) return false;
-  const [scheme, token] = authHeader.split(" ");
-  return scheme === "Bearer" && token === CRON_SECRET;
+  return isValidCronSecret(request.headers.get("authorization"));
 }
 
 export async function POST(request: NextRequest) {

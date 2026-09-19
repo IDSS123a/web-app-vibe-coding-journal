@@ -16,6 +16,12 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "Vibe-Coding Journal — Daily Intelligence Digest",
   description: "Automated daily intelligence digest for vibe-coders",
+  // Icons come from the Next.js file conventions in app/ (icon.png,
+  // apple-icon.png, favicon.ico), which Next links into <head> automatically.
+  // Until 2026-09-19 only public/favicon.png existed -- a 640x640 / 107 KB image
+  // nothing in <head> pointed at -- so browsers asked for /favicon.ico, got a 404
+  // and showed no tab icon (D1). public/favicon.png stays: the Mascot and
+  // SiteCredit components render it in-page.
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

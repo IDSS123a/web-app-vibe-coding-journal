@@ -8,6 +8,8 @@ change, newest first.
 
 ## 2026-09-19
 
+- **Reliability (PDL-054):** the Vibe-Coding Assistant (and the daily pipeline) no longer fails outright when one Gemini key answers "service unavailable" — the next key is tried. Cron endpoints now refuse every request if their secret is not configured (previously a built-in default). Security headers added (framing blocked, no MIME sniffing, referrer/permissions policies; a Content-Security-Policy in report-only mode). Dead login code and `bcryptjs` removed. The browser tab now shows the site icon (favicon + Apple touch icon).
+
 - **Paywall (PDL-053):** access now follows the subscription, enforced on the server. No payment → no access; $10 Basic → Daily Report, Archive, Bookmarks; $50 Premium → also University, Dictionary, Assistant. The Daily Report and Archive were readable without logging in (the article text sat in the page source); they are now served only by `/api/reports/*` after the token and subscription are verified. Bookmarks require an active subscription too. The dashboard's empty state no longer shows a fake "Auto-published" report.
 
 - **SECURITY (high):** registered users could read all University lessons, quiz answers and unpublished Daily Reports directly through the database API; the ten broad read policies were removed (migration 022, PDL-052). The Daily Report itself is still publicly readable — open decision, see the stress-test plan (S1b).

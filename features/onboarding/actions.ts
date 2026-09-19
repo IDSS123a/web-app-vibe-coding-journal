@@ -1,7 +1,7 @@
 "use server";
 
 import { supabaseAdmin } from "@/lib/db/client";
-import { registerSchema, loginSchema } from "@/lib/validation/schemas";
+import { registerSchema } from "@/lib/validation/schemas";
 import { awardCoins } from "@/features/rewards/repository";
 
 interface AuthResponse {
@@ -113,63 +113,6 @@ export async function registerAction(input: unknown): Promise<AuthResponse> {
     return {
       success: true,
       data: { userId: authUser.user.id, email: parsed.email },
-    };
-  } catch (error) {
-    if (error instanceof Error) {
-      return {
-        success: false,
-        error: error.message,
-      };
-    }
-    return {
-      success: false,
-      error: "An unexpected error occurred",
-    };
-  }
-}
-
-/**
- * Login action (E-6 five-step)
- * 1. Auth: Check if user exists (implicit in step 4)
- * 2. Authorize: N/A for login
- * 3. Validate: Zod schema
- * 4. Execute: Verify password
- * 5. Return: Session token
- */
-export async function loginAction(input: unknown): Promise<AuthResponse> {
-  try {
-    // 3. Validate
-    const parsed = loginSchema.parse(input);
-
-    if (!supabaseAdmin) {
-      return {
-        success: false,
-        error: "Authentication service unavailable",
-      };
-    }
-
-    // 4. Execute: Get user and verify password
-    const { data: user, error: userError } = await supabaseAdmin
-      .from("user_profiles")
-      .select("id, email")
-      .eq("email", parsed.email)
-      .single();
-
-    if (userError || !user) {
-      return {
-        success: false,
-        error: "Invalid email or password",
-      };
-    }
-
-    // Note: In production, password verification happens via Supabase Auth
-    // This is simplified for the scaffold. Real implementation uses
-    // supabaseAdmin.auth.signInWithPassword() which handles verification.
-
-    // 5. Return
-    return {
-      success: true,
-      data: { userId: user.id, email: user.email },
     };
   } catch (error) {
     if (error instanceof Error) {

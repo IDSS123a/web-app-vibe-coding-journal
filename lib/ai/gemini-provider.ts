@@ -174,7 +174,7 @@ interface GeminiErrorBody {
   };
 }
 
-type KeyFailureKind = "rate_limit" | "auth_or_suspended" | "model_unavailable" | null;
+type KeyFailureKind = "rate_limit" | "auth_or_suspended" | "model_unavailable" | "overloaded" | null;
 
 /**
  * Pulls ONLY a small allowlist of non-secret diagnostic fields out of a
@@ -235,6 +235,24 @@ function classifyFailure(httpStatus: number, body: GeminiErrorBody | null): KeyF
   if (httpStatus === 404 || body?.error?.status === "NOT_FOUND") {
     return "model_unavailable";
   }
+  // Found live 2026-09-18/19 (stress test, R1): key 1 answered 503
+  // "UNAVAILABLE: this model is currently experiencing high demand" while six
+  // other keys were healthy -- and because a 5xx used to "surface immediately,
+  // do not rotate", every call (which always starts at key 1) failed: the
+  // Assistant showed "Failed to generate prompt" although capacity existed.
+  // A 5xx from Google's side is transient and per-request, so trying the next
+  // key is the right response, exactly like a rate limit. A 400 (bad request)
+  // still surfaces immediately -- rotating keys cannot fix a malformed prompt.
+  if (
+    httpStatus === 500 ||
+    httpStatus === 502 ||
+    httpStatus === 503 ||
+    httpStatus === 504 ||
+    body?.error?.status === "UNAVAILABLE" ||
+    body?.error?.status === "INTERNAL"
+  ) {
+    return "overloaded";
+  }
   return null; // not a per-key-rotatable failure — surfaces immediately
 }
 
@@ -288,6 +306,8 @@ async function callGeminiJSON(
   // the worse interpretation win.
   let sawAuthOrSuspended = false;
   let sawModelUnavailable = false;
+  let sawRateLimit = false;
+  let sawOverloaded = false;
 
   for (let i = 0; i < keys.length; i++) {
     const key = keys[i]!;
@@ -381,31 +401,43 @@ async function callGeminiJSON(
       const failureKind = classifyFailure(response.status, body);
       const quotaInfo = extractSafeQuotaInfo(body);
 
-      if (failureKind === "rate_limit" || failureKind === "auth_or_suspended" || failureKind === "model_unavailable") {
+      if (failureKind === "rate_limit" || failureKind === "auth_or_suspended" || failureKind === "model_unavailable" || failureKind === "overloaded") {
         if (failureKind === "auth_or_suspended") {
           sawAuthOrSuspended = true;
         } else if (failureKind === "model_unavailable") {
           sawModelUnavailable = true;
+        } else if (failureKind === "overloaded") {
+          sawOverloaded = true;
+        } else {
+          sawRateLimit = true;
         }
         const label =
           failureKind === "auth_or_suspended"
             ? "auth/permission failure"
             : failureKind === "model_unavailable"
               ? `model unavailable on this key's project (${GEMINI_MODEL})`
-              : "rate-limited";
+              : failureKind === "overloaded"
+                ? `temporarily unavailable (HTTP ${response.status})`
+                : "rate-limited";
         const nextIndex = i + 1;
         if (nextIndex < keys.length) {
           console.warn(`[GEMINI] key ${i + 1} ${label}, trying key ${nextIndex + 1}${quotaInfo}`);
           continue;
         }
         console.warn(`[GEMINI] key ${i + 1} ${label}, no more keys configured${quotaInfo}`);
+        // Only transient 5xx failures across every key: not a quota/suspension
+        // problem, so do not report one (that would tell the operator "wait
+        // until tomorrow"). A plain error keeps the caller's generic handling.
+        if (sawOverloaded && !sawAuthOrSuspended && !sawModelUnavailable && !sawRateLimit) {
+          throw new Error(`Gemini is temporarily unavailable on all ${keys.length} key(s) (HTTP 5xx)`);
+        }
         throw new GeminiKeysExhaustedError(
           keys.length,
           sawAuthOrSuspended ? "suspected_suspension" : sawModelUnavailable ? "model_deprecated" : "quota",
         );
       }
 
-      // Any other error (bad request, 5xx, etc.): surface immediately, do not rotate.
+      // Any other error (e.g. 400 bad request): surface immediately, do not rotate.
       throw new Error(`Gemini request failed: HTTP ${response.status}`);
     } finally {
       clearTimeout(timeoutId);
