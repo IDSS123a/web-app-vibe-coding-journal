@@ -560,7 +560,9 @@ const ASSESS_RELEVANCE_BATCH_MAX_OUTPUT_TOKENS = 8192;
 // verdict, and the thinking tokens come first: the shared 25 s limit aborted a real
 // 80 term classification call (2026-09-19). Batch calls get their own, longer limit.
 const BATCH_FETCH_TIMEOUT_MS = 60000;
-const CLASSIFY_TERMS_MAX_OUTPUT_TOKENS = 8192;
+// 80 terms at 8192 was truncated live by gemini-3.6-flash (its thinking tokens count against the
+// budget, finishReason MAX_TOKENS, 2026-09-19); a smaller batch AND a larger budget.
+const CLASSIFY_TERMS_MAX_OUTPUT_TOKENS = 16384;
 const EXTRACT_TERMS_MAX_OUTPUT_TOKENS = 8192;
 
 export class GeminiProvider implements AIProvider {

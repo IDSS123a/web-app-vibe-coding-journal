@@ -12,7 +12,7 @@
  *     hourly backlog cycle files it later (features/dictionary/classify-pending.ts), a few
  *     calls at a time, because the free AI tier allows only about 100 to 240 requests a day
  *     for the whole product (PDL-058);
- *   - --max-calls=N classifies up to N batches of 80 from here first (default 0);
+ *   - --max-calls=N classifies up to N batches of 80 from here first (the hourly classifier uses 40) (default 0);
  *   - existing terms keep their approved definition, they only gain facets and aliases.
  */
 import fs from "node:fs";

@@ -1,7 +1,7 @@
 /**
  * Finishes the classification of imported dictionary terms in small, budgeted steps
  * (2026-09-19). The import stores every term at once; filing each under a topic group, a
- * level and a tier costs one AI call per 80 terms, and the free tier allows only about
+ * level and a tier costs one AI call per 40 terms, and the free tier allows only about
  * 100 to 240 calls per day for the whole product. So the hourly backlog cycle calls this
  * with a few calls at a time until nothing is left, and the Dictionary improves in place.
  */
@@ -10,7 +10,7 @@ import { getAIProvider } from "@/lib/ai/ai-provider";
 import { GeminiKeysExhaustedError } from "@/lib/ai/gemini-provider";
 import { DICTIONARY_GROUPS } from "./domain";
 
-export const CLASSIFY_BATCH_SIZE = 80;
+export const CLASSIFY_BATCH_SIZE = 40;
 
 export interface ClassifyPendingResult {
   calls: number;
