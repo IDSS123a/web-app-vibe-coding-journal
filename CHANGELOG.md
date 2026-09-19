@@ -6,6 +6,10 @@ reconstructed here retroactively — this file covers from its own start
 date forward). One entry per user-visible or operationally significant
 change, newest first.
 
+## 2026-09-20
+
+- **Prompt School (PDL-061).** A new card next to the University, built from the book Mastering Prompt Engineering, for the same Premium subscription. The first chapter, "The Five Pillars", is open with 6 lessons and 8 interactive exercises: choose, fill in the blanks of a real prompt, put the parts in order, spot the flaw, and rewrite a weak prompt yourself. Every attempt is checked at once with feedback on what to fix, and your best score and finished lessons are remembered. The rest of the course (12 chapters, about 47 lessons, beginner to advanced) is listed as coming soon. Basic and trial readers see what the School offers and can buy Premium on the same screen. The menu switches to the compact button below 1280 px wide because it now has one more link.
+
 ## 2026-09-19
 
 - **Upgrade screens that sell (PDL-060).** When a reader reaches the University, the Dictionary or the Assistant without Premium, they now see what that feature gives them, what Premium includes, the price ($40 for a paying Basic subscriber, $50 otherwise, about 14 cents a day) and a checkout button on the same screen. A trial user no longer sees a $40 upgrade offer that could not work.

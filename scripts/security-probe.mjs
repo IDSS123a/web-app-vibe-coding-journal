@@ -47,6 +47,7 @@ const FORGED = `${b64({ alg: "HS256", typ: "JWT" })}.${b64({ sub: "00000000-0000
 const PROTECTED_GET = [
   "/api/me/../dictionary", "/api/dictionary", "/api/reports/latest", "/api/reports", "/api/reports/2026-09-19", "/api/bookmarks",
   "/api/assistant/history", "/api/university/courses", "/api/university/progress", "/api/rewards/state",
+  "/api/prompt-school", "/api/prompt-school/chapters/five-pillars", "/api/prompt-school/lessons/five-pillars/pillar-1-context",
   "/api/admin/users", "/api/admin/payments", "/api/admin/reports", "/api/admin/university", "/api/admin/hold-gate-calibration", "/api/admin/assistant-usage",
 ];
 const ADMIN_ONLY_GET = ["/api/admin/users", "/api/admin/payments", "/api/admin/reports", "/api/admin/university", "/api/admin/hold-gate-calibration", "/api/admin/assistant-usage"];
@@ -59,6 +60,8 @@ async function main() {
     check(`anonymous ${p} refused`, [401, 403, 405].includes(await call("GET", p)), String(await call("GET", p)));
   for (const p of ["/api/dictionary", "/api/reports/latest", "/api/admin/users", "/api/bookmarks"])
     check(`forged admin token refused on ${p}`, (await call("GET", p, { token: FORGED })) === 401);
+  check("POST prompt-school exercise check anonymous refused", (await call("POST", "/api/prompt-school/exercises/00000000-0000-0000-0000-000000000000/check", { body: { answer: {} } })) === 401);
+  check("POST prompt-school lesson complete anonymous refused", (await call("POST", "/api/prompt-school/lessons/five-pillars/pillar-1-context/complete")) === 401);
   check("POST /api/assistant/generate anonymous refused", (await call("POST", "/api/assistant/generate", { body: {} })) === 401);
   check("POST /api/payments/create-order anonymous refused", (await call("POST", "/api/payments/create-order", { body: { tier: "premium" } })) === 401);
   check("POST /api/admin/users anonymous refused", (await call("POST", "/api/admin/users", { body: { email: "x@example.com", tier: "basic" } })) === 401);
@@ -105,18 +108,32 @@ async function main() {
   for (const p of ["/api/reports/not-a-date", "/api/reports/2026-13-45", "/api/reports/%27%20OR%201%3D1--", "/api/reports?page=-1", "/api/reports?page=abc", "/api/reports?page=99999999"])
     check(`bad input ${p} handled`, [400, 404, 422].includes(await call("GET", p, { token: userToken })), String(await call("GET", p, { token: userToken })));
   check("assistant generate with junk body is 422", (await call("POST", "/api/assistant/generate", { token: userToken, body: { projectDescription: 1 } })) === 422);
+  // Prompt School: input handling, and answers never leave the server before an attempt.
+  {
+    check("prompt-school bad chapter slug is 400", (await call("GET", "/api/prompt-school/chapters/BAD%20SLUG!", { token: userToken })) === 400);
+    check("prompt-school unknown chapter is 404", (await call("GET", "/api/prompt-school/chapters/no-such-chapter", { token: userToken })) === 404);
+    check("prompt-school exercise check with a non-uuid id is 400", (await call("POST", "/api/prompt-school/exercises/nope/check", { token: userToken, body: { answer: {} } })) === 400);
+    const { data: ex } = await admin.from("ps_exercises").select("id, kind").eq("kind", "choice").limit(1);
+    if (ex?.[0]) {
+      check("prompt-school check with a wrong-shaped answer is 400", (await call("POST", `/api/prompt-school/exercises/${ex[0].id}/check`, { token: userToken, body: { answer: { text: "x" } } })) === 400);
+      check("prompt-school check with a missing body is 400", (await call("POST", `/api/prompt-school/exercises/${ex[0].id}/check`, { token: userToken })) === 400);
+    }
+    const res = await fetch(`${BASE}/api/prompt-school/chapters/five-pillars`, { headers: { authorization: `Bearer ${userToken}` } });
+    const raw = await res.text();
+    check("prompt-school chapter payload carries no answers, rubrics or explanations", res.status === 200 && !/"answer"|"criteria"|"explanation"|"correct"|"flawed"|"anyOf"|"model"/.test(raw));
+  }
   check("bookmark with a non-uuid id is rejected", [400, 404, 422].includes(await call("POST", "/api/bookmarks", { token: userToken, body: { article_id: "nope" } })));
 
   // 7. Tier matrix, walked by changing the test account and restoring it
   const { data: orig } = await admin.from("user_profiles").select("subscription_tier, subscription_status, trial_ends_at, subscription_expires_at, is_blocked").eq("email", "user@test.local").single();
   const soon = (d) => new Date(Date.now() + d * 864e5).toISOString();
   const cases = [
-    ["premium active", { subscription_tier: "premium", subscription_status: "active", subscription_expires_at: soon(200), is_blocked: false }, { dict: 200, reports: 200, assistantGen: "not403" }],
-    ["basic active", { subscription_tier: "basic", subscription_status: "active", subscription_expires_at: soon(200), is_blocked: false }, { dict: 403, reports: 200, assistantGen: 403 }],
-    ["trial running", { subscription_tier: "basic", subscription_status: "trial", trial_ends_at: soon(2), is_blocked: false }, { dict: 403, reports: 200, assistantGen: 403 }],
-    ["trial ended", { subscription_tier: "basic", subscription_status: "trial", trial_ends_at: soon(-1), is_blocked: false }, { dict: 403, reports: 403, assistantGen: 403 }],
-    ["expired", { subscription_tier: "premium", subscription_status: "expired", is_blocked: false }, { dict: 403, reports: 403, assistantGen: 403 }],
-    ["blocked premium", { subscription_tier: "premium", subscription_status: "active", subscription_expires_at: soon(200), is_blocked: true }, { dict: 403, reports: 403, assistantGen: 403 }],
+    ["premium active", { subscription_tier: "premium", subscription_status: "active", subscription_expires_at: soon(200), is_blocked: false }, { dict: 200, reports: 200, assistantGen: "not403", ps: 200 }],
+    ["basic active", { subscription_tier: "basic", subscription_status: "active", subscription_expires_at: soon(200), is_blocked: false }, { dict: 403, reports: 200, assistantGen: 403, ps: 403 }],
+    ["trial running", { subscription_tier: "basic", subscription_status: "trial", trial_ends_at: soon(2), is_blocked: false }, { dict: 403, reports: 200, assistantGen: 403, ps: 403 }],
+    ["trial ended", { subscription_tier: "basic", subscription_status: "trial", trial_ends_at: soon(-1), is_blocked: false }, { dict: 403, reports: 403, assistantGen: 403, ps: 403 }],
+    ["expired", { subscription_tier: "premium", subscription_status: "expired", is_blocked: false }, { dict: 403, reports: 403, assistantGen: 403, ps: 403 }],
+    ["blocked premium", { subscription_tier: "premium", subscription_status: "active", subscription_expires_at: soon(200), is_blocked: true }, { dict: 403, reports: 403, assistantGen: 403, ps: 403 }],
   ];
   try {
     for (const [label, patch, want] of cases) {
@@ -129,6 +146,10 @@ async function main() {
       const gen = await call("POST", "/api/assistant/generate", { token: t, body: { projectDescription: 1 } });
       check(`${label}: dictionary`, dict === want.dict, `got ${dict}`);
       check(`${label}: daily report`, rep === want.reports, `got ${rep}`);
+      const ps = await call("GET", "/api/prompt-school", { token: t });
+      const psCheck = await call("POST", "/api/prompt-school/exercises/00000000-0000-0000-0000-000000000000/check", { token: t, body: { answer: {} } });
+      check(`${label}: prompt school`, ps === want.ps, `got ${ps}`);
+      check(`${label}: prompt school exercise check`, want.ps === 200 ? psCheck === 404 : psCheck === 403, `got ${psCheck}`);
       check(`${label}: assistant gate`, want.assistantGen === "not403" ? gen !== 403 && gen !== 401 : gen === want.assistantGen, `got ${gen}`);
       const upg = await call("POST", "/api/payments/create-upgrade-order", { token: t });
       if (label === "trial running" || label === "premium active") check(`${label}: cannot buy the $40 upgrade`, upg === 403, `got ${upg}`);

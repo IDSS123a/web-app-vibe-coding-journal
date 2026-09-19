@@ -5,6 +5,7 @@ import {
   canApproveReports,
   canRejectReports,
   canAccessPromptAssistant,
+  canAccessPromptSchool,
   canAccessUniversity,
   canReadPaidContent,
   isBillingExempt,
@@ -96,6 +97,7 @@ describe("access levels: no payment -> nothing, Basic -> daily content, Premium 
     expect(canReadPaidContent(basic)).toBe(true);
     expect(canAccessUniversity(basic)).toBe(false);
     expect(canAccessPromptAssistant(basic)).toBe(false);
+    expect(canAccessPromptSchool(basic)).toBe(false);
   });
 
   it("Premium ($50) with active access reads everything", () => {
@@ -103,6 +105,7 @@ describe("access levels: no payment -> nothing, Basic -> daily content, Premium 
     expect(canReadPaidContent(premium)).toBe(true);
     expect(canAccessUniversity(premium)).toBe(true);
     expect(canAccessPromptAssistant(premium)).toBe(true);
+    expect(canAccessPromptSchool(premium)).toBe(true);
   });
 
   it("Premium tier WITHOUT active access (lapsed) gets nothing at any level", () => {
@@ -110,6 +113,7 @@ describe("access levels: no payment -> nothing, Basic -> daily content, Premium 
     expect(canReadPaidContent(lapsed)).toBe(false);
     expect(canAccessUniversity(lapsed)).toBe(false);
     expect(canAccessPromptAssistant(lapsed)).toBe(false);
+    expect(canAccessPromptSchool(lapsed)).toBe(false);
   });
 });
 

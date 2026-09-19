@@ -20,7 +20,7 @@ import { useEffect, useState } from "react";
 import { PayPalCheckout } from "@/components/PayPalCheckout";
 import { BASIC_PRICE_USD, PREMIUM_PRICE_USD, UPGRADE_PRICE_USD, centsPerDay, perMonthUsd } from "@/lib/pricing";
 
-export type PremiumFeature = "university" | "dictionary" | "assistant";
+export type PremiumFeature = "university" | "dictionary" | "assistant" | "promptschool";
 
 export interface PitchAudience {
   /** True for an active Basic subscriber, who pays the difference. */
@@ -28,6 +28,13 @@ export interface PitchAudience {
 }
 
 const FEATURE_COPY: Record<PremiumFeature, { eyebrow: string; headline: string; lead: string; peekTitle: string; peek: string[] }> = {
+  promptschool: {
+    eyebrow: "Prompt School",
+    headline: "Learn to write prompts that work, by writing them.",
+    lead: "A hands-on course built on the book Mastering Prompt Engineering, from your first clear prompt to advanced techniques. You do not only read: you complete, order, repair and write prompts, and every attempt is checked at once with feedback on what to fix.",
+    peekTitle: "What you practise",
+    peek: ["The five pillars of every effective prompt", "Repair a vague prompt until it is precise", "Spot the flaw in a broken prompt", "Complete and assemble real prompt templates"],
+  },
   assistant: {
     eyebrow: "Vibe-Coding Assistant",
     headline: "Turn your idea into a build-ready prompt in under a minute.",
@@ -55,6 +62,7 @@ const PREMIUM_INCLUDES = [
   "Vibe-Coding University: 75 lessons, chapter quizzes and level tests",
   "Vibe-Coding Dictionary: 2,600+ terms that keep growing",
   "Vibe-Coding Assistant: prompts written for you",
+  "Prompt School: learn to write prompts with hands-on practice",
   "Everything in Basic: Daily Report, Archive and Bookmarks",
 ];
 
@@ -65,7 +73,7 @@ interface Props {
   /** Called once /api/me confirms Premium after a payment, so the page can open. */
   onUnlocked: () => void;
   /** Which /api/me boolean means "Premium is active" for polling. */
-  unlockedKey: "hasUniversityAccess" | "hasAssistantAccess";
+  unlockedKey: "hasUniversityAccess" | "hasAssistantAccess" | "hasPromptSchoolAccess";
 }
 
 export function PremiumPitch({ feature, audience, token, onUnlocked, unlockedKey }: Props) {

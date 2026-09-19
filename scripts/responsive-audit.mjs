@@ -67,6 +67,7 @@ async function dynamicPaths() {
   const { data: course } = lesson?.[0] ? await admin.from("courses").select("slug").eq("id", lesson[0].course_id) : { data: null };
   out.lessonPath = lesson?.[0] && course?.[0] ? `/university/${course[0].slug}/${lesson[0].slug}` : null;
   out.chapterId = lesson?.[0]?.chapter_id;
+  out.promptSchool = Boolean((await admin.from("ps_chapters").select("id").eq("slug", "five-pillars").eq("published", true).maybeSingle()).data);
   return out;
 }
 
@@ -162,6 +163,10 @@ async function main() {
     { path: "/university/level-test/beginner", who: "user" },
     { path: "/dictionary", who: "user" },
     { path: "/assistant", who: "user" },
+    dyn.promptSchool && { path: "/prompt-school", who: "user" },
+    dyn.promptSchool && { path: "/prompt-school/five-pillars", who: "user" },
+    dyn.promptSchool && { path: "/prompt-school/five-pillars/pillar-5-delimiters-and-synergy", who: "user" },
+    dyn.promptSchool && { path: "/prompt-school/five-pillars/practice", who: "user" },
     { path: "/admin/users", who: "admin" },
     { path: "/admin/review-queue", who: "admin" },
     { path: "/admin/payments", who: "admin" },

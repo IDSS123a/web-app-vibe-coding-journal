@@ -25,6 +25,9 @@
  * width (768) and phone-landscape (812) it overflowed the viewport, squeezed
  * the logo onto three lines and pushed Sign Out off-screen. Below 1024 px
  * the hamburger is used. Hamburger and logo tap targets are now >= 44 px.
+ *
+ * Breakpoint moved lg (1024) -> xl (1280) on 2026-09-20 when the seventh link (Prompt School) joined:
+ * seven links need about 1100 px, so the hamburger now covers everything below 1280 px.
  */
 
 import Link from "next/link";
@@ -41,6 +44,7 @@ const LOGGED_IN_LINKS = [
   { href: "/university", label: "University" },
   { href: "/dictionary", label: "Dictionary" },
   { href: "/assistant", label: "Assistant" },
+  { href: "/prompt-school", label: "Prompt School" },
 ];
 
 export function SiteNav() {
@@ -75,7 +79,7 @@ export function SiteNav() {
         {!loading && (
           <>
             {/* Desktop / tablet: full horizontal row, unchanged. */}
-            <div className="hidden items-center gap-4 text-xs font-bold uppercase tracking-widest lg:flex">
+            <div className="hidden items-center gap-4 text-xs font-bold uppercase tracking-widest xl:flex">
               {token ? (
                 <>
                   {LOGGED_IN_LINKS.map((link) => (
@@ -108,7 +112,7 @@ export function SiteNav() {
             </div>
 
             {/* Mobile: coin balance stays visible next to the hamburger; full detail lives behind CoinBalance's own click-to-expand. */}
-            <div className="flex items-center gap-2 lg:hidden">
+            <div className="flex items-center gap-2 xl:hidden">
               {token && <CoinBalance variant="compact" />}
               <button
                 type="button"
@@ -133,7 +137,7 @@ export function SiteNav() {
       </nav>
 
       {!loading && mobileOpen && (
-        <div className="border-t-4 border-black bg-white lg:hidden">
+        <div className="border-t-4 border-black bg-white xl:hidden">
           <div className="flex flex-col text-xs font-bold uppercase tracking-widest">
             {token ? (
               <>

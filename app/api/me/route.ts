@@ -12,7 +12,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { getVerifiedUser } from "@/lib/auth/verify-token";
-import { isBillingExempt, canAccessUniversity, canAccessPromptAssistant } from "@/lib/permissions";
+import { isBillingExempt, canAccessUniversity, canAccessPromptAssistant, canAccessPromptSchool } from "@/lib/permissions";
 import { evaluateSubscriptionAccess } from "@/features/onboarding/domain";
 
 export async function GET(request: NextRequest) {
@@ -27,6 +27,7 @@ export async function GET(request: NextRequest) {
         accessReason: "unauthenticated",
         hasUniversityAccess: false,
         hasAssistantAccess: false,
+        hasPromptSchoolAccess: false,
         subscriptionTier: null,
         subscriptionStatus: null,
         isBlocked: false,
@@ -62,6 +63,12 @@ export async function GET(request: NextRequest) {
       // CONSTITUTION.md P-19, DECISION_LOG.md PDL-046): same premium-tier
       // gate as University -- see lib/permissions.ts canAccessPromptAssistant.
       hasAssistantAccess: canAccessPromptAssistant({
+        role: user.role,
+        subscriptionTier: user.subscriptionTier,
+        hasActiveAccess: subscriptionResult.hasAccess,
+      }),
+      // Prompt School (specs/prompt-school/): same premium-tier gate as University.
+      hasPromptSchoolAccess: canAccessPromptSchool({
         role: user.role,
         subscriptionTier: user.subscriptionTier,
         hasActiveAccess: subscriptionResult.hasAccess,

@@ -111,3 +111,13 @@ export function canAccessPromptAssistant(user: {
 }): boolean {
   return hasPremiumTierAccess(user);
 }
+
+// Prompt School (specs/prompt-school/, 2026-09-20): a second learning card built from the
+// Director's book, under the same $50/year premium-tier condition as University and the Assistant.
+export function canAccessPromptSchool(user: {
+  role: string;
+  subscriptionTier: "basic" | "premium";
+  hasActiveAccess: boolean;
+}): boolean {
+  return hasPremiumTierAccess(user);
+}

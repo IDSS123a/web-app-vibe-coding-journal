@@ -51,6 +51,11 @@ export function MarkdownContent({ children, className = "" }: { children: string
           code: ({ children }) => (
             <code className="bg-[#F2F2F2] px-1 py-0.5 font-mono text-xs">{children}</code>
           ),
+          pre: ({ children }) => (
+            <pre className="mb-4 overflow-x-auto whitespace-pre-wrap break-words border-2 border-black bg-[#F2F2F2] p-3 font-mono text-xs leading-relaxed">
+              {children}
+            </pre>
+          ),
           hr: () => <hr className="my-6 border-t-2 border-current opacity-30" />,
           blockquote: ({ children }) => (
             <blockquote className="mb-4 border-l-4 border-[#FF3000] pl-4 text-sm italic">{children}</blockquote>

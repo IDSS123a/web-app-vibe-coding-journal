@@ -1,0 +1,23 @@
+# TASKS: Prompt School
+
+Vertical slice (2026-09-20): tasks 1 to 10 done and verified, 11 waits for the Director's approval to push.
+
+- [x] 1 Migration 030, applied to production
+- [x] 2 Domain: types and grading, tests (30)
+- [x] 3 Content: outline of the whole course (12 chapters, 47 lessons planned), slice chapter (6 lessons, 8 exercises), content validation test (11)
+- [x] 4 Seed script `scripts/seed-prompt-school.ts` (idempotent), run against production
+- [x] 5 Repository
+- [x] 6 Permissions (`canAccessPromptSchool`), `/api/me` (`hasPromptSchoolAccess`), PremiumGuard and PremiumPitch feature, nav link (menu breakpoint lg to xl)
+- [x] 7 API routes (5)
+- [x] 8 UI: overview, chapter, lesson, practice with the five exercise kinds
+- [x] 9 Probe (119 checks), smoke test (28 checks) and responsive audit extended to the new pages
+- [x] 10 Self-review, typecheck, lint, tests, build
+- [ ] 11 PDL-061, CHANGELOG, commit; ask the Director before push
+
+## Next phases (after the Director approves the slice)
+
+- [ ] A Chapters 1, 3 and Appendix C (beginner), then intermediate, then advanced, in batches of one or two chapters
+- [ ] B Level tests and chapter-pass gating decision (open chapters freely now, as in the slice)
+- [ ] C Capstone workshops from the book's Appendix B blueprints
+- [ ] D Live sandbox: learner runs their own prompt on a real model, at most 3 runs a day per user, shares the free AI pool (PDL-058), built last
+- [ ] E Coins and badges through the existing rewards system

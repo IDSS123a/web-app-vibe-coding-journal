@@ -2227,6 +2227,20 @@ fully matched. `/plan-feature` is next.
 
 **Accepted and recorded, not fixed:** admin routes answer an ordinary signed-in user with 401 instead of 403 (nothing leaks, changing sixteen routes is churn); `npm audit` reports the PostCSS copy bundled inside Next.js (build time only, never processes attacker CSS, the fix needs Next 16); the root HANDOFF files stay because sprint documents link to them; CSP is still report-only. Open items are listed at the top of `sprints/STRESS_TEST_2026-09-18_AND_PLAN.md`.
 
+## PDL-061 Prompt School: a second learning card from the Director's book
+
+**Date:** 2026-09-20. Director: build a prompt-writing school (beginner to advanced) like the University, from her book "Mastering Prompt Engineering", as one more card under the same $50 Premium condition, with interactive exercises where the learner completes or writes prompt statements. Her answers: a limited live AI sandbox (at most 3 runs a day per user, built last), about 45 lessons in the first version, start with a specification and one vertical slice.
+
+**Design** (`specs/prompt-school/`). Twelve chapters in three levels mapped to the book (beginner: craft, five pillars, foundational techniques, formatting; intermediate: reasoning, structure and protection, code and research, optimize and debug; advanced: ethics and bias, tools and multimodal, case studies, blueprint workshops). Content is authored text stored in the database by an idempotent seed script (`scripts/seed-prompt-school.ts`), so the free AI quota is untouched (PDL-021, PDL-058). Five exercise kinds, all graded on the server without AI: choice, fill in the blanks, order the parts (Up and Down buttons, no drag), spot the flaw, repair the prompt (a rubric of alternative patterns per criterion, weighted; feedback names each missed criterion with a hint). An exercise passes at 75 percent, a chapter at an average best score of 75 percent over all its exercises. Correct answers, rubrics and explanations never leave the server before an attempt: the chapter route returns only the public half (`toPublicExercise`), and the probe checks the payload for any answer field. Access is the University rule (`canAccessPromptSchool`, admin exempt, blocked and expired refused); Basic and trial users get the upsell screen (`PremiumPitch` feature "promptschool") with checkout on the same screen. Tables `ps_*` (migration 030) are default deny like every table since migration 022.
+
+**Slice delivered:** chapter "The Five Pillars" (book chapter 2): 6 lessons and 8 exercises (2 choice, 2 fill, 1 order, 1 spot, 2 repair), the rest of the course visible as "coming soon" with planned lesson counts. Each repair rubric is tested against its own model answer, good samples (must pass) and bad samples (must fail). The top menu gained a seventh link, so its full row now starts at 1280 px (was 1024) and the hamburger covers everything below.
+
+**Verification:** 270 unit tests (41 new: grading, validation, content, permissions), typecheck, lint, security probe 119 checks (was 96: anonymous 401 on all five routes, tier matrix premium, basic, trial, ended, expired and blocked for the overview and the grading route, bad slugs, non-uuid ids, wrong-shaped answers, missing body, no answer fields in the chapter payload), end to end smoke 28 checks in real Chrome (pages, lesson completion, one exercise graded by the server, one rubric graded, the test account's progress removed afterwards), responsive audit 276 checks in 12 viewport settings (280 to 3440 px, OS dark mode), 23 pages of which 4 are new, 0 issues.
+
+**Not built yet (phases in `specs/prompt-school/TASKS.md`):** the other eleven chapters (about 41 lessons), level tests, capstone workshops from Appendix B, the live sandbox (3 runs a day, shares the free AI pool), coins and badges. Whether chapters should unlock in sequence like the University is an open question; the slice keeps them open.
+
+---
+
 ---
 
 *Vibe-Coding Journal — Project Decision Log — updated as decisions are made.*

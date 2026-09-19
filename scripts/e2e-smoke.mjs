@@ -70,6 +70,35 @@ try {
     ok("dictionary search finds Context window first", /context window/i.test(first), first);
   });
   await visit(userCtx, "/assistant", "Generate My Prompt");
+
+  // Prompt School: pages, then a real graded attempt, then the test account's progress is removed again.
+  {
+    const startedAt = new Date().toISOString();
+    const { data: tu } = await admin.from("user_profiles").select("id").eq("email", "user@test.local").single();
+    await visit(userCtx, "/prompt-school", "The Five Pillars");
+    await visit(userCtx, "/prompt-school/five-pillars", "Start practice");
+    await visit(userCtx, "/prompt-school/five-pillars/pillar-1-context", "Mark lesson as done", async (page) => {
+      await page.getByRole("button", { name: /Mark lesson as done/ }).click();
+      await page.getByText("Lesson done").first().waitFor({ timeout: 8000 });
+      ok("prompt school lesson can be marked done", true);
+    });
+    await visit(userCtx, "/prompt-school/five-pillars/practice", "Name the pillar", async (page) => {
+      const first = page.locator("section").first();
+      await first.getByRole("radio", { name: /Context$/ }).click();
+      await first.getByRole("button", { name: /Check answer/ }).click();
+      await first.getByText(/Passed: 100%/).waitFor({ timeout: 10000 });
+      ok("prompt school choice exercise is graded on the server", true);
+      const repair = page.locator("section").filter({ hasText: "Repair the prompt with constraints" });
+      await repair.locator("textarea").fill("Describe the top 3 benefits of our software for small business owners. Under 200 words. Avoid jargon and keep an encouraging tone.");
+      await repair.getByRole("button", { name: /Check answer/ }).click();
+      await repair.getByText(/Passed: 100%/).waitFor({ timeout: 10000 });
+      ok("prompt school repair exercise is rubric graded", true);
+    });
+    await admin.from("ps_exercise_results").delete().eq("user_id", tu.id).gte("updated_at", startedAt);
+    await admin.from("ps_lesson_progress").delete().eq("user_id", tu.id).gte("completed_at", startedAt);
+    const { count: left } = await admin.from("ps_exercise_results").select("*", { count: "exact", head: true }).eq("user_id", tu.id);
+    ok("prompt school test progress removed again", left === 0);
+  }
   await visit(userCtx, "/welcome", "Dashboard");
 
   // Bookmark round trip on the dashboard

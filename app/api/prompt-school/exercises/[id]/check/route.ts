@@ -1,0 +1,44 @@
+/**
+ * POST /api/prompt-school/exercises/[id]/check  body { answer }: grades one attempt on the server.
+ * Only now do the explanation and the correct answer (or model answer) leave the server. The best
+ * score per exercise is stored. Deterministic grading, no AI request. Premium-only.
+ */
+import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
+import { requirePromptSchoolUser } from "@/features/prompt-school/access";
+import { gradeExercise } from "@/features/prompt-school/domain";
+import { getExerciseForGrading, recordAttempt } from "@/features/prompt-school/repository";
+
+const idSchema = z.string().uuid();
+const bodySchema = z.object({ answer: z.unknown() });
+
+export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const auth = await requirePromptSchoolUser(request);
+    if ("denied" in auth) return auth.denied;
+
+    const id = idSchema.safeParse((await params).id);
+    const body = bodySchema.safeParse(await request.json().catch(() => null));
+    if (!id.success || !body.success) return NextResponse.json({ error: "Invalid request" }, { status: 400 });
+
+    const found = await getExerciseForGrading(id.data);
+    if (!found) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+    const result = gradeExercise(found.exercise, body.data.answer);
+    if (!result) return NextResponse.json({ error: "Invalid answer" }, { status: 400 });
+
+    const saved = await recordAttempt(auth.user.sub, found.exercise.id, result.score, body.data.answer);
+    return NextResponse.json({
+      score: result.score,
+      passed: result.passed,
+      feedback: result.feedback,
+      reveal: result.reveal,
+      explanation: found.exercise.explanation,
+      bestScore: saved.bestScore,
+      attempts: saved.attempts,
+    });
+  } catch (err) {
+    console.error(`[PROMPT-SCHOOL] Error grading exercise: ${err instanceof Error ? err.message : String(err)}`);
+    return NextResponse.json({ error: "Failed to check the answer" }, { status: 500 });
+  }
+}

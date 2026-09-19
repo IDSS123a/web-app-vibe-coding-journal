@@ -31,6 +31,7 @@ interface MeResponse {
   hasAccess: boolean;
   hasUniversityAccess: boolean;
   hasAssistantAccess: boolean;
+  hasPromptSchoolAccess: boolean;
   isBlocked: boolean;
   subscriptionTier: "basic" | "premium" | null;
   subscriptionStatus?: "trial" | "active" | "expired" | null;
@@ -39,7 +40,7 @@ interface MeResponse {
 interface PremiumGuardProps {
   children: ReactNode;
   /** Which /api/me boolean gates this page. Defaults to University's, unchanged for existing callers. */
-  accessKey?: "hasUniversityAccess" | "hasAssistantAccess";
+  accessKey?: "hasUniversityAccess" | "hasAssistantAccess" | "hasPromptSchoolAccess";
   /** Which feature the upsell screen describes. Defaults from accessKey. */
   feature?: PremiumFeature;
 }
@@ -48,7 +49,8 @@ export function PremiumGuard({ children, accessKey = "hasUniversityAccess", feat
   const { token, loading } = useSession();
   const [state, setState] = useState<GuardState>("checking");
   const [isActiveBasic, setIsActiveBasic] = useState(false);
-  const shownFeature: PremiumFeature = feature ?? (accessKey === "hasAssistantAccess" ? "assistant" : "university");
+  const shownFeature: PremiumFeature =
+    feature ?? (accessKey === "hasAssistantAccess" ? "assistant" : accessKey === "hasPromptSchoolAccess" ? "promptschool" : "university");
 
   useEffect(() => {
     if (loading) return;
