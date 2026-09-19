@@ -220,3 +220,23 @@ describe('isReportEligible (P-0: relevance-excluded articles stay out of the rep
     expect(after.hold).toBe(false);
   });
 });
+
+describe("evaluateReportHold scans only the text that is published", () => {
+  it("ignores a hype word in the vendor raw text when an editorial summary replaces it", () => {
+    const decision = evaluateReportHold([
+      { title: "Cursor adds background agents", summary: "A calm editorial summary.", raw_summary: "A revolutionary new era", confidence_score: 0.9 },
+    ]);
+    expect(decision.hypeCount).toBe(0);
+    expect(decision.hold).toBe(false);
+  });
+
+  it("still holds when the raw text IS what gets published (no summary)", () => {
+    const decision = evaluateReportHold([{ title: "Update", summary: null, raw_summary: "A revolutionary new era", confidence_score: 0.9 }]);
+    expect(decision.hypeCount).toBe(1);
+  });
+
+  it("holds for a hype word in the published why-it-matters", () => {
+    const decision = evaluateReportHold([{ title: "x", summary: "fine", raw_summary: null, why_it_matters: "This changes everything", confidence_score: 0.9 }]);
+    expect(decision.hypeCount).toBe(1);
+  });
+});

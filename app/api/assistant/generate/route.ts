@@ -102,16 +102,16 @@ export async function POST(request: NextRequest) {
     // says so, because "did that use one of my 5?" is the first thing people ask.
     if (error instanceof GeminiUnavailableError) {
       return NextResponse.json(
-        { error: "The AI service is busy right now. Nothing was counted against your daily limit — please try again in a minute." },
+        { error: "The AI service is busy right now. Nothing was counted against your daily limit, please try again in a minute." },
         { status: 503 },
       );
     }
     if (error instanceof GeminiKeysExhaustedError) {
       return NextResponse.json(
-        { error: "The AI service has reached its capacity for now. Nothing was counted against your daily limit — please try again later today." },
+        { error: "The AI service has reached its capacity for now. Nothing was counted against your daily limit, please try again later today." },
         { status: 503 },
       );
     }
-    return NextResponse.json({ error: "Failed to generate prompt. Nothing was counted against your daily limit — please try again." }, { status: 500 });
+    return NextResponse.json({ error: "Failed to generate prompt. Nothing was counted against your daily limit, please try again." }, { status: 500 });
   }
 }

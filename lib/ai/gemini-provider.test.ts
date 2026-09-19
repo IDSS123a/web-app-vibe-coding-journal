@@ -19,6 +19,7 @@ beforeEach(() => {
   process.env.GEMINI_API_KEY_2 = "key-two";
   process.env.GEMINI_API_KEY_3 = "key-three";
   for (let i = 4; i <= 8; i++) delete process.env[`GEMINI_API_KEY_${i}`];
+  process.env.GEMINI_FALLBACK_MODELS = ""; // the rotation tests below are about keys, one model
   fetchMock = vi.fn();
   vi.stubGlobal("fetch", fetchMock);
   vi.spyOn(console, "warn").mockImplementation(() => undefined);
@@ -104,5 +105,94 @@ describe("GeminiProvider key rotation", () => {
       name: "GeminiKeysExhaustedError",
       reason: "suspected_suspension",
     });
+  });
+});
+
+describe("writing rule: AI tells never leave the provider", () => {
+  it("removes an em dash from any string in a model response before the caller sees it", async () => {
+    const body = { candidates: [{ content: { parts: [{ text: JSON.stringify({ relevanceScore: 90, reasoning: "on topic — clearly a coding tool" }) }] } }] };
+    fetchMock.mockResolvedValueOnce(res(200, body));
+
+    const out = await (await provider()).assessRelevance({ title: "t", summary: "s" });
+
+    expect(out.reasoning).toBe("on topic, clearly a coding tool");
+    expect(JSON.stringify(out)).not.toMatch(/[—–]/);
+  });
+});
+
+describe("assessRelevanceBatch", () => {
+  const items = [
+    { id: "a", title: "Cursor ships agents", summary: "s" },
+    { id: "b", title: "Aviation report", summary: "s" },
+    { id: "c", title: "Claude Code update", summary: "s" },
+  ];
+  const bodyOf = (scores: unknown) => ({ candidates: [{ content: { parts: [{ text: JSON.stringify({ scores }) }] } }] });
+
+  it("maps scores back to article ids by number, in one call", async () => {
+    fetchMock.mockResolvedValueOnce(
+      res(200, bodyOf([{ n: 3, relevanceScore: 92, reasoning: "direct" }, { n: 1, relevanceScore: 88, reasoning: "direct" }, { n: 2, relevanceScore: 4, reasoning: "off topic" }])),
+    );
+
+    const out = await (await provider()).assessRelevanceBatch({ items });
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(Object.fromEntries(out.results.map((r) => [r.id, r.relevanceScore]))).toEqual({ a: 88, b: 4, c: 92 });
+  });
+
+  it("omits items the model skipped, ignores unknown or repeated numbers and clamps the range", async () => {
+    fetchMock.mockResolvedValueOnce(
+      res(200, bodyOf([{ n: 1, relevanceScore: 250 }, { n: 1, relevanceScore: 5 }, { n: 9, relevanceScore: 50 }, { n: 3, relevanceScore: "high" }])),
+    );
+
+    const out = await (await provider()).assessRelevanceBatch({ items });
+
+    expect(out.results).toEqual([{ id: "a", relevanceScore: 100, reasoning: "" }]);
+  });
+
+  it("returns nothing for an empty list without calling the API", async () => {
+    expect(await (await provider()).assessRelevanceBatch({ items: [] })).toEqual({ results: [] });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+});
+
+describe("model fallback (each free-tier model has its own daily quota per key)", () => {
+  const dayQuota = () => err(429, "RESOURCE_EXHAUSTED");
+
+  it("moves to the next model when every key is out of quota on the first", async () => {
+    process.env.GEMINI_FALLBACK_MODELS = "gemini-3.6-flash";
+    fetchMock
+      .mockResolvedValueOnce(dayQuota())
+      .mockResolvedValueOnce(dayQuota())
+      .mockResolvedValueOnce(dayQuota())
+      .mockResolvedValueOnce(res(200, OK_BODY));
+
+    const out = await (await provider()).assessRelevance({ title: "t", summary: "s" });
+
+    expect(out.relevanceScore).toBe(80);
+    expect(urlOf(0)).toContain("gemini-2.5-flash:");
+    expect(urlOf(3)).toContain("gemini-3.6-flash:");
+    expect(urlOf(3)).toContain("key=key-one");
+  });
+
+  it("throws the primary model's error when the fallback fails too", async () => {
+    process.env.GEMINI_FALLBACK_MODELS = "gemini-3.6-flash";
+    fetchMock.mockResolvedValue(dayQuota());
+
+    await expect((await provider()).assessRelevance({ title: "t", summary: "s" })).rejects.toMatchObject({ name: "GeminiKeysExhaustedError", reason: "quota" });
+    expect(fetchMock).toHaveBeenCalledTimes(6);
+  });
+
+  it("a 402 on one key rotates on instead of aborting (seen live on gemini-3.6-flash)", async () => {
+    fetchMock.mockResolvedValueOnce(err(402, "FAILED_PRECONDITION")).mockResolvedValueOnce(res(200, OK_BODY));
+    const out = await (await provider()).assessRelevance({ title: "t", summary: "s" });
+    expect(out.relevanceScore).toBe(80);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("does not try another model for a bad request", async () => {
+    process.env.GEMINI_FALLBACK_MODELS = "gemini-3.6-flash";
+    fetchMock.mockResolvedValue(err(400, "INVALID_ARGUMENT"));
+    await expect((await provider()).assessRelevance({ title: "t", summary: "s" })).rejects.toThrow(/HTTP 400/);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 });

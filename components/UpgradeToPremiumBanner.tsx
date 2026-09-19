@@ -124,11 +124,11 @@ export function UpgradeToPremiumBanner() {
     <div className="mb-8 border-4 border-[#FF3000] p-6">
       <p className="mb-1 text-xs font-bold uppercase tracking-widest text-[#FF3000]">Upgrade Available</p>
       <h3 className="mb-2 text-lg font-black uppercase tracking-tight text-black">
-        Get Premium — pay only the $40 difference
+        Get Premium, pay only the $40 difference
       </h3>
       <p className="mb-4 text-sm text-black">
         You&apos;re on Basic. Upgrade to Premium to unlock Vibe-Coding University and the Vibe-Coding
-        Assistant — you only pay the $40 difference, not the full $50 again.
+        Assistant, you only pay the $40 difference, not the full $50 again.
       </p>
       {awaitingWebhook ? (
         <p className="text-sm text-black opacity-70">Processing your upgrade…</p>

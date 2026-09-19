@@ -54,7 +54,7 @@ export default function AdminPaymentsPage() {
         <p className="mb-2 text-xs font-bold uppercase tracking-widest text-[#FF3000]">Revenue</p>
         <h2 className="text-3xl font-black uppercase tracking-tighter text-black">Payments</h2>
         <p className="mt-2 text-sm text-black">
-          Every PayPal webhook event, newest first. Subscriptions activate automatically — this
+          Every PayPal webhook event, newest first. Subscriptions activate automatically, this
           list is for visibility, not approval.
         </p>
       </div>
@@ -91,10 +91,10 @@ export default function AdminPaymentsPage() {
                       minute: "2-digit",
                     })}
                   </td>
-                  <td className="p-4 text-black">{event.user_email ?? event.user_id ?? "—"}</td>
-                  <td className="p-4 text-black">{event.tier ?? "—"}</td>
+                  <td className="p-4 text-black">{event.user_email ?? event.user_id ?? "n/a"}</td>
+                  <td className="p-4 text-black">{event.tier ?? "n/a"}</td>
                   <td className="p-4 text-black">
-                    {event.amount_usd != null ? `$${event.amount_usd}` : "—"}
+                    {event.amount_usd != null ? `$${event.amount_usd}` : "n/a"}
                   </td>
                   <td className="p-4">
                     <span

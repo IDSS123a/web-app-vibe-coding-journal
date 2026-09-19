@@ -283,7 +283,7 @@ export function SubscriptionGuard({ children }: { children: ReactNode }) {
           </div>
         </div>
         <p className="mt-8 text-xs uppercase tracking-wide text-black opacity-50">
-          Sandbox mode — no real payment is processed.
+          Sandbox mode, no real payment is processed.
         </p>
       </div>
     );

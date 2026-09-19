@@ -14,10 +14,14 @@ export async function getEnabledSources(): Promise<Source[]> {
     throw new Error("Admin client not available");
   }
 
+  // Enabled sources, PLUS disabled ones whose cool-down has elapsed (see
+  // computeSourceFailure in domain.ts): a failing source is retried later
+  // instead of staying dark forever.
+  const nowIso = new Date().toISOString();
   const { data, error } = await supabaseAdmin
     .from("sources")
     .select("*")
-    .eq("enabled", true)
+    .or(`enabled.eq.true,retry_after.lte.${nowIso}`)
     .order("last_polled", { ascending: true, nullsFirst: true });
 
   if (error) {
@@ -96,6 +100,8 @@ export async function updateSource(
     last_success: string;
     failure_count: number;
     enabled: boolean;
+    retry_after: string | null;
+    disabled_at: string | null;
     source_class: Source["source_class"];
     trust_score: Source["trust_score"];
     topics: string[];

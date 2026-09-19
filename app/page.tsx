@@ -12,7 +12,7 @@ export default function HomePage() {
         <p className="mt-8 max-w-2xl text-lg leading-relaxed text-black md:text-xl">
           The AI development landscape changes every day. New models. New tools.
           New agents. New workflows. New possibilities. Vibe-Coding Journal watches
-          the landscape for you — filters the noise, connects the dots, and
+          the landscape for you, filters the noise, connects the dots, and
           delivers the intelligence you need to build better and faster.
         </p>
 

@@ -61,7 +61,7 @@ function HeadlineIndex({ articles }: { articles: Article[] }) {
   return (
     <nav aria-label="Articles in this report" className="mt-6 border-2 border-black bg-[#F2F2F2] p-4 sm:p-6">
       <h2 className="mb-3 text-xs font-bold uppercase tracking-widest text-[#FF3000]">
-        In this report — {articles.length} articles
+        In this report, {articles.length} articles
       </h2>
       <ol className="space-y-0">
         {articles.map((article, i) => (
@@ -125,7 +125,7 @@ function MoreBelowCue({ articles }: { articles: Article[] }) {
     <button
       type="button"
       onClick={goToNext}
-      aria-label={`Scroll to the next article — ${below} more below`}
+      aria-label={`Scroll to the next article, ${below} more below`}
       className="fixed bottom-10 left-1/2 z-30 inline-flex min-h-11 -translate-x-1/2 items-center gap-2 whitespace-nowrap border-2 border-black bg-black px-4 text-xs font-bold uppercase tracking-widest text-white transition-colors duration-150 ease-out hover:border-[#FF3000] hover:bg-[#FF3000]"
     >
       <span aria-hidden="true">↓</span>

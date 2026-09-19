@@ -56,6 +56,12 @@ import type {
   JudgeHoldReasonOutput,
   AssessRelevanceInput,
   AssessRelevanceOutput,
+  AssessRelevanceBatchInput,
+  AssessRelevanceBatchOutput,
+  ClassifyTermsInput,
+  ClassifyTermsOutput,
+  ExtractTermsInput,
+  ExtractTermsOutput,
   GenerateLessonInput,
   GenerateLessonOutput,
   GenerateSupplementaryLessonInput,
@@ -64,6 +70,7 @@ import type {
   GeneratePromptBlueprintOutput,
 } from "./ai-provider";
 import { PROMPT_ENGINEERING_CANON } from "./prompt-canon";
+import { NO_AI_TELLS_PROMPT_RULE, stripAiTellsDeep } from "@/lib/text/no-ai-tells";
 
 // A-5/AUDIT-003: sized to the longest expected output for this specific
 // call. Originally set to 512 assuming only the visible output (a
@@ -246,7 +253,10 @@ function classifyFailure(httpStatus: number, body: GeminiErrorBody | null): KeyF
   // config difference, not a malformed request (which would 404/400 the
   // same way on every key). Rotating to the next key is the right
   // response, same as a rate limit, rather than aborting the whole call.
-  if (httpStatus === 404 || body?.error?.status === "NOT_FOUND") {
+  // 402 (payment required) was seen live on one key for gemini-3.6-flash: that key's
+  // project cannot serve this model, exactly like the 404 case, so it must not abort the
+  // rotation either.
+  if (httpStatus === 404 || httpStatus === 402 || body?.error?.status === "NOT_FOUND") {
     return "model_unavailable";
   }
   // Found live 2026-09-18/19 (stress test, R1): key 1 answered 503
@@ -303,7 +313,42 @@ const GEMINI_FETCH_TIMEOUT_MS = 25000;
 // digest's own timing/risk profile is untouched.
 const PROMPT_BLUEPRINT_FETCH_TIMEOUT_MS = 90000;
 
+/**
+ * The models tried, in order. Each free-tier model has its OWN daily request quota per
+ * key, so a second model roughly doubles the calls available per day (measured
+ * 2026-09-19: gemini-2.5-flash allows 20 requests per day per key, and four of six
+ * live keys were already exhausted by mid afternoon while every key still had its full
+ * gemini-3.6-flash quota). GEMINI_MODEL stays the primary; GEMINI_FALLBACK_MODELS
+ * (comma separated, default gemini-3.6-flash, empty to disable) is only tried when the
+ * primary fails for a reason another model could fix.
+ */
+function modelChain(): string[] {
+  const fallbacks = (process.env.GEMINI_FALLBACK_MODELS ?? "gemini-3.6-flash").split(",").map((m) => m.trim()).filter(Boolean);
+  return [GEMINI_MODEL, ...fallbacks].filter((m, i, all) => all.indexOf(m) === i);
+}
+
 async function callGeminiJSON(
+  keys: string[],
+  prompt: string,
+  maxOutputTokens?: number,
+  timeoutMs: number = GEMINI_FETCH_TIMEOUT_MS,
+): Promise<Record<string, unknown>> {
+  let firstError: unknown;
+  for (const model of modelChain()) {
+    try {
+      return await callGeminiJSONForModel(model, keys, prompt, maxOutputTokens, timeoutMs);
+    } catch (err) {
+      const nextModelMayHelp = err instanceof GeminiKeysExhaustedError || err instanceof GeminiUnavailableError;
+      if (!nextModelMayHelp) throw err;
+      firstError ??= err;
+      console.warn(`[GEMINI] model ${model} unavailable on every key (${err.message}), trying the next model if any`);
+    }
+  }
+  throw firstError;
+}
+
+async function callGeminiJSONForModel(
+  model: string,
   keys: string[],
   prompt: string,
   maxOutputTokens?: number,
@@ -325,7 +370,7 @@ async function callGeminiJSON(
 
   for (let i = 0; i < keys.length; i++) {
     const key = keys[i]!;
-    const url = `${API_BASE}/${GEMINI_MODEL}:generateContent?key=${key}`;
+    const url = `${API_BASE}/${model}:generateContent?key=${key}`;
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
@@ -366,7 +411,11 @@ async function callGeminiJSON(
           throw new Error("Gemini response missing expected text content");
         }
         try {
-          return JSON.parse(text) as Record<string, unknown>;
+          // Writing rule (Director, 2026-09-19): every string a model returns is
+          // cleaned of AI tells (em dash above all) before ANY caller sees it, so
+          // no feature can forget to do it. The prompts also ask the model not to
+          // produce them; this is the guarantee, the prompt is only the request.
+          return stripAiTellsDeep(JSON.parse(text)) as Record<string, unknown>;
         } catch (parseErr) {
           // Found live 2026-09-13: a JSON.parse failure here almost always
           // means the response was truncated by maxOutputTokens (see this
@@ -429,7 +478,7 @@ async function callGeminiJSON(
           failureKind === "auth_or_suspended"
             ? "auth/permission failure"
             : failureKind === "model_unavailable"
-              ? `model unavailable on this key's project (${GEMINI_MODEL})`
+              ? `model unavailable on this key's project (${model})`
               : failureKind === "overloaded"
                 ? `temporarily unavailable (HTTP ${response.status})`
                 : "rate-limited";
@@ -467,6 +516,7 @@ async function callGeminiJSON(
 }
 
 const P3_SYSTEM_RULES = `You are writing content for a daily developer intelligence digest.
+${NO_AI_TELLS_PROMPT_RULE}
 You MUST follow these non-negotiable editorial rules:
 - Never use hype words or phrases, even to describe something genuinely notable: "revolutionary", "game changer", "groundbreaking", "unprecedented", "disrupts", "changes everything". State what changed and why it matters in plain, measured language instead.
 - Every summary must end with an actionable judgment, not just a description.
@@ -484,6 +534,21 @@ function depthInstruction(tone?: SummarizeInput["tone"]): string {
       return "Depth: technical when needed. Default to simple language; add technical detail only where it changes the recommendation.";
   }
 }
+
+// The P-0 topic rubric, shared by the single and the batched relevance calls so the
+// two can never drift apart (2026-09-19).
+const RELEVANCE_RUBRIC = `Score how directly relevant this article is, 0-100, to ANY of: vibe coding, AI-assisted coding, AI coding agents, agentic software engineering, AI-native IDEs, AI app builders (Bolt, Lovable, Replit, v0, Cursor, Windsurf, Claude Code, GitHub Copilot and similar), AI-generated code/UI/applications, prompt-driven development, AI code testing/debugging/review/quality/security, MCP, tool use, context engineering, AI coding benchmarks and productivity/reliability, or the future of software engineering under AI.
+
+Calibration:
+- 81-100: directly and specifically about one of the above
+- 61-80: clearly relevant, meaningful practical connection
+- 41-60: tangentially related, a stretch to call directly useful
+- 21-40: peripheral, only loosely tech-adjacent
+- 0-20: unrelated (general tech/AI/science news, aviation/aerospace, pure math/physics, hardware nostalgia, music/education, business/industry not about AI coding, etc.), even if it appeared on a tech-adjacent site like Hacker News`;
+
+const ASSESS_RELEVANCE_BATCH_MAX_OUTPUT_TOKENS = 8192;
+const CLASSIFY_TERMS_MAX_OUTPUT_TOKENS = 8192;
+const EXTRACT_TERMS_MAX_OUTPUT_TOKENS = 8192;
 
 export class GeminiProvider implements AIProvider {
   private keys: string[];
@@ -585,14 +650,7 @@ Use "uncertain" only if the excerpt genuinely doesn't give enough context to dec
     // the original P-0 framing rather than replacing it.
     const prompt = `You are the topic gate for "Vibe-Coding Journal," a daily digest STRICTLY for vibe-coders -- people building software with AI coding tools. This is NOT a general tech/AI/science news aggregator.
 
-Score how directly relevant this article is, 0-100, to ANY of: vibe coding, AI-assisted coding, AI coding agents, agentic software engineering, AI-native IDEs, AI app builders (Bolt, Lovable, Replit, v0, Cursor, Windsurf, Claude Code, GitHub Copilot and similar), AI-generated code/UI/applications, prompt-driven development, AI code testing/debugging/review/quality/security, MCP, tool use, context engineering, AI coding benchmarks and productivity/reliability, or the future of software engineering under AI.
-
-Calibration:
-- 81-100: directly and specifically about one of the above
-- 61-80: clearly relevant, meaningful practical connection
-- 41-60: tangentially related, a stretch to call directly useful
-- 21-40: peripheral, only loosely tech-adjacent
-- 0-20: unrelated (general tech/AI/science news, aviation/aerospace, pure math/physics, hardware nostalgia, music/education, business/industry not about AI coding, etc.), even if it appeared on a tech-adjacent site like Hacker News
+${RELEVANCE_RUBRIC}
 
 Title: ${input.title}
 Summary: ${input.summary}
@@ -611,6 +669,155 @@ Return ONLY a JSON object: { "relevanceScore": integer 0-100, "reasoning": strin
       relevanceScore,
       reasoning: typeof result.reasoning === "string" ? result.reasoning : "",
     };
+  }
+
+  /**
+   * Batched P-0 relevance (2026-09-19): scores up to ASSESS_RELEVANCE_BATCH_SIZE
+   * articles in ONE call, same rubric as assessRelevance. Items are numbered in the
+   * prompt and answered by number, so a model that skips or reorders an item cannot
+   * misattribute a score. Unscored items are omitted from the result (never guessed).
+   */
+  async assessRelevanceBatch(input: AssessRelevanceBatchInput): Promise<AssessRelevanceBatchOutput> {
+    if (input.items.length === 0) return { results: [] };
+
+    const listing = input.items
+      .map((item, i) => `[${i + 1}] Title: ${item.title}
+Summary: ${item.summary.slice(0, 400)}`)
+      .join("\n\n");
+
+    const prompt = `${RELEVANCE_RUBRIC}
+
+${NO_AI_TELLS_PROMPT_RULE}
+
+Score EACH of the ${input.items.length} numbered articles below independently.
+
+${listing}
+
+Return ONLY a JSON object: { "scores": [ { "n": integer article number, "relevanceScore": integer 0-100, "reasoning": string (at most 12 words) } ] } with exactly one entry per article number.`;
+
+    const result = await callGeminiJSON(this.keys, prompt, ASSESS_RELEVANCE_BATCH_MAX_OUTPUT_TOKENS);
+
+    const scores = Array.isArray(result.scores) ? result.scores : [];
+    const results: AssessRelevanceBatchOutput["results"] = [];
+    const seen = new Set<number>();
+    for (const entry of scores as Array<Record<string, unknown>>) {
+      const n = typeof entry?.n === "number" ? Math.round(entry.n) : NaN;
+      const raw = entry?.relevanceScore;
+      const item = Number.isInteger(n) ? input.items[n - 1] : undefined;
+      if (!item || seen.has(n) || typeof raw !== "number" || !Number.isFinite(raw)) continue;
+      seen.add(n);
+      results.push({
+        id: item.id,
+        relevanceScore: Math.max(0, Math.min(100, Math.round(raw))),
+        reasoning: typeof entry.reasoning === "string" ? entry.reasoning : "",
+      });
+    }
+    return { results };
+  }
+
+  /**
+   * Files dictionary terms under a topic group, a level and a tier (2026-09-19). Terms are
+   * numbered in the prompt and answered by number. Answers with an unknown group, level
+   * or tier are dropped (never coerced), so the caller falls back to its own default.
+   */
+  async classifyTerms(input: ClassifyTermsInput): Promise<ClassifyTermsOutput> {
+    if (input.terms.length === 0) return { items: [] };
+
+    const groupList = input.groups.map((g) => `- ${g.id}: ${g.label}`).join("\n");
+    const listing = input.terms
+      .map((t) => `[${t.n}] ${t.term}${t.hint ? ` (from section: ${t.hint})` : ""}: ${t.definition.slice(0, 140)}`)
+      .join("\n");
+
+    const prompt = `You are organising a glossary for "Vibe-Coding Journal", a product for vibe-coders: people who build software by directing AI coding assistants. File each numbered term.
+
+TOPIC GROUP (pick exactly one id):
+${groupList}
+
+LEVEL:
+- beginner: a newcomer meets it in the first weeks of vibe-coding
+- intermediate: needed once building real projects
+- advanced: specialist knowledge
+
+TIER:
+- core: specific to vibe-coding, AI-assisted development, agents, prompting, context, or AI coding tools and their failure modes
+- related: general software engineering a vibe-coder regularly meets (web, databases, testing, git, deployment, basic security, product)
+- adjacent: deep machine learning theory or research, distributed-systems internals, hardware, regulation and compliance, rare security techniques
+
+${NO_AI_TELLS_PROMPT_RULE}
+
+TERMS:
+${listing}
+
+Return ONLY a JSON object: { "items": [ { "n": integer term number, "group": group id, "level": "beginner"|"intermediate"|"advanced", "tier": "core"|"related"|"adjacent" } ] } with exactly one entry per term number.`;
+
+    const result = await callGeminiJSON(this.keys, prompt, CLASSIFY_TERMS_MAX_OUTPUT_TOKENS);
+
+    const groupIds = new Set(input.groups.map((g) => g.id));
+    const numbers = new Set(input.terms.map((t) => t.n));
+    const seen = new Set<number>();
+    const items: ClassifyTermsOutput["items"] = [];
+    for (const entry of (Array.isArray(result.items) ? result.items : []) as Array<Record<string, unknown>>) {
+      const n = typeof entry?.n === "number" ? Math.round(entry.n) : NaN;
+      const { group, level, tier } = entry ?? {};
+      if (!numbers.has(n) || seen.has(n)) continue;
+      if (typeof group !== "string" || !groupIds.has(group)) continue;
+      if (level !== "beginner" && level !== "intermediate" && level !== "advanced") continue;
+      if (tier !== "core" && tier !== "related" && tier !== "adjacent") continue;
+      seen.add(n);
+      items.push({ n, group, level, tier });
+    }
+    return { items };
+  }
+
+  /**
+   * Term discovery (2026-09-19): reads recent, already relevance-checked articles and
+   * returns vocabulary a vibe-coder would meet in them that the Dictionary does not have
+   * yet. It only proposes: nothing is published until the caller's promotion rule
+   * (features/dictionary/discovery.ts) is satisfied.
+   */
+  async extractTerms(input: ExtractTermsInput): Promise<ExtractTermsOutput> {
+    if (input.articles.length === 0) return { terms: [] };
+
+    const groupList = input.groups.map((g) => `- ${g.id}: ${g.label}`).join("\n");
+    const listing = input.articles
+      .map((a) => `[${a.n}] ${a.title}\n${a.summary.slice(0, 500)}`)
+      .join("\n\n");
+    const known = input.knownTerms.slice(0, 400).join("; ");
+
+    const prompt = `You maintain the glossary of "Vibe-Coding Journal", a product for vibe-coders: people who build software by directing AI coding assistants. Below are recent articles. List NEW vocabulary a vibe-coder would meet in them and need explained: named techniques, product features, protocols, workflows, failure modes, or slang that has settled into use. A term must appear in at least one article.
+
+Do NOT list: company names, people, product version numbers, one-off event names, generic words, or anything already in KNOWN TERMS (compare case-insensitively, and treat abbreviations and spelled-out forms as the same term).
+
+TOPIC GROUP ids:
+${groupList}
+
+${NO_AI_TELLS_PROMPT_RULE}
+
+KNOWN TERMS: ${known}
+
+ARTICLES:
+${listing}
+
+Return ONLY a JSON object: { "terms": [ { "term": string (the name people use), "definition": string (one plain sentence, at most 30 words, no hype), "group": topic group id, "level": "beginner"|"intermediate"|"advanced", "articleNumbers": [integers of the articles that mention it] } ] }. Return an empty list if nothing qualifies. At most 12 terms.`;
+
+    const result = await callGeminiJSON(this.keys, prompt, EXTRACT_TERMS_MAX_OUTPUT_TOKENS);
+
+    const groupIds = new Set(input.groups.map((g) => g.id));
+    const numbers = new Set(input.articles.map((a) => a.n));
+    const terms: ExtractTermsOutput["terms"] = [];
+    for (const entry of (Array.isArray(result.terms) ? result.terms : []) as Array<Record<string, unknown>>) {
+      const term = typeof entry?.term === "string" ? entry.term.trim() : "";
+      const definition = typeof entry?.definition === "string" ? entry.definition.trim() : "";
+      const { group, level } = entry ?? {};
+      const articleNumbers = (Array.isArray(entry?.articleNumbers) ? entry.articleNumbers : [])
+        .filter((v): v is number => typeof v === "number" && numbers.has(Math.round(v)))
+        .map((v) => Math.round(v));
+      if (!term || term.length > 60 || !definition || articleNumbers.length === 0) continue;
+      if (typeof group !== "string" || !groupIds.has(group)) continue;
+      if (level !== "beginner" && level !== "intermediate" && level !== "advanced") continue;
+      terms.push({ term, definition, group, level, articleNumbers: [...new Set(articleNumbers)] });
+    }
+    return { terms };
   }
 
   /**
@@ -754,9 +961,11 @@ Return ONLY a JSON object with exactly these fields:
     input: GeneratePromptBlueprintInput,
   ): Promise<GeneratePromptBlueprintOutput> {
     const techPreferencesText =
-      input.techPreferences.length > 0 ? input.techPreferences.join(", ") : "no preference stated — choose sensibly for the project type";
+      input.techPreferences.length > 0 ? input.techPreferences.join(", ") : "no preference stated, choose sensibly for the project type";
 
     const prompt = `${PROMPT_ENGINEERING_CANON}
+
+${NO_AI_TELLS_PROMPT_RULE}
 
 ## THE VIBE-CODER'S PROJECT
 

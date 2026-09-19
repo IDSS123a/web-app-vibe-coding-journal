@@ -250,7 +250,7 @@ export default function HoldGateCalibrationPage() {
                     </span>
                   </td>
                   <td className="py-2 pr-4 text-gray-700 dark:text-gray-300">
-                    {run.reports_analyzed_count ?? "—"}
+                    {run.reports_analyzed_count ?? "n/a"}
                   </td>
                 </tr>
               ))}

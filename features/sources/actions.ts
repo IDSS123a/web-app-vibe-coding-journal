@@ -9,7 +9,7 @@
 import { createHash } from "crypto";
 import Parser from "rss-parser";
 import { getEnabledSources, updateSource } from "./repository";
-import { shouldAutoDisableSource, SOURCE_HEALTH_CONFIG } from "./domain";
+import { computeSourceFailure, SOURCE_HEALTH_CONFIG, SOURCE_RECOVERED } from "./domain";
 import { supabaseAdmin } from "@/lib/db/client";
 
 // Sprint 06 (PDL logged in DECISION_LOG.md, M-12 pattern): rss-parser
@@ -39,7 +39,12 @@ const FEED_FETCH_USER_AGENT =
 // budget and avoids re-creating the exact failure pattern already found
 // and fixed once this session (a source silently auto-disabling after a
 // few failed runs, unnoticed for months).
-const INTER_SOURCE_DELAY_MS = 1500;
+const INTER_SOURCE_DELAY_MS = 1000;
+
+// Collection limits (2026-09-19): see collectArticlesFromAllSources.
+const MAX_ITEMS_PER_FEED = 40;
+const MAX_ITEM_AGE_DAYS = 30;
+const POLL_CONCURRENCY = 4;
 
 // Found live 2026-09-14: a REAL production outage, not just a slow test
 // route -- the actual hourly cron started hitting Vercel's own
@@ -67,7 +72,7 @@ const INTER_SOURCE_DELAY_MS = 1500;
 // blocking further progress. A future, more surgical fix would thread
 // real cancellation through every Supabase call individually; this is
 // the fast, safe stopgap for an active outage.
-const SOURCE_PROCESSING_BUDGET_MS = 10000;
+const SOURCE_PROCESSING_BUDGET_MS = 20000;
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -100,9 +105,24 @@ interface ParsedArticle {
 }
 
 /**
- * Poll all enabled sources and collect articles
- * Called by /api/cron/daily-digest
- * P-1.1: Returns error details, not a silent failure
+ * Poll all due sources and collect articles.
+ * Called by /api/cron/daily-digest.
+ * P-1.1: returns error details, not a silent failure.
+ *
+ * Rewritten 2026-09-19 (knowledge-growth work, root cause of the third daily
+ * timeout). The old loop did, per source: a HEAD probe, a GET, then ONE database
+ * round trip PER FEED ITEM, re-upserting every item of every feed every hour.
+ * The Vercel atom feed holds about 1,500 entries, so five sources took roughly
+ * four minutes and the 300 s function limit killed the run before any report was
+ * built. Now:
+ *   - no HEAD probe (several feeds answer HEAD with 403/405 and were being counted
+ *     as failures, which is how nine healthy sources ended up disabled);
+ *   - only the newest MAX_ITEMS_PER_FEED items, none older than MAX_ITEM_AGE_DAYS;
+ *   - ONE batched insert per source that ignores rows already stored, so the number
+ *     returned is the number of genuinely new articles;
+ *   - sources are polled a few at a time, never two at once on the same host;
+ *   - failures use a growing cool-down (features/sources/domain.ts), not a
+ *     permanent disable.
  */
 export async function collectArticlesFromAllSources(): Promise<{
   success: boolean;
@@ -114,162 +134,109 @@ export async function collectArticlesFromAllSources(): Promise<{
   let articlesAdded = 0;
   let sourcesProcessed = 0;
 
-  // Extracted so the whole thing (every step, every Supabase call) can be
-  // raced against SOURCE_PROCESSING_BUDGET_MS below -- see that
-  // constant's comment for why. Mutates errors/articlesAdded via closure,
-  // unchanged from before this was a separate function. Uses `return`
-  // instead of the original code's `continue` for its two early-exit
-  // cases (unreachable / zero articles) -- now that this is its own
-  // function, `return` is the equivalent for "nothing more to do for
-  // this source." One small, deliberate behavior simplification: the
-  // inter-source delay is now applied unconditionally after every
-  // source (including these early-exit cases), not skipped for them --
-  // simpler, and if anything more conservative about not bursting a
-  // host, never less.
   async function processSource(source: Awaited<ReturnType<typeof getEnabledSources>>[number]): Promise<void> {
+    const started = new Date();
     try {
-      // Step 1: Health check (P-7: reachability)
-      const isReachable = await checkSourceReachability(source.url);
+      const parsed = await parseFeed(source.url, source.type);
+      const cutoff = started.getTime() - MAX_ITEM_AGE_DAYS * 86_400_000;
+      const fresh = parsed
+        .filter((a) => Number.isNaN(new Date(a.published_at).getTime()) || new Date(a.published_at).getTime() >= cutoff)
+        .sort((x, y) => (x.published_at < y.published_at ? 1 : -1))
+        .slice(0, MAX_ITEMS_PER_FEED);
 
-      if (!isReachable) {
-        // Source is down — increment failure count
-        const newFailureCount = source.failure_count + 1;
-        const shouldDisable = shouldAutoDisableSource(newFailureCount);
-
-        await updateSource(source.id, {
-          failure_count: newFailureCount,
-          enabled: !shouldDisable,
-        });
-
-        if (shouldDisable) {
-          errors.push({
-            sourceId: source.id,
-            error: `Source auto-disabled after ${newFailureCount} consecutive failures`,
-          });
-        } else {
-          errors.push({
-            sourceId: source.id,
-            error: `Source unreachable (failure ${newFailureCount}/${SOURCE_HEALTH_CONFIG.MAX_FAILURES})`,
-          });
-        }
-
+      if (parsed.length === 0) {
+        errors.push({ sourceId: source.id, error: `${source.name}: parsed but returned zero articles` });
+        // The source itself is healthy, it just had nothing: recover it.
+        await updateSource(source.id, { ...SOURCE_RECOVERED, last_polled: started.toISOString() });
         return;
       }
 
-      // Step 2: Parse feed
-      const articles = await parseFeed(source.url, source.type);
+      if (!supabaseAdmin) throw new Error("Admin client not available");
 
-      if (articles.length === 0) {
-        errors.push({
-          sourceId: source.id,
-          error: "Source parsed but returned zero articles",
-        });
-        // Reset failure count — source is healthy, just no new articles
-        await updateSource(source.id, {
-          last_polled: new Date().toISOString(),
-          failure_count: 0,
-        });
-        return;
-      }
-
-      // Step 3: Store articles with source_id
-      for (const article of articles) {
+      // One row per hash: two items of the same feed with the same title and URL would
+      // otherwise collide inside a single statement.
+      const byHash = new Map<string, Record<string, unknown>>();
+      for (const article of fresh) {
         const hash = generateArticleHash(article.title, article.url);
-
-        if (!supabaseAdmin) {
-          throw new Error("Admin client not available");
-        }
-
-        const { error } = await supabaseAdmin
-          .from("articles")
-          .upsert(
-            {
-              title: article.title,
-              url: article.url,
-              source_id: source.id,
-              source: source.name,
-              published_at: article.published_at,
-              raw_summary: article.summary,
-              hash,
-            },
-            { onConflict: "hash" }, // Don't re-insert if hash already exists (duplicate)
-          );
-
-        if (error) {
-          throw new Error(`Failed to store article: ${error.message}`);
-        }
-
-        articlesAdded++;
+        byHash.set(hash, {
+          title: article.title,
+          url: article.url,
+          source_id: source.id,
+          source: source.name,
+          published_at: article.published_at,
+          raw_summary: article.summary,
+          hash,
+        });
       }
 
-      // Step 4: Update source metadata (success)
+      let added = 0;
+      if (byHash.size > 0) {
+        // ignoreDuplicates: rows whose hash already exists are skipped, and only the
+        // rows actually inserted come back, so `added` is a true count of new articles.
+        const { data, error } = await supabaseAdmin
+          .from("articles")
+          .upsert([...byHash.values()], { onConflict: "hash", ignoreDuplicates: true })
+          .select("id");
+        if (error) throw new Error(`Failed to store articles: ${error.message}`);
+        added = data?.length ?? 0;
+      }
+      articlesAdded += added;
+
       await updateSource(source.id, {
-        last_polled: new Date().toISOString(),
+        ...SOURCE_RECOVERED,
+        last_polled: started.toISOString(),
         last_success: new Date().toISOString(),
-        failure_count: 0, // Reset on success
       });
     } catch (sourceError) {
-      // Source-level error — log and continue with next source
-      const errorMsg =
-        sourceError instanceof Error ? sourceError.message : String(sourceError);
+      const errorMsg = sourceError instanceof Error ? sourceError.message : String(sourceError);
+      const outcome = computeSourceFailure(source.failure_count, new Date());
 
-      const newFailureCount = source.failure_count + 1;
-      const shouldDisable = shouldAutoDisableSource(newFailureCount);
+      try {
+        await updateSource(source.id, { ...outcome, last_polled: started.toISOString() });
+      } catch (writeError) {
+        console.error(`[COLLECT] Could not record failure for "${source.name}": ${String(writeError)}`);
+      }
 
-      await updateSource(source.id, {
-        failure_count: newFailureCount,
-        enabled: !shouldDisable,
-      });
-
-      // P-7: errorMsg is already self-describing (e.g. "Feed fetch error:
-      // ..." for a transient reachability-adjacent failure vs "Feed parse
-      // error: ..." for a genuine parse failure, or "Failed to store
-      // article: ..." for a storage issue) — no blanket "Parse error:"
-      // prefix here, that used to conflate all three into one category.
       errors.push({
         sourceId: source.id,
-        error: errorMsg,
+        error: outcome.enabled
+          ? `${source.name}: ${errorMsg} (failure ${outcome.failure_count}/${SOURCE_HEALTH_CONFIG.MAX_FAILURES})`
+          : `${source.name}: ${errorMsg} (paused until ${outcome.retry_after})`,
       });
     }
   }
 
   try {
     const sources = await getEnabledSources();
+    sourcesProcessed = sources.length;
 
-    for (const source of sources) {
-      sourcesProcessed++;
+    // At most one source per host at a time (five hnrss.org feeds, for example),
+    // and a short pause after each, so no host is hit in a burst.
+    const hostTail = new Map<string, Promise<void>>();
+    const queue = [...sources];
 
-      try {
-        await withTimeout(processSource(source), SOURCE_PROCESSING_BUDGET_MS, source.name);
-      } catch (raceError) {
-        // Only reachable if processSource() itself somehow throws past
-        // its own catch (shouldn't happen — defensive), or the
-        // SOURCE_PROCESSING_BUDGET_MS ceiling won the race. In the
-        // timeout case specifically: deliberately does NOT attempt
-        // another Supabase write here to record the failure — the same
-        // class of call already timed out inside processSource(), and
-        // retrying immediately risks hanging again right here. The
-        // in-memory error below is still recorded either way; next
-        // hour's run re-tries this source's health from scratch.
-        const msg = raceError instanceof Error ? raceError.message : String(raceError);
-        console.error(`[COLLECT] "${source.name}" did not complete within ${SOURCE_PROCESSING_BUDGET_MS}ms: ${msg}`);
-        errors.push({ sourceId: source.id, error: `Processing exceeded time budget: ${msg}` });
+    const worker = async (): Promise<void> => {
+      for (let source = queue.shift(); source; source = queue.shift()) {
+        const host = new URL(source.url).hostname;
+        const previous = hostTail.get(host) ?? Promise.resolve();
+        const mine = previous.then(async () => {
+          try {
+            await withTimeout(processSource(source), SOURCE_PROCESSING_BUDGET_MS, source.name);
+          } catch (raceError) {
+            const msg = raceError instanceof Error ? raceError.message : String(raceError);
+            console.error(`[COLLECT] "${source.name}" did not complete within ${SOURCE_PROCESSING_BUDGET_MS}ms: ${msg}`);
+            errors.push({ sourceId: source.id, error: `Processing exceeded time budget: ${msg}` });
+          }
+          await sleep(INTER_SOURCE_DELAY_MS);
+        });
+        hostTail.set(host, mine);
+        await mine;
       }
-
-      // Politeness delay before the next source -- see
-      // INTER_SOURCE_DELAY_MS's comment above. Skipped after the very
-      // last source; nothing follows it to wait for.
-      if (sourcesProcessed < sources.length) {
-        await sleep(INTER_SOURCE_DELAY_MS);
-      }
-    }
-
-    return {
-      success: errors.length === 0,
-      articlesAdded,
-      sourcesProcessed,
-      errors,
     };
+
+    await Promise.all(Array.from({ length: Math.min(POLL_CONCURRENCY, sources.length) }, () => worker()));
+
+    return { success: errors.length === 0, articlesAdded, sourcesProcessed, errors };
   } catch (err) {
     const errorMsg = err instanceof Error ? err.message : String(err);
     return {
@@ -278,28 +245,6 @@ export async function collectArticlesFromAllSources(): Promise<{
       sourcesProcessed,
       errors: [{ sourceId: "system", error: errorMsg }],
     };
-  }
-}
-
-/**
- * Check if source URL is reachable (HTTP HEAD)
- * P-7: Reachability test before full fetch
- */
-async function checkSourceReachability(url: string): Promise<boolean> {
-  try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), SOURCE_HEALTH_CONFIG.HTTP_TIMEOUT_MS);
-
-    const response = await fetch(url, {
-      method: "HEAD",
-      signal: controller.signal,
-      headers: { "User-Agent": FEED_FETCH_USER_AGENT },
-    });
-
-    clearTimeout(timeout);
-    return response.ok;
-  } catch {
-    return false;
   }
 }
 

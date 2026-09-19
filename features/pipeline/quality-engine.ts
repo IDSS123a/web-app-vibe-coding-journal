@@ -193,6 +193,8 @@ export function evaluateReportHold(
   articles: Array<
     Pick<Article, "title" | "summary" | "raw_summary"> & {
       confidence_score?: number | null;
+      why_it_matters?: string | null;
+      what_to_watch?: string | null;
     }
   >,
 ): ReportHoldDecision {
@@ -209,7 +211,12 @@ export function evaluateReportHold(
       belowThreshold++;
     }
 
-    const text = `${article.title ?? ""} ${article.summary ?? ""} ${article.raw_summary ?? ""}`;
+    // The P-3 voice rule is about what WE publish. The vendor raw_summary is shown only when
+    // there is no editorial summary (formatDigestEntry), so scanning it when a summary exists
+    // held reports over words no reader ever sees. That over-reach is part of why only one
+    // report was ever published (2026-09-19 audit).
+    const published = article.summary || article.raw_summary || "";
+    const text = `${article.title ?? ""} ${published} ${article.why_it_matters ?? ""} ${article.what_to_watch ?? ""}`;
     if (containsHypeWords(text)) {
       hypeCount++;
     }

@@ -175,6 +175,7 @@ export async function updateArticleConfidence(
 export async function updateArticleRelevance(
   articleId: string,
   relevanceScore: number,
+  relevanceSource: "ai" | "ai_batch" | "triage" = "ai",
 ): Promise<void> {
   if (!supabaseAdmin) {
     throw new Error("Admin client not available");
@@ -184,6 +185,7 @@ export async function updateArticleRelevance(
     .from("articles")
     .update({
       relevance_score: relevanceScore,
+      relevance_source: relevanceSource,
       updated_at: new Date().toISOString(),
     })
     .eq("id", articleId);
@@ -252,53 +254,67 @@ export async function updateArticleCategory(
 }
 
 /**
- * Get articles ready for Daily Report (not duplicates, have confidence score, below/above threshold).
+ * Maximum articles in one Daily Report. A normal report is 5 to 20 (admin review
+ * screen wording); more than that is a pile, not a briefing.
+ */
+export const MAX_ARTICLES_PER_REPORT = 20;
+
+/** Articles older than this are never pulled into a new report, however unreported. */
+const REPORT_FRESHNESS_DAYS = 7;
+
+/**
+ * Get articles ready for the Daily Report: relevant (P-0), scored, summarised, not a
+ * duplicate, published recently, and NOT already used in an earlier report.
  *
- * Scoped to articles collected since the most recent prior report -- without
- * this window, every run re-pulled the ENTIRE all-time article history (a
- * real production bug found 2026-09-10: reports had grown to 900+ articles /
- * 31+ hours reading time each, guaranteeing the P-3 hype-word hold gate
- * tripped every single day since it's near-certain *some* article somewhere
- * in an ever-growing all-time pile contains a hype word). The cron's own
- * schedule-gate already guarantees this only runs once a report doesn't yet
- * exist for today (see app/api/cron/daily-digest/route.ts's
- * `already_generated_today` check), so "the latest existing report" is
- * always the correct prior boundary, never today's own row.
+ * Rewritten 2026-09-19. It used to take every article created since the previous
+ * report row was created. Two consequences: an article collected before the last report
+ * but finished later (a backlog, a slow run) could never appear anywhere, and an article
+ * that reached the front of the queue without an editorial summary was printed with
+ * "TBD" fields. The report is now built from the queue of finished, unreported articles,
+ * best first (relevance, then recency), capped at MAX_ARTICLES_PER_REPORT. The 900+
+ * article reports of 2026-09-08 and 09-09 came from the very first version of this
+ * function having no bound at all (see features/pipeline/domain.ts).
+ *
+ * "Already used" is read from daily_report_articles (migration 009), which
+ * linkArticlesToReport fills for every report.
  */
 export async function getArticlesForDailyReport(): Promise<Article[]> {
   if (!supabaseAdmin) {
     throw new Error("Admin client not available");
   }
 
-  const { data: latestReport, error: latestReportError } = await supabaseAdmin
-    .from("daily_reports")
-    .select("created_at")
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  if (latestReportError) {
-    throw new Error(`Failed to fetch latest report boundary: ${latestReportError.message}`);
-  }
-
-  // No prior report at all (fresh environment): fall back to a bounded
-  // 48h window rather than an unbounded all-time pull.
-  const sinceIso =
-    latestReport?.created_at ?? new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
+  const sinceIso = new Date(Date.now() - REPORT_FRESHNESS_DAYS * 24 * 60 * 60 * 1000).toISOString();
 
   const { data, error } = await supabaseAdmin
     .from("articles")
     .select("*")
     .is("duplicate_of", null)
-    .not("confidence_score", "is", null) // Only scored articles
-    .gte("created_at", sinceIso) // Only articles collected since the last report
-    .order("published_at", { ascending: false });
+    .gt("confidence_score", 0)
+    .not("summary", "is", null)
+    .gte("published_at", sinceIso)
+    .order("relevance_score", { ascending: false, nullsFirst: false })
+    .order("published_at", { ascending: false })
+    .limit(MAX_ARTICLES_PER_REPORT * 3);
 
   if (error) {
     throw new Error(`Failed to fetch articles for daily report: ${error.message}`);
   }
 
-  // P-0: relevance-excluded articles (confidence_score forced to 0) must not
-  // reach the report -- see isReportEligible in quality-engine.ts.
-  return (data as Article[]).filter(isReportEligible);
+  const candidates = (data as Article[]).filter(isReportEligible);
+  if (candidates.length === 0) return [];
+
+  const { data: linked, error: linkedError } = await supabaseAdmin
+    .from("daily_report_articles")
+    .select("article_id")
+    .in(
+      "article_id",
+      candidates.map((a) => a.id),
+    );
+
+  if (linkedError) {
+    throw new Error(`Failed to read report links: ${linkedError.message}`);
+  }
+
+  const used = new Set((linked ?? []).map((l) => l.article_id as string));
+  return candidates.filter((a) => !used.has(a.id)).slice(0, MAX_ARTICLES_PER_REPORT);
 }

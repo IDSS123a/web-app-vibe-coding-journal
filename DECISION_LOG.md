@@ -2163,4 +2163,30 @@ fully matched. `/plan-feature` is next.
 
 ---
 
+## PDL-057 The "no AI tells" writing rule
+
+**Date:** 2026-09-19. **Director's rule:** recognisable marks of AI writing, above all the spaced em dash, must never appear anywhere. The dash becomes a comma and a space. (This entry and the new ones after it follow the rule themselves.)
+
+**Enforced in four places, because each alone leaves a hole:**
+1. `lib/text/no-ai-tells.ts` (`stripAiTells`, `stripAiTellsDeep`). It handles spaced and unspaced em dashes, en dashes, a hand typed spaced double hyphen, number ranges (kept as a hyphen), a placeholder dash (becomes n/a), wrapped lines, and leaves fenced and inline code untouched.
+2. The AI boundary: every parsed Gemini response passes through `stripAiTellsDeep` before any caller sees it, and every prompt carries the rule (`NO_AI_TELLS_PROMPT_RULE`). The prompt is the request, the sanitiser is the guarantee.
+3. Source: 75 user-facing literals in code (UI text, emails, page title, log messages) rewritten, and a build guard (`lib/text/no-ai-tells.guard.test.ts`) that parses every source file and fails on a dash in a string, template or JSX text. Comments are not checked.
+4. Stored content: `scripts/sweep-ai-tells.ts` cleaned 687 production rows (491 articles, 58 reports, 75 lessons, 41 + 19 quiz questions, dictionary, Assistant history) and the Supabase invite email subject and template. A second dry run reports 0. Re-runnable any time.
+
+**Not done, on purpose:** the older governance documents (DECISION_LOG entries before this one, sprint notes) still contain dashes. They are internal and dated; new text follows the rule.
+
+## PDL-058 Pipeline health and the real Gemini capacity (root cause of "the system does not grow")
+
+**Date:** 2026-09-19. Found by auditing production data while answering the Director's question whether the system grows and learns.
+
+**Findings.** (1) The daily run timed out again (third time, run 35444198913, 504 at 300 s): collection did one database call per feed item and re-upserted every item of every feed every hour (the Vercel atom feed has about 1,500 entries), so five sources took about four minutes. (2) Nine of 14 sources were permanently disabled after three failures although all answer HTTP 200 today (a HEAD probe several feeds refuse counted as a failure). (3) 3,793 of 4,037 stored articles never received a relevance score. (4) One report was ever published in the whole history, 55 held: the hype filter also scanned the vendor's raw text, which readers never see, and the report window (by creation time) could never include an article finished late. (5) Two simultaneous hourly triggers could run the pipeline twice.
+
+**Changes.** New collector (no HEAD probe, newest 40 items per feed, none older than 30 days, one batched insert that ignores stored rows so the count is real, four sources at a time and never two on one host). Cool-down instead of permanent disable (6, 12, 24, 48, 72 hours; a success re-enables). Enrichment moved to `features/pipeline/enrichment.ts` with a free keyword triage, relevance judged in batches of 15 per call, summaries only for relevant articles, a wall-clock deadline per phase. Every non-report hour now does backlog work instead of returning "skipped". Report articles come from the queue of finished, unreported, relevant articles (max 20); an empty queue writes no report instead of a blocking empty one. The hype filter now scans only text that is published. A lease lock (`cron_locks`) stops two triggers running at once. Migrations 023 to 026.
+
+**Gemini capacity, measured.** The free tier allows 20 requests per day per key per model (quotaId GenerateRequestsPerDayPerProjectPerModel). Four of six live keys were already spent on `gemini-2.5-flash` by mid afternoon, while every key still had its full `gemini-3.6-flash` quota (each model has its own bucket). The provider now falls back to `GEMINI_FALLBACK_MODELS` (default `gemini-3.6-flash`) when every key is out on the primary, and a 402 on one key rotates instead of aborting. Background enrichment is held to 100 AI requests per trailing 24 hours (`ai_call_log`) so it cannot starve the report, the Assistant or the University. Key 7 still answers 403 and key 3 answers 404 or 402: still an open decision for the Director (R2).
+
+**Consequence for planning.** Roughly 100 to 240 AI requests per day is the ceiling for everything. Anything that needs thousands of AI calls (scoring the 3,800 stored articles, classifying 2,600 dictionary terms) must be batched and spread over days, and a heavier plan needs either a paid tier (PDL-021 says free only) or more keys.
+
+---
+
 *Vibe-Coding Journal — Project Decision Log — updated as decisions are made.*

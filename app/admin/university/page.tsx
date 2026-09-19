@@ -86,7 +86,7 @@ export default function AdminUniversityPage() {
         {lessons.map((lesson) => (
           <div key={lesson.id} className="border-4 border-black p-8">
             <p className="mb-1 text-xs font-bold uppercase tracking-widest text-[#FF3000]">
-              {lesson.course_slug} — Supplementary
+              {lesson.course_slug} , Supplementary
             </p>
             <h3 className="text-2xl font-black uppercase tracking-tight text-black">{lesson.title}</h3>
             <div className="swiss-grid-pattern mt-4 max-h-96 overflow-y-auto border-2 border-black bg-[#F2F2F2] p-4 text-black">

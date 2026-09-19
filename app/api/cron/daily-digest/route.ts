@@ -13,32 +13,23 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { collectArticlesFromAllSources } from "@/features/sources/actions";
+import { runEnrichment } from "@/features/pipeline/enrichment";
+import { acquireCronLock, releaseCronLock } from "@/lib/cron/lock";
+import { aiCallsInLast24h, recordAiCalls } from "@/lib/ai/usage";
 import {
   getArticleByHash,
   markArticleAsDuplicate,
   getNonDuplicateArticles,
-  updateArticleConfidence,
-  updateArticleRelevance,
-  updateArticleCategory,
-  updateArticleSummary,
   getArticlesForDailyReport,
   getRelatedSourcesForArticles,
 } from "@/features/pipeline/repository";
 import { upsertDailyReport, getDailyReportByDate, linkArticlesToReport } from "@/features/daily-report/repository";
 import { isTargetOperationsHour, isPastCatchUpDeadline } from "@/lib/cron/schedule-gate";
-import {
-  scoreArticleConfidence,
-  classifyArticle,
-  evaluateReportHold,
-  ARTICLE_CATEGORIES,
-  RELEVANCE_THRESHOLD,
-} from "@/features/pipeline/quality-engine";
+import { evaluateReportHold } from "@/features/pipeline/quality-engine";
 import { clusterDuplicateEvents } from "@/features/pipeline/domain";
 import { sendReviewQueueAlert } from "@/lib/email/resend";
 import { ensureAIProviderInitialized } from "@/lib/ai/init";
-import { getAIProvider } from "@/lib/ai/ai-provider";
-import { GeminiKeysExhaustedError } from "@/lib/ai/gemini-provider";
-import { assessRelevanceOutputSchema, type Article } from "@/lib/validation/schemas";
+import type { Article } from "@/lib/validation/schemas";
 import { isValidCronSecret } from "@/lib/cron/auth";
 
 /**
@@ -55,6 +46,7 @@ function validateCronAuth(request: NextRequest): boolean {
  */
 export async function POST(request: NextRequest) {
   const startTime = Date.now();
+  let lockHeld = false;
 
   try {
     // 1. AUTHENTICATE (E-6 five-step)
@@ -77,11 +69,8 @@ export async function POST(request: NextRequest) {
     const now = new Date();
     const isTargetHour = isTargetOperationsHour(now);
     if (!isTargetHour && !isPastCatchUpDeadline(now)) {
-      console.log("[CRON] Not the configured target hour — skipping this invocation");
-      return NextResponse.json(
-        { success: true, skipped: true, reason: "not_target_hour" },
-        { status: 200 },
-      );
+      console.log("[CRON] Not the configured target hour, running backlog work only");
+      return await backlogResponse("not_target_hour", startTime);
     }
 
     // Idempotency: at-least-once delivery from either scheduler, plus the
@@ -93,16 +82,21 @@ export async function POST(request: NextRequest) {
     const existingReport = await getDailyReportByDate(todayDate);
     if (existingReport) {
       console.log(
-        `[CRON] Report for ${todayDate} already exists (status: ${existingReport.review_status}) — skipping duplicate run`,
+        `[CRON] Report for ${todayDate} already exists (status: ${existingReport.review_status}), running backlog work only`,
       );
-      return NextResponse.json(
-        { success: true, skipped: true, reason: "already_generated_today" },
-        { status: 200 },
-      );
+      return await backlogResponse("already_generated_today", startTime);
     }
 
+    // Two triggers can fire within seconds of each other (GitHub Actions and cron-job.org);
+    // only one may run the pipeline. The lease expires by itself if a run is killed.
+    if (!(await acquireCronLock(DIGEST_LOCK, DIGEST_LOCK_TTL_MS))) {
+      console.log("[CRON] Another digest run holds the lock, standing down");
+      return NextResponse.json({ success: true, skipped: true, reason: "another_run_in_progress" }, { status: 200 });
+    }
+    lockHeld = true;
+
     if (!isTargetHour) {
-      console.log("[CRON] Target hour was missed today — catch-up safety net triggering the pipeline now");
+      console.log("[CRON] Target hour was missed today, catch-up safety net triggering the pipeline now");
     }
     console.log("[CRON] Starting daily digest pipeline");
     ensureAIProviderInitialized();
@@ -173,8 +167,11 @@ export async function POST(request: NextRequest) {
     console.log(`[CRON]   ✓ Deduplicated: ${dedupeResult.duplicatesFound} duplicates marked`);
 
     // Phase 3: Quality Engine + Classifier + AI Summary
-    console.log("[CRON] Phase 3: Quality Engine & Classifier");
-    const qualityResult = await runQualityEngine();
+    console.log("[CRON] Phase 3: Enrichment (triage, batched relevance, summaries)");
+    const qualityResult = await runEnrichment({
+      limit: MAX_ARTICLES_PER_ENRICHMENT_RUN,
+      deadlineAt: startTime + ENRICHMENT_DEADLINE_MS,
+    });
     endPhase("qualityEngine");
     console.log(
       `[CRON]   ✓ Quality scored: ${qualityResult.articlesScored}, Classified: ${qualityResult.articlesClassified}, AI-summarized: ${qualityResult.articlesSummarized}`,
@@ -198,6 +195,16 @@ export async function POST(request: NextRequest) {
       qualityResult.aiModelDeprecated,
     );
     endPhase("dailyReport");
+    if (reportResult.noEligibleArticles) {
+      // Nothing finished and relevant yet. Writing an empty report would block the whole day
+      // (the idempotency check above would then skip every later run), so write nothing: the
+      // next hourly run continues the enrichment and tries again.
+      console.log("[CRON]   No eligible articles yet, no report written; the next run will retry");
+      return NextResponse.json(
+        { success: true, skipped: true, reason: "no_eligible_articles_yet", phaseDurationsMs, durationMs: Date.now() - startTime },
+        { status: 200 },
+      );
+    }
     console.log(
       `[CRON]   ✓ Report generated: ${reportResult.articleCount} articles, status: ${reportResult.reviewStatus}`,
     );
@@ -237,6 +244,9 @@ export async function POST(request: NextRequest) {
           articlesScored: qualityResult.articlesScored,
           articlesClassified: qualityResult.articlesClassified,
           articlesSummarized: qualityResult.articlesSummarized,
+          triageSkipped: qualityResult.triageSkipped,
+          batchCalls: qualityResult.batchCalls,
+          stoppedForBudget: qualityResult.stoppedForBudget,
           aiUnavailableCount: qualityResult.aiUnavailableCount,
           aiSuspectedSuspension: qualityResult.aiSuspectedSuspension,
           aiModelDeprecated: qualityResult.aiModelDeprecated,
@@ -265,6 +275,28 @@ export async function POST(request: NextRequest) {
       },
       { status: 500 },
     );
+  } finally {
+    if (lockHeld) await releaseCronLock(DIGEST_LOCK);
+  }
+}
+
+/**
+ * Response for invocations that are not the report run: do the hourly backlog work
+ * under the same lease, so two simultaneous triggers do not both spend AI quota.
+ */
+async function backlogResponse(reason: string, startTime: number): Promise<NextResponse> {
+  if (!(await acquireCronLock(DIGEST_LOCK, DIGEST_LOCK_TTL_MS))) {
+    return NextResponse.json({ success: true, skipped: true, reason: "another_run_in_progress" }, { status: 200 });
+  }
+  try {
+    const backlog = await runBacklogCycle(startTime);
+    return NextResponse.json({ success: true, skipped: true, reason, backlog }, { status: 200 });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error(`[CRON] Backlog cycle failed: ${msg}`);
+    return NextResponse.json({ success: false, skipped: true, reason, error: msg }, { status: 500 });
+  } finally {
+    await releaseCronLock(DIGEST_LOCK);
   }
 }
 
@@ -373,241 +405,56 @@ async function deduplicateArticles(): Promise<{
   }
 }
 
-// Found live 2026-09-14, active outage: getNonDuplicateArticles() with
-// no limit meant a backlog left by earlier failed runs (1000 unscored
-// articles, after three consecutive Phase-1 timeouts the same day) made
-// THIS phase itself exceed the function's 300s budget trying to
-// AI-score all of them in one run — see that function's own doc
-// comment (features/pipeline/repository.ts) for the full incident.
-// Capping this phase to a bounded chunk per run guarantees a single
-// run's Quality Engine work can never itself exceed the time budget,
-// regardless of how large the backlog gets; the rest is naturally
-// picked up by the next hourly run.
-//
-// First value tried (20) was still confirmed live to time out at 300s
-// -- the real bottleneck once Phases 1/2 stopped being the problem
-// turned out to be Gemini's free-tier rate limit itself
-// (GenerateRequestsPerMinutePerProjectPerModel-FreeTier, 5/minute per
-// key): 20 articles x up to 2-3 sequential calls each repeatedly hit
-// RESOURCE_EXHAUSTED and rotated through multiple of the 8 keys before
-// succeeding, and that real per-call latency (plus Gemini 2.5 Flash's
-// own "thinking" tokens, see DECISION_LOG.md's Phase-2 finding) added
-// up well past the remaining budget. Lowered to 5 to survive the
-// active outage (PDL-027).
-//
-// Raised 5 -> 40 on 2026-09-14 (PDL-027 follow-up), against Gemini's
-// own daily quota headroom -- but never against the Vercel FUNCTION
-// duration budget, because the per-article loop directly below is
-// fully sequential (up to 2-3 real Gemini network calls per article,
-// one `await` after another, zero parallelism). That gap was flagged
-// explicitly at the time ("cannot be re-verified same-day... the first
-// real proof is tomorrow's natural daily run") and the real proof
-// arrived 2026-09-15: EVERY real invocation that day
-// (05:53/11:12/16:23/20:01 UTC, confirmed via `gh run view` on
-// .github/workflows/hourly-digest-trigger.yml) hit Vercel's
-// FUNCTION_INVOCATION_TIMEOUT (300s) before finishing -- a full day
-// with ZERO daily_reports rows produced, a real service outage, not a
-// hypothetical risk. Reverted to 20 -- the last value with an actual
-// working track record (used through 2026-09-10 to -14 before this
-// raise) rather than guessing a new number. Still just as sequential
-// as before; if 20 also turns out to be too slow, the real fix is
-// parallelizing this loop (e.g. Promise.all in small batches), not
-// another blind cap adjustment -- watch real Vercel function-duration
-// data before touching this constant again, the same mistake this
-// comment exists to not repeat.
-const MAX_ARTICLES_PER_QUALITY_RUN = 20;
+// Time budget (2026-09-19). The function is killed at 300 s, and that kill used to be
+// the only thing that ever ended a slow run: no report, no error, a 504 in the trigger
+// log (third occurrence, run 35444198913). Every phase now works against a deadline
+// and stops cleanly, leaving the rest of the queue for the next hourly run. The
+// enrichment deadline leaves about a minute for the report and the response.
+const ENRICHMENT_DEADLINE_MS = 215_000;
+// Off-target hours do backlog work only, with the same ceiling.
+const BACKLOG_DEADLINE_MS = 230_000;
+const MAX_ARTICLES_PER_ENRICHMENT_RUN = 150;
+// Background enrichment may spend this many AI requests per trailing 24 hours. Measured
+// 2026-09-19: the free tier allows about 20 requests per day per key per model, roughly
+// 100 to 240 in all across the live keys and the two models, and that pool also has to
+// cover the report itself (about 40), the Assistant (cap 30) and the University.
+const BACKLOG_DAILY_AI_CALL_BUDGET = 100;
+const BACKLOG_PURPOSE = "backlog_enrichment";
+const DIGEST_LOCK = "digest";
+const DIGEST_LOCK_TTL_MS = 290_000;
 
 /**
- * Phase 3: Quality Engine & Classifier & AI Summary
- * Scores all articles, assigns categories, and generates P-3-compliant
- * summaries via the configured AIProvider (Sprint 05: GeminiProvider).
- *
- * classify() integration (confirmed with Director, sprints/SPRINT_05.md):
- * the heuristic classifyArticle() runs first; AI classify() is called ONLY
- * as a fallback when the heuristic returns null (M-4: don't guess when the
- * cheap/free heuristic already couldn't).
+ * Hourly work on every invocation that is not the report run: collect fresh articles,
+ * mark duplicates, and drain the enrichment queue (relevance, confidence, category,
+ * summary). This is what keeps the system growing between reports and what works off a
+ * backlog; before it, every non-target hour returned "skipped" and did nothing.
  */
-async function runQualityEngine(): Promise<{
-  success: boolean;
-  articlesScored: number;
-  articlesClassified: number;
-  articlesSummarized: number;
-  aiUnavailableCount: number;
-  aiSuspectedSuspension: boolean;
-  aiModelDeprecated: boolean;
-  errors: string[];
-}> {
-  const errors: string[] = [];
-  let articlesScored = 0;
-  let articlesClassified = 0;
-  let articlesSummarized = 0;
-  let aiUnavailableCount = 0;
-  // PDL-012: worse-case wins across the whole run — one suspected-suspension
-  // article is enough to escalate the report-level alert, not averaged away.
-  let aiSuspectedSuspension = false;
-  // Found live 2026-09-11 (P-0 fix verification): distinct from both of the
-  // above -- a rate limit self-resolves and a suspension is an account
-  // problem, but a deprecated model needs a code/config change and will
-  // not fix itself no matter how many times the run retries.
-  let aiModelDeprecated = false;
-
-  try {
-    const articles = await getNonDuplicateArticles(MAX_ARTICLES_PER_QUALITY_RUN);
-    console.log(`[QUALITY] Processing ${articles.length} articles`);
-    const aiProvider = getAIProvider();
-
-    for (const article of articles) {
-      try {
-        // P-0 (CRITICAL) relevance gate — must run before scoring/
-        // classification/summarization so an off-topic article never
-        // reaches an AI-costed step. Found live 2026-09-11: aviation,
-        // math, music-theory, NASA-imaging, and cables content had been
-        // publishing alongside real vibe-coding content because nothing
-        // upstream checked topic at all. Fails OPEN (treated as
-        // relevant, score 100) on any assessment failure — a bad-AI-day
-        // must never behave worse than today's status quo (M-4); a real
-        // Gemini outage still surfaces via the existing
-        // GeminiKeysExhaustedError handling below, once classify/
-        // summarize hit the same exhausted keys.
-        //
-        // Phase 2 (specs/vibe-coding-intelligence-engine/ROADMAP.md,
-        // 2026-09-13): graded 0-100 relevanceScore, not a boolean — see
-        // RELEVANCE_THRESHOLD (features/pipeline/quality-engine.ts) for
-        // the cutoff and its rationale. The score itself is persisted
-        // (migration 011) for every article, not just excluded ones,
-        // supporting future calibration.
-        let relevanceScore = 100;
-        try {
-          const relevanceRaw = await aiProvider.assessRelevance({
-            title: article.title,
-            summary: article.raw_summary ?? "",
-          });
-          const parsedRelevance = assessRelevanceOutputSchema.safeParse(relevanceRaw);
-          if (parsedRelevance.success) {
-            relevanceScore = parsedRelevance.data.relevanceScore;
-            await updateArticleRelevance(article.id, relevanceScore);
-            if (relevanceScore < RELEVANCE_THRESHOLD) {
-              console.log(
-                `[QUALITY]   Off-topic (P-0, score ${relevanceScore}/100), excluding ${article.id}: ${parsedRelevance.data.reasoning}`,
-              );
-            }
-          } else {
-            // E-5/AUDIT-003: a successful call is not a successful result --
-            // log and count, but fail open rather than trust a malformed
-            // payload as a reason to hide real content.
-            console.error(
-              `[QUALITY]   Unparseable relevance assessment for ${article.id}: ${parsedRelevance.error.message}`,
-            );
-          }
-        } catch (relevanceError) {
-          const msg = relevanceError instanceof Error ? relevanceError.message : String(relevanceError);
-          console.warn(`[QUALITY]   Relevance assessment failed for ${article.id}, failing open: ${msg}`);
-        }
-
-        if (relevanceScore < RELEVANCE_THRESHOLD) {
-          // Sub-CONFIDENCE_THRESHOLD score excludes it via the existing
-          // getArticlesForDailyReport() filter -- deliberately reusing an
-          // existing gate instead of a schema migration, given the
-          // Director's "fix this NOW" urgency (2026-09-11). Skips
-          // classify/summarize entirely below, saving Gemini quota
-          // (free-only constraint, PDL-012/PDL-021, same principle as
-          // hold-gate-calibration's never-re-judge rule).
-          await updateArticleConfidence(article.id, 0);
-          articlesScored++;
-          continue;
-        }
-
-        // Score confidence (heuristic, unchanged)
-        const confidence = scoreArticleConfidence(article);
-        await updateArticleConfidence(article.id, confidence);
-        articlesScored++;
-
-        // Classify category: heuristic first, AI only as a fallback (M-4)
-        let category = classifyArticle(article);
-        if (!category) {
-          try {
-            const aiClassification = await aiProvider.classify({
-              text: `${article.title} ${article.raw_summary ?? ""}`,
-              categories: [...ARTICLE_CATEGORIES],
-            });
-            if (aiClassification.category) {
-              category = aiClassification.category as (typeof ARTICLE_CATEGORIES)[number];
-            }
-          } catch (classifyError) {
-            // Classification fallback failing is not fatal — leave category
-            // null (M-4) and continue; logged, not swallowed.
-            const msg = classifyError instanceof Error ? classifyError.message : String(classifyError);
-            console.warn(`[QUALITY]   AI classify fallback failed for ${article.id}: ${msg}`);
-          }
-        }
-        if (category) {
-          await updateArticleCategory(article.id, category);
-          articlesClassified++;
-        }
-
-        // AI Summary (P-3 editorial voice) — required field population
-        try {
-          const summary = await aiProvider.summarize({
-            text: `${article.title}\n\n${article.raw_summary ?? ""}`,
-          });
-          await updateArticleSummary(article.id, {
-            summary: summary.summary,
-            why_it_matters: summary.why_it_matters,
-            who_it_affects: summary.who_it_affects,
-            worth_trying: summary.worth_trying,
-            what_to_watch: summary.what_to_watch,
-          });
-          articlesSummarized++;
-        } catch (summarizeError) {
-          if (summarizeError instanceof GeminiKeysExhaustedError) {
-            // P-1.1: fail loudly via the report-level hold, not a crash.
-            aiUnavailableCount++;
-            if (summarizeError.reason === "suspected_suspension") {
-              aiSuspectedSuspension = true;
-            } else if (summarizeError.reason === "model_deprecated") {
-              aiModelDeprecated = true;
-            }
-            const reasonLabel =
-              summarizeError.reason === "suspected_suspension"
-                ? "possible account suspension"
-                : summarizeError.reason === "model_deprecated"
-                  ? "configured Gemini model deprecated on at least one key's project"
-                  : "all keys rate-limited";
-            console.warn(`[QUALITY]   AI summary unavailable for ${article.id}: ${reasonLabel}`);
-          } else {
-            const msg = summarizeError instanceof Error ? summarizeError.message : String(summarizeError);
-            errors.push(`Article ${article.id} summarize: ${msg}`);
-          }
-        }
-      } catch (articleError) {
-        const errorMsg = articleError instanceof Error ? articleError.message : String(articleError);
-        errors.push(`Article ${article.id}: ${errorMsg}`);
-      }
-    }
-
-    return {
-      success: errors.length === 0,
-      articlesScored,
-      articlesClassified,
-      articlesSummarized,
-      aiUnavailableCount,
-      aiSuspectedSuspension,
-      aiModelDeprecated,
-      errors,
-    };
-  } catch (err) {
-    const errorMsg = err instanceof Error ? err.message : String(err);
-    return {
-      success: false,
-      articlesScored: 0,
-      articlesClassified: 0,
-      articlesSummarized: 0,
-      aiUnavailableCount: 0,
-      aiSuspectedSuspension: false,
-      aiModelDeprecated: false,
-      errors: [errorMsg],
-    };
-  }
+async function runBacklogCycle(startTime: number) {
+  ensureAIProviderInitialized();
+  const collect = await collectArticlesFromAllSources();
+  const dedupe = await deduplicateArticles();
+  const usedToday = await aiCallsInLast24h(BACKLOG_PURPOSE);
+  const remaining = Math.max(0, BACKLOG_DAILY_AI_CALL_BUDGET - usedToday);
+  const enrichment = await runEnrichment({
+    limit: MAX_ARTICLES_PER_ENRICHMENT_RUN,
+    deadlineAt: startTime + BACKLOG_DEADLINE_MS,
+    maxAiCalls: remaining,
+  });
+  await recordAiCalls(BACKLOG_PURPOSE, enrichment.aiCalls);
+  return {
+    aiBudget: { dailyBudget: BACKLOG_DAILY_AI_CALL_BUDGET, usedBefore: usedToday, usedThisRun: enrichment.aiCalls },
+    collected: { articlesAdded: collect.articlesAdded, sourcesProcessed: collect.sourcesProcessed, errors: collect.errors.length },
+    duplicates: dedupe.duplicatesFound,
+    enrichment: {
+      scored: enrichment.articlesScored,
+      summarized: enrichment.articlesSummarized,
+      triageSkipped: enrichment.triageSkipped,
+      batchCalls: enrichment.batchCalls,
+      stoppedForBudget: enrichment.stoppedForBudget,
+      errors: enrichment.errors.length,
+    },
+    durationMs: Date.now() - startTime,
+  };
 }
 
 /**
@@ -627,8 +474,8 @@ async function runQualityEngine(): Promise<{
  */
 function formatDigestEntry(article: Article, alsoCoveredBy: string[]): string {
   const confidencePct =
-    article.confidence_score != null ? `${Math.round(article.confidence_score * 100)}%` : "—";
-  const relevance = article.relevance_score != null ? `${article.relevance_score}/100` : "—";
+    article.confidence_score != null ? `${Math.round(article.confidence_score * 100)}%` : "n/a";
+  const relevance = article.relevance_score != null ? `${article.relevance_score}/100` : "n/a";
   const evidence = [
     `Reported by ${article.source || "Unknown"}`,
     alsoCoveredBy.length > 0 ? `also covered by ${alsoCoveredBy.join(", ")}` : null,
@@ -647,9 +494,9 @@ function formatDigestEntry(article: Article, alsoCoveredBy: string[]): string {
 
 **Evidence:** ${evidence}
 
-**Confidence:** ${confidencePct} — **Worth trying:** ${worthTrying}
+**Confidence:** ${confidencePct}, **Worth trying:** ${worthTrying}
 
-**What to watch:** ${article.what_to_watch || "—"}`;
+**What to watch:** ${article.what_to_watch || "n/a"}`;
 }
 
 /**
@@ -667,6 +514,7 @@ async function generateDailyReport(
   reviewStatus: "auto_published" | "held_for_review";
   holdReasons: string[];
   urgent: boolean;
+  noEligibleArticles?: boolean;
   errors: string[];
 }> {
   const errors: string[] = [];
@@ -677,6 +525,9 @@ async function generateDailyReport(
   try {
     const articles = await getArticlesForDailyReport();
     console.log(`[REPORT] Generating report for ${date} (${articles.length} articles)`);
+    if (articles.length === 0) {
+      return { success: true, date, articleCount: 0, reviewStatus: "held_for_review", holdReasons: [], urgent: false, noEligibleArticles: true, errors };
+    }
 
     // P-6 publish gate: confidence threshold AND hype-word filter (P-3).
     // A hype word in any article's text blocks auto-publish.
@@ -694,7 +545,7 @@ async function generateDailyReport(
       if (aiSuspectedSuspension) {
         urgent = true;
         holdReasons.push(
-          `All AI providers unavailable — possible account suspension (not just quota exhaustion). ${aiUnavailableCount} article(s) affected. Verify Gemini account/key status immediately.`,
+          `All AI providers unavailable, possible account suspension (not just quota exhaustion). ${aiUnavailableCount} article(s) affected. Verify Gemini account/key status immediately.`,
         );
       } else if (aiModelDeprecated) {
         // Found live 2026-09-11: distinct from both a rate limit (self-
@@ -704,11 +555,11 @@ async function generateDailyReport(
         // this; GEMINI_MODEL needs to be updated.
         urgent = true;
         holdReasons.push(
-          `AI summary unavailable — the configured Gemini model is deprecated on at least one key's project (${aiUnavailableCount} article(s) affected). Update GEMINI_MODEL; retrying will not resolve this on its own.`,
+          `AI summary unavailable, the configured Gemini model is deprecated on at least one key's project (${aiUnavailableCount} article(s) affected). Update GEMINI_MODEL; retrying will not resolve this on its own.`,
         );
       } else {
         holdReasons.push(
-          `AI summary unavailable — all Gemini API keys rate-limited (quota exhausted for today, ${aiUnavailableCount} article(s)). No action needed; retry next scheduled run.`,
+          `AI summary unavailable, all Gemini API keys rate-limited (quota exhausted for today, ${aiUnavailableCount} article(s)). No action needed; retry next scheduled run.`,
         );
       }
     }

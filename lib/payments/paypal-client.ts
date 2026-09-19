@@ -79,7 +79,7 @@ export async function createPayPalOrder(
       purchase_units: [
         {
           custom_id: userId,
-          description: `Vibe-Coding Journal — ${tier === "premium" ? "Premium" : "Basic"} (annual)`,
+          description: `Vibe-Coding Journal, ${tier === "premium" ? "Premium" : "Basic"} (annual)`,
           amount: {
             currency_code: "USD",
             value: TIER_PRICES_USD[tier],
@@ -135,7 +135,7 @@ export async function createPayPalUpgradeOrder(
       purchase_units: [
         {
           custom_id: userId,
-          description: "Vibe-Coding Journal — Basic to Premium upgrade (annual)",
+          description: "Vibe-Coding Journal, Basic to Premium upgrade (annual)",
           amount: {
             currency_code: "USD",
             value: UPGRADE_PRICE_USD,

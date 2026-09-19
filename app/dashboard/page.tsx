@@ -60,7 +60,7 @@ export default function DashboardPage() {
         {!loading && !error && !report && (
           <div className="border-4 border-black p-4 sm:p-8 md:p-12">
             <p className="text-center text-sm italic text-black opacity-60">
-              No Daily Report has been published yet — check back soon.
+              No Daily Report has been published yet, check back soon.
             </p>
           </div>
         )}

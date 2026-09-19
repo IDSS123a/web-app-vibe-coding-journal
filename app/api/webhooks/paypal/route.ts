@@ -188,7 +188,7 @@ export async function POST(request: NextRequest) {
   // Best-effort: a failed notification must never undo or fail the
   // activation that already succeeded above.
   void sendAdminNotification({
-    subject: `New ${classification.tier} subscription — $${amountUsd ?? "?"}`,
+    subject: `New ${classification.tier} subscription, $${amountUsd ?? "?"}`,
     html: `
 <h2>New Subscription Activated</h2>
 <p><strong>Tier:</strong> ${classification.tier}</p>

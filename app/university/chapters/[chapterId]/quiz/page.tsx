@@ -127,7 +127,7 @@ function ChapterQuiz() {
               {result.score} / {questions.length}
             </p>
             <p className="mt-2 text-sm text-black">
-              {result.passed ? "Passed — the next chapter is now unlocked." : "Not this time — try again."}
+              {result.passed ? "Passed, the next chapter is now unlocked." : "Not this time, try again."}
             </p>
             {!result.passed && (
               <button

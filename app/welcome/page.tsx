@@ -14,7 +14,7 @@ const FEATURES = [
   {
     n: "01",
     title: "Daily Digest",
-    body: "A new intelligence briefing every day, readable in under 10 minutes. Real AI coding news, tools, and workflow changes — filtered for relevance, not just aggregated.",
+    body: "A new intelligence briefing every day, readable in under 10 minutes. Real AI coding news, tools, and workflow changes, filtered for relevance, not just aggregated.",
     href: "/dashboard",
     cta: "Read Today's Digest",
   },
@@ -35,7 +35,7 @@ const FEATURES = [
   {
     n: "04",
     title: "University",
-    body: "A full curriculum on building software with AI — 75 lessons across beginner, intermediate, and expert, organized into chapters with quizzes and a final test per level. Start from wherever actually fits you.",
+    body: "A full curriculum on building software with AI, 75 lessons across beginner, intermediate, and expert, organized into chapters with quizzes and a final test per level. Start from wherever actually fits you.",
     href: "/university",
     cta: "Start the University",
   },
@@ -87,7 +87,7 @@ export default function WelcomePage() {
             Earn Vibe Coins as You Go
           </h3>
           <p className="mx-auto mt-3 max-w-lg text-sm text-black">
-            Bookmarking articles and returning daily earns Vibe Coins, streaks, and levels —
+            Bookmarking articles and returning daily earns Vibe Coins, streaks, and levels,
             a running record of how consistently you stay on top of the field.
           </p>
         </div>

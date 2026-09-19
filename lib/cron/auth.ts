@@ -17,7 +17,7 @@ import { timingSafeEqual } from "node:crypto";
 export function isValidCronSecret(authorizationHeader: string | null): boolean {
   const secret = process.env.CRON_SECRET;
   if (!secret) {
-    console.error("[CRON] CRON_SECRET is not configured — refusing every cron request (fail closed)");
+    console.error("[CRON] CRON_SECRET is not configured, refusing every cron request (fail closed)");
     return false;
   }
   if (!authorizationHeader) return false;

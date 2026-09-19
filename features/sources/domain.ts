@@ -31,6 +31,8 @@ export interface Source {
   last_polled: string | null;
   last_success: string | null;
   failure_count: number;
+  retry_after?: string | null;
+  disabled_at?: string | null;
   // Nullable: migration 010 added these to an existing table without
   // backfilling every conceivable future row by default -- a source
   // created before this classification work, or through a future flow
@@ -95,7 +97,7 @@ export const SOURCE_HEALTH_CONFIG = {
   // comfortably under it (14 * 11.5s = 161s) -- 5s is still generous
   // for a real feed host; the sources actually configured today all
   // respond in well under 1s in normal operation.
-  HTTP_TIMEOUT_MS: 5000,
+  HTTP_TIMEOUT_MS: 8000,
 };
 
 export interface SourceHealthStatus {
@@ -129,3 +131,46 @@ export function isSourceStale(lastPolled: string | null): boolean {
 
   return hoursAgo > SOURCE_HEALTH_CONFIG.EXPECTED_CADENCE_HOURS;
 }
+
+/**
+ * Cool-down instead of permanent disable (2026-09-19, knowledge-growth work).
+ * Before this, three failures switched a source off for good and nothing ever
+ * switched it back on: 9 of 14 sources sat disabled although all of them answer
+ * HTTP 200 today (a temporary rate limit or an unsupported HEAD probe had been
+ * enough to kill them). Now the third failure disables the source only until
+ * `retry_after`, and the wait grows with every further failed retry.
+ */
+export const SOURCE_RETRY_BACKOFF_HOURS = [6, 12, 24, 48, 72] as const;
+
+export interface SourceFailureOutcome {
+  failure_count: number;
+  enabled: boolean;
+  /** ISO time after which a disabled source is tried again; null while enabled. */
+  retry_after: string | null;
+  /** Set on the failure that disabled the source; null otherwise. */
+  disabled_at: string | null;
+}
+
+export function computeSourceFailure(previousFailureCount: number, now: Date): SourceFailureOutcome {
+  const failure_count = previousFailureCount + 1;
+  if (!shouldAutoDisableSource(failure_count)) {
+    return { failure_count, enabled: true, retry_after: null, disabled_at: null };
+  }
+  const step = Math.min(failure_count - SOURCE_HEALTH_CONFIG.MAX_FAILURES, SOURCE_RETRY_BACKOFF_HOURS.length - 1);
+  const hours = SOURCE_RETRY_BACKOFF_HOURS[step]!;
+  return {
+    failure_count,
+    enabled: false,
+    retry_after: new Date(now.getTime() + hours * 3600_000).toISOString(),
+    disabled_at: now.toISOString(),
+  };
+}
+
+/** A source is polled when it is enabled, or when its cool-down has elapsed. */
+export function isSourceDue(source: { enabled: boolean; retry_after?: string | null }, now: Date): boolean {
+  if (source.enabled) return true;
+  return !!source.retry_after && new Date(source.retry_after).getTime() <= now.getTime();
+}
+
+/** State to write after a successful poll: fully healthy again. */
+export const SOURCE_RECOVERED = { failure_count: 0, enabled: true, retry_after: null, disabled_at: null } as const;

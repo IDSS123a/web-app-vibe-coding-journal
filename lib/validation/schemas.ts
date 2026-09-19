@@ -97,6 +97,11 @@ export const articleSchema = z.object({
   // confidence_score, which is a general content-quality heuristic
   // (scoreArticleConfidence) unrelated to topical relevance.
   relevance_score: z.number().int().min(0).max(100).nullable(),
+  // Migration 023: how relevance_score was decided ('ai', 'ai_batch', 'triage').
+  // Optional so rows and fixtures from before that migration still validate.
+  relevance_source: z.enum(["ai", "ai_batch", "triage"]).nullable().optional(),
+  // The source row this article came from (migration 010 onwards; null for old rows).
+  source_id: z.string().uuid().nullable().optional(),
   duplicate_of: z.string().uuid().nullable(),
   hash: z.string(),
   created_at: z.string().datetime(),

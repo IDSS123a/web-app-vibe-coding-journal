@@ -138,7 +138,7 @@ export function deriveSuggestions(stats: HoldReasonStats[]): SuggestionDraft[] {
 
     drafts.push({
       suggestionText: `Consider removing "${stat.holdReason}" from the P-3 hype-word list`,
-      rationale: `Judged ${stat.totalOccurrences} time(s) across report history: ${stat.falsePositiveCount} false positive(s), ${stat.genuineHypeCount} genuine hype, ${stat.uncertainCount} uncertain — ${Math.round(stat.falsePositiveRate * 100)}% false-positive rate.`,
+      rationale: `Judged ${stat.totalOccurrences} time(s) across report history: ${stat.falsePositiveCount} false positive(s), ${stat.genuineHypeCount} genuine hype, ${stat.uncertainCount} uncertain, ${Math.round(stat.falsePositiveRate * 100)}% false-positive rate.`,
     });
   }
 
@@ -157,7 +157,7 @@ export function buildSummaryMarkdown(stats: HoldReasonStats[], reportsAnalyzedCo
   const lines = [`Analyzed ${reportsAnalyzedCount} new report(s) this run.`, ""];
   for (const stat of stats) {
     lines.push(
-      `- **${stat.holdReason}**: ${stat.totalOccurrences} occurrence(s) — ` +
+      `- **${stat.holdReason}**: ${stat.totalOccurrences} occurrence(s), ` +
         `${stat.genuineHypeCount} genuine, ${stat.falsePositiveCount} false positive, ` +
         `${stat.uncertainCount} uncertain (${Math.round(stat.falsePositiveRate * 100)}% false-positive rate)`,
     );

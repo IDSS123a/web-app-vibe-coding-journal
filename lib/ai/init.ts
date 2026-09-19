@@ -19,6 +19,6 @@ export function ensureAIProviderInitialized(): void {
     setAIProvider(new GeminiProvider());
     console.log("[AI] Provider initialized: Gemini");
   } else {
-    console.log("[AI] No GEMINI_API_KEY_1 configured — AI provider stays NoOp");
+    console.log("[AI] No GEMINI_API_KEY_1 configured, AI provider stays NoOp");
   }
 }

@@ -32,7 +32,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     return NextResponse.json({
       success: true,
       warning:
-        "New sign-ins are blocked immediately. A session token this user already has can remain valid until its own natural expiry (typically up to ~1 hour) — this is a known Supabase Auth limitation, not an app bug.",
+        "New sign-ins are blocked immediately. A session token this user already has can remain valid until its own natural expiry (typically up to ~1 hour), this is a known Supabase Auth limitation, not an app bug.",
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);

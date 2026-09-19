@@ -164,10 +164,10 @@ export default function ReviewDetailPage({ params }: { params: Promise<{ date: s
 
   const riskyReasons: string[] = [];
   if (date && date < P0_SHIP_DATE) {
-    riskyReasons.push("Dated before the P-0 relevance gate shipped (2026-09-11) — never checked for topical relevance.");
+    riskyReasons.push("Dated before the P-0 relevance gate shipped (2026-09-11), never checked for topical relevance.");
   }
   if (report.article_count > ABNORMAL_ARTICLE_COUNT) {
-    riskyReasons.push(`Abnormally large (${report.article_count} articles) — a normal report is 5-20.`);
+    riskyReasons.push(`Abnormally large (${report.article_count} articles), a normal report is 5-20.`);
   }
   const isRisky = riskyReasons.length > 0;
 

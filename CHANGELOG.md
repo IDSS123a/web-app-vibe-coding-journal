@@ -8,6 +8,9 @@ change, newest first.
 
 ## 2026-09-19
 
+- **The daily pipeline now finishes (PDL-058).** Today's report did not appear because collecting from the sources took minutes and the run was killed. Collection now takes about half a minute, dead sources come back on their own after a pause, every hour does useful background work, and two triggers can no longer run at once. Articles are judged for relevance in batches, so the free AI quota stretches much further, and a second Gemini model is used when the first one's daily quota is spent.
+- **No AI writing tells anywhere (PDL-057).** The spaced em dash is replaced by a comma everywhere a reader can see it: pages, emails, AI answers (cleaned before they are stored) and every stored article, report, lesson and quiz. A build check keeps it that way.
+
 - **Dashboard (PDL-056):** the Daily Report now opens with a numbered list of the day's headlines (tap one to jump to it), and while you read, a "↓ N more below" button shows how many articles are left and takes you to the next one.
 
 - **Every screen size (PDL-055):** the site was audited in a real browser at phone, tablet, laptop and wide-screen sizes. Fixed: the top menu overflowing on tablets and phones held sideways (now a hamburger below 1024 px), the admin menu running off a phone screen, the home-page headline being cut off on phones, article cards leaving a narrow text column on phones, tables clipped on small screens, and — on devices set to dark mode — admin pages showing dark boxes and an invisible heading (the app is now consistently light). All buttons and links are at least 44 px to tap. The audit is repeatable: `npm run audit:responsive`.

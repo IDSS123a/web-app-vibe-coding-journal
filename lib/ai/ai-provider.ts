@@ -100,6 +100,63 @@ export interface AssessRelevanceOutput {
 }
 
 /**
+ * Batched form of the same P-0 judgment (2026-09-19, knowledge-growth work): one
+ * Gemini call scores up to ASSESS_RELEVANCE_BATCH_SIZE articles. The free tier
+ * allows only a few calls per minute per key, so one call per article could never
+ * keep up (94 percent of stored articles were still unscored). Scores use the exact
+ * rubric of assessRelevance. An item the model failed to score is simply absent from
+ * `results`, so the caller leaves it for the next run instead of guessing.
+ */
+export interface AssessRelevanceBatchInput {
+  items: Array<{ id: string; title: string; summary: string }>;
+}
+
+export interface AssessRelevanceBatchOutput {
+  results: Array<{ id: string; relevanceScore: number; reasoning: string }>;
+}
+
+export const ASSESS_RELEVANCE_BATCH_SIZE = 15;
+
+/**
+ * Dictionary work (specs/knowledge-growth-and-dictionary/, 2026-09-19). Both calls take the
+ * topic groups as input, so the vocabulary lives in features/dictionary/domain.ts only.
+ *
+ * classifyTerms files existing terms under a topic group, a level and a tier. extractTerms
+ * reads a batch of recent articles and returns vocabulary a vibe-coder would meet in them
+ * that is NOT in `knownTerms`, each with a plain definition. Neither call ever writes
+ * anything: callers validate the answer and decide.
+ */
+export interface DictionaryGroupInfo {
+  id: string;
+  label: string;
+}
+
+export interface ClassifyTermsInput {
+  terms: Array<{ n: number; term: string; definition: string; hint?: string }>;
+  groups: DictionaryGroupInfo[];
+}
+
+export interface ClassifyTermsOutput {
+  items: Array<{ n: number; group: string; level: "beginner" | "intermediate" | "advanced"; tier: "core" | "related" | "adjacent" }>;
+}
+
+export interface ExtractTermsInput {
+  articles: Array<{ n: number; title: string; summary: string }>;
+  knownTerms: string[];
+  groups: DictionaryGroupInfo[];
+}
+
+export interface ExtractTermsOutput {
+  terms: Array<{
+    term: string;
+    definition: string;
+    group: string;
+    level: "beginner" | "intermediate" | "advanced";
+    articleNumbers: number[];
+  }>;
+}
+
+/**
  * Vibe-Coding University's weekly lesson-generation job (specs/
  * vibe-coding-university/PLAN.md, confirmed 2026-09-14). Writes the
  * body for ONE already-titled stub lesson using recent high-relevance
@@ -177,6 +234,9 @@ export interface AIProvider {
   classify(input: ClassifyInput): Promise<ClassifyOutput>;
   judgeHoldReason(input: JudgeHoldReasonInput): Promise<JudgeHoldReasonOutput>;
   assessRelevance(input: AssessRelevanceInput): Promise<AssessRelevanceOutput>;
+  assessRelevanceBatch(input: AssessRelevanceBatchInput): Promise<AssessRelevanceBatchOutput>;
+  classifyTerms(input: ClassifyTermsInput): Promise<ClassifyTermsOutput>;
+  extractTerms(input: ExtractTermsInput): Promise<ExtractTermsOutput>;
   generateLesson(input: GenerateLessonInput): Promise<GenerateLessonOutput>;
   generateSupplementaryLesson(input: GenerateSupplementaryLessonInput): Promise<GenerateSupplementaryLessonOutput>;
   generatePromptBlueprint(input: GeneratePromptBlueprintInput): Promise<GeneratePromptBlueprintOutput>;
@@ -235,6 +295,23 @@ class NoOpProvider implements AIProvider {
       relevanceScore: 100,
       reasoning: "[AI provider not configured]",
     };
+  }
+
+  // Batch form: same fail-open stance as assessRelevance (no provider configured must
+  // never be the reason real content is excluded).
+  async assessRelevanceBatch(input: AssessRelevanceBatchInput): Promise<AssessRelevanceBatchOutput> {
+    return {
+      results: input.items.map((i) => ({ id: i.id, relevanceScore: 100, reasoning: "[AI provider not configured]" })),
+    };
+  }
+
+  // The two dictionary calls are fail-closed: an empty answer means "nothing learned", never a guess.
+  async classifyTerms(): Promise<ClassifyTermsOutput> {
+    return { items: [] };
+  }
+
+  async extractTerms(): Promise<ExtractTermsOutput> {
+    return { terms: [] };
   }
 
   // Deliberately NOT fail-open like assessRelevance above -- an empty

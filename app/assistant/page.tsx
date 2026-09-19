@@ -99,7 +99,7 @@ function BlueprintResult({ generation }: { generation: Generation }) {
       <div className="border-b-4 border-black p-6">
         <div className="mb-3 flex items-center justify-between gap-4">
           <h3 className="text-xs font-bold uppercase tracking-widest text-black">
-            Prompt Blueprint — copy this into Claude Code
+            Prompt Blueprint, copy this into Claude Code
           </h3>
           <CopyButton text={generation.promptBlueprint} />
         </div>
@@ -134,7 +134,7 @@ const GENERATION_STAGES: { atSeconds: number; text: string }[] = [
   { atSeconds: 0, text: "Reading your answers…" },
   { atSeconds: 4, text: "Applying the prompt-engineering canon to your project…" },
   { atSeconds: 12, text: "Writing your Blueprint (this is the slow part)…" },
-  { atSeconds: 30, text: "Still working — long Blueprints can take up to a minute…" },
+  { atSeconds: 30, text: "Still working, long Blueprints can take up to a minute…" },
   { atSeconds: 60, text: "Taking longer than usual. Hang on a little more…" },
 ];
 
@@ -149,7 +149,7 @@ function GeneratingStatus() {
     <div role="status" aria-live="polite" className="border-4 border-black p-4 text-sm text-black">
       <p className="font-bold">{stage.text}</p>
       <p className="mt-1 text-xs text-[#666]">
-        {seconds}s elapsed — please keep this tab open; your Blueprint appears here and is saved to History.
+        {seconds}s elapsed, please keep this tab open; your Blueprint appears here and is saved to History.
       </p>
       <div className="mt-3 h-1 w-full overflow-hidden bg-[#E5E5E5]" aria-hidden="true">
         <div className="h-full w-1/3 animate-pulse bg-[#FF3000]" />
@@ -245,17 +245,17 @@ function Wizard() {
       if (!res.ok) {
         setError(
           data?.error ||
-            "The service did not answer properly. Nothing was counted against your daily limit — please try again in a minute.",
+            "The service did not answer properly. Nothing was counted against your daily limit, please try again in a minute.",
         );
         return;
       }
       if (!data?.data) {
-        setError("The service returned an empty answer. Nothing was counted against your daily limit — please try again.");
+        setError("The service returned an empty answer. Nothing was counted against your daily limit, please try again.");
         return;
       }
       setResult(data.data as Generation);
     } catch {
-      setError("Could not reach the server — check your internet connection and try again. Your answers are still in the form.");
+      setError("Could not reach the server, check your internet connection and try again. Your answers are still in the form.");
     } finally {
       setSubmitting(false);
     }
@@ -411,7 +411,7 @@ function Wizard() {
                     checked={form.noTechPreference}
                     onChange={(e) => setForm({ ...form, noTechPreference: e.target.checked })}
                   />
-                  No preference — let the AI decide
+                  No preference, let the AI decide
                 </label>
               </Field>
 

@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
 
     const alreadyRan = await hasGenerationRunThisWeek(isoWeek);
     if (alreadyRan) {
-      console.log(`[UNIVERSITY_CRON] Already ran for ${isoWeek} — skipping`);
+      console.log(`[UNIVERSITY_CRON] Already ran for ${isoWeek}, skipping`);
       return NextResponse.json({ success: true, skipped: true, reason: "already_ran_this_week" });
     }
 
@@ -119,7 +119,7 @@ async function runStubRetry(
   }
 
   if (!generation.body) {
-    console.error("[UNIVERSITY_CRON] Stub retry returned an empty body — treating as failed");
+    console.error("[UNIVERSITY_CRON] Stub retry returned an empty body, treating as failed");
     await recordGenerationRun({
       iso_week: isoWeek,
       status: "failed",
@@ -171,7 +171,7 @@ async function runStubRetry(
 async function runNewSupplementaryLesson(isoWeek: string, startTime: number) {
   const sourceArticles = await getUnusedHighRelevanceArticles(5);
   if (sourceArticles.length === 0) {
-    console.log("[UNIVERSITY_CRON] No stub to retry and no unused high-relevance articles — nothing to generate");
+    console.log("[UNIVERSITY_CRON] No stub to retry and no unused high-relevance articles, nothing to generate");
     await recordGenerationRun({
       iso_week: isoWeek,
       status: "no_stub_available",
@@ -205,7 +205,7 @@ async function runNewSupplementaryLesson(isoWeek: string, startTime: number) {
   }
 
   if (!generation.title || !generation.body) {
-    console.error("[UNIVERSITY_CRON] Supplementary generation returned an empty title/body — treating as failed");
+    console.error("[UNIVERSITY_CRON] Supplementary generation returned an empty title/body, treating as failed");
     await recordGenerationRun({
       iso_week: isoWeek,
       status: "failed",

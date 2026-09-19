@@ -186,7 +186,7 @@ export default function AdminUsersPage() {
             </button>
           </div>
           <p className="mt-3 text-xs text-black opacity-60">
-            Sends an email invite — no password is set here (E-4). The account is active on the
+            Sends an email invite, no password is set here (E-4). The account is active on the
             chosen tier immediately.
           </p>
           {createError && <p className="mt-2 text-sm text-[#FF3000]">{createError}</p>}
@@ -223,7 +223,7 @@ export default function AdminUsersPage() {
                   <td className="p-3 uppercase">{u.subscriptionTier}</td>
                   <td className="p-3">{u.subscriptionStatus}</td>
                   <td className="p-3">
-                    {u.subscriptionExpiresAt ? new Date(u.subscriptionExpiresAt).toLocaleDateString() : "—"}
+                    {u.subscriptionExpiresAt ? new Date(u.subscriptionExpiresAt).toLocaleDateString() : "n/a"}
                   </td>
                 </tr>
               ))}
@@ -285,8 +285,8 @@ export default function AdminUsersPage() {
                 <ul className="space-y-2 text-sm text-black">
                   {selected.payments.map((p) => (
                     <li key={p.id} className="border-b border-black pb-2">
-                      {new Date(p.created_at).toLocaleDateString()} — {p.event_type} — $
-                      {p.amount_usd ?? "?"} — {p.tier ?? "?"} — {p.status}
+                      {new Date(p.created_at).toLocaleDateString()}, {p.event_type}, $
+                      {p.amount_usd ?? "?"}, {p.tier ?? "?"}, {p.status}
                     </li>
                   ))}
                 </ul>

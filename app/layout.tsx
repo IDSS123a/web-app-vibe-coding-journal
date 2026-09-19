@@ -14,7 +14,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Vibe-Coding Journal — Daily Intelligence Digest",
+  title: "Vibe-Coding Journal, Daily Intelligence Digest",
   description: "Automated daily intelligence digest for vibe-coders",
   // Icons come from the Next.js file conventions in app/ (icon.png,
   // apple-icon.png, favicon.ico), which Next links into <head> automatically.

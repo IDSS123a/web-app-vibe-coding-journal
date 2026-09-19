@@ -45,7 +45,7 @@ export default function BookmarksPage() {
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
     } catch {
-      setError("Failed to remove a bookmark — refresh to see the current list.");
+      setError("Failed to remove a bookmark, refresh to see the current list.");
     }
   }
 
@@ -84,7 +84,7 @@ export default function BookmarksPage() {
 
         {!loading && token && bookmarks !== null && bookmarks.length === 0 && (
           <p className="border-4 border-black py-16 text-center text-sm italic text-black opacity-60">
-            No bookmarks yet — bookmark an article from the{" "}
+            No bookmarks yet, bookmark an article from the{" "}
             <a href="/dashboard" className="font-bold uppercase not-italic underline decoration-2 underline-offset-4 hover:text-[#FF3000]">
               dashboard
             </a>{" "}

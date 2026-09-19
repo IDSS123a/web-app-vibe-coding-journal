@@ -89,7 +89,7 @@ function LevelTest() {
           ← University
         </a>
         <p className="mt-6 text-xs font-bold uppercase tracking-widest text-[#FF3000]">
-          {params.level} — Final Test
+          {params.level} , Final Test
         </p>
         <h1 className="mt-2 text-3xl font-black uppercase tracking-tighter text-black">
           Level Final Test
@@ -135,7 +135,7 @@ function LevelTest() {
             <p className="mt-2 text-sm text-black">
               {result.passed
                 ? `You've completed the ${params.level} level.`
-                : "Not this time — review the chapters and try again."}
+                : "Not this time, review the chapters and try again."}
             </p>
             {!result.passed && (
               <button

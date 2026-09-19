@@ -28,19 +28,19 @@ export async function sendReviewQueueAlert(payload: {
   urgent?: boolean;
 }): Promise<boolean> {
   if (!resend || !resendApiKey) {
-    console.warn("[EMAIL] Resend not configured — skipping review queue alert");
+    console.warn("[EMAIL] Resend not configured, skipping review queue alert");
     return false;
   }
 
   try {
     const reasonsList = payload.reasons.map((r) => `• ${r}`).join("\n");
-    const subjectTag = payload.urgent ? "[URGENT — ACTION NEEDED]" : "[REVIEW]";
+    const subjectTag = payload.urgent ? "[URGENT, ACTION NEEDED]" : "[REVIEW]";
     const urgentBanner = payload.urgent
-      ? `<p style="background:#fee2e2;color:#991b1b;padding:12px;border-radius:6px;font-weight:bold;">⚠ Possible AI provider account suspension detected — not ordinary quota exhaustion. Verify account/key status now.</p>`
+      ? `<p style="background:#fee2e2;color:#991b1b;padding:12px;border-radius:6px;font-weight:bold;">⚠ Possible AI provider account suspension detected, not ordinary quota exhaustion. Verify account/key status now.</p>`
       : "";
 
     const html = `
-<h2>Vibe-Coding Journal — Review Required</h2>
+<h2>Vibe-Coding Journal, Review Required</h2>
 ${urgentBanner}
 <p><strong>Date:</strong> ${payload.date}</p>
 <p><strong>Articles:</strong> ${payload.articleCount}</p>
@@ -52,7 +52,7 @@ ${urgentBanner}
     const { error } = await resend.emails.send({
       from: fromAddress,
       to: reviewQueueEmail,
-      subject: `${subjectTag} Daily digest for ${payload.date} — ${payload.articleCount} articles`,
+      subject: `${subjectTag} Daily digest for ${payload.date}, ${payload.articleCount} articles`,
       html,
     });
 
@@ -85,24 +85,24 @@ export async function sendPaymentIssueAlert(payload: {
   userId: string | null;
 }): Promise<boolean> {
   if (!resend || !resendApiKey) {
-    console.warn("[EMAIL] Resend not configured — skipping payment issue alert");
+    console.warn("[EMAIL] Resend not configured, skipping payment issue alert");
     return false;
   }
 
   try {
     const html = `
-<h2>Vibe-Coding Journal — Payment Requires Manual Review</h2>
-<p style="background:#fee2e2;color:#991b1b;padding:12px;border-radius:6px;font-weight:bold;">⚠ A PayPal webhook event could not be resolved automatically — do not assume it succeeded or failed.</p>
+<h2>Vibe-Coding Journal, Payment Requires Manual Review</h2>
+<p style="background:#fee2e2;color:#991b1b;padding:12px;border-radius:6px;font-weight:bold;">⚠ A PayPal webhook event could not be resolved automatically, do not assume it succeeded or failed.</p>
 <p><strong>PayPal event ID:</strong> ${payload.paypalEventId}</p>
 <p><strong>Event type:</strong> ${payload.eventType}</p>
 <p><strong>Reason:</strong> ${payload.reason}</p>
-<p><strong>User ID:</strong> ${payload.userId ?? "unknown — could not correlate to a user"}</p>
+<p><strong>User ID:</strong> ${payload.userId ?? "unknown, could not correlate to a user"}</p>
     `.trim();
 
     const { error } = await resend.emails.send({
       from: fromAddress,
       to: reviewQueueEmail,
-      subject: `[PAYMENT ISSUE] ${payload.eventType} — manual review needed`,
+      subject: `[PAYMENT ISSUE] ${payload.eventType}, manual review needed`,
       html,
     });
 
@@ -128,7 +128,7 @@ export async function sendAdminNotification(payload: {
   html: string;
 }): Promise<boolean> {
   if (!resend || !resendApiKey) {
-    console.warn("[EMAIL] Resend not configured — skipping admin notification");
+    console.warn("[EMAIL] Resend not configured, skipping admin notification");
     return false;
   }
 
@@ -167,7 +167,7 @@ export async function sendSubscriptionExpiringEmail(payload: {
   expiresAt: string; // ISO date
 }): Promise<boolean> {
   if (!resend || !resendApiKey) {
-    console.warn("[EMAIL] Resend not configured — skipping subscription-expiry email");
+    console.warn("[EMAIL] Resend not configured, skipping subscription-expiry email");
     return false;
   }
 
