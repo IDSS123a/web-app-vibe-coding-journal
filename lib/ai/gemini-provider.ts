@@ -138,6 +138,20 @@ export class GeminiKeysExhaustedError extends Error {
 }
 
 /**
+ * Gemini did not give an answer for a transient reason -- every key answered
+ * with a 5xx, or the request timed out. Distinct from GeminiKeysExhaustedError
+ * (quota / suspension / deprecated model: "wait until tomorrow or fix the
+ * account"): this one means "try again in a minute". User-facing routes use the
+ * difference to say so instead of a generic 500.
+ */
+export class GeminiUnavailableError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "GeminiUnavailableError";
+  }
+}
+
+/**
  * PDL-012 simplification (Sprint 06, 2026-07-18): there is exactly one
  * Gemini key set (GEMINI_API_KEY_1..8), used for both local/preview work
  * and production, by explicit Director decision — PDL-012 states plainly
@@ -338,7 +352,7 @@ async function callGeminiJSON(
         });
       } catch (fetchErr) {
         if (controller.signal.aborted) {
-          throw new Error(`Gemini request timed out after ${timeoutMs}ms`);
+          throw new GeminiUnavailableError(`Gemini request timed out after ${timeoutMs}ms`);
         }
         // Network-level failure — not a per-key issue, don't rotate keys, fail this call.
         throw new Error("Gemini request failed (network error)");
@@ -429,7 +443,7 @@ async function callGeminiJSON(
         // problem, so do not report one (that would tell the operator "wait
         // until tomorrow"). A plain error keeps the caller's generic handling.
         if (sawOverloaded && !sawAuthOrSuspended && !sawModelUnavailable && !sawRateLimit) {
-          throw new Error(`Gemini is temporarily unavailable on all ${keys.length} key(s) (HTTP 5xx)`);
+          throw new GeminiUnavailableError(`Gemini is temporarily unavailable on all ${keys.length} key(s) (HTTP 5xx)`);
         }
         throw new GeminiKeysExhaustedError(
           keys.length,

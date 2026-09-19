@@ -94,7 +94,7 @@ Load/concurrency, full mobile and accessibility pass across every screen, cross-
 1. **Start-of-session P-21 check** (CLAUDE.md): digest run/timings, latest report status.
 2. ~~**S1** drop the content SELECT policies~~ — DONE 2026-09-19 (migration 022, F3, PDL-052).
 3. **S3 + S4** delete/lock test accounts; rotate the two pasted credentials.
-4. ~~**R1** Gemini 5xx rotation~~ — DONE 2026-09-19 (PDL-054). The rest of D3 (progress feedback and a friendly retry message in the Assistant UI) is still open.
+4. ~~**R1** Gemini 5xx rotation~~ — DONE 2026-09-19 (PDL-054). D3 (progress feedback, plain "busy, nothing counted" message, 503 instead of 500) DONE the same day; a live production check after deploy is still owed.
 5. ~~**S5, S6, S8, D1**~~ — DONE 2026-09-19 (PDL-054), awaiting push and a production check. Open follow-up: switch the CSP from Report-Only to enforced after observing real login / checkout / Assistant / University sessions.
 5b. **D2 dashboard scroll cue** and **D4 responsive audit + fixes** (needs the Director to pick a dashboard variant first; D4 gets its own Playwright check).
 6. **Decisions from the Director:** paywall for the Daily Report/Archive (S1b), backups (S2), Gemini model migration and key 7 (R2), dashboard empty-state policy (B1), upgrade clock (B7), Assistant caps (B8).

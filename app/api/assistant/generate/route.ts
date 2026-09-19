@@ -26,6 +26,7 @@ import {
 import { buildGenerateInput, isUserCapExceeded, isGlobalCapExceeded, ASSISTANT_DAILY_CAP_PER_USER } from "@/features/prompt-assistant/domain";
 import { ensureAIProviderInitialized } from "@/lib/ai/init";
 import { getAIProvider } from "@/lib/ai/ai-provider";
+import { GeminiKeysExhaustedError, GeminiUnavailableError } from "@/lib/ai/gemini-provider";
 
 export async function POST(request: NextRequest) {
   try {
@@ -96,6 +97,21 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     console.error(`[ASSISTANT] generate failed: ${message}`);
-    return NextResponse.json({ error: "Failed to generate prompt" }, { status: 500 });
+    // A failed generation is never persisted (insertGeneration runs only after
+    // success), so it does not count toward the user's daily cap -- the message
+    // says so, because "did that use one of my 5?" is the first thing people ask.
+    if (error instanceof GeminiUnavailableError) {
+      return NextResponse.json(
+        { error: "The AI service is busy right now. Nothing was counted against your daily limit — please try again in a minute." },
+        { status: 503 },
+      );
+    }
+    if (error instanceof GeminiKeysExhaustedError) {
+      return NextResponse.json(
+        { error: "The AI service has reached its capacity for now. Nothing was counted against your daily limit — please try again later today." },
+        { status: 503 },
+      );
+    }
+    return NextResponse.json({ error: "Failed to generate prompt. Nothing was counted against your daily limit — please try again." }, { status: 500 });
   }
 }

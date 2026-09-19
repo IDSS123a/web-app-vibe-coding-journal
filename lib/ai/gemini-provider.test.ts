@@ -63,7 +63,9 @@ describe("GeminiProvider key rotation", () => {
     const p = await provider();
     await expect(p.assessRelevance({ title: "t", summary: "s" })).rejects.toThrow(/temporarily unavailable on all 3 key/);
     await expect(p.assessRelevance({ title: "t", summary: "s" })).rejects.not.toMatchObject({ name: "GeminiKeysExhaustedError" });
-    expect(fetchMock).toHaveBeenCalledTimes(6); // 3 keys x 2 calls
+    // Routes tell "try again in a minute" from "out of quota" by this class.
+    await expect(p.assessRelevance({ title: "t", summary: "s" })).rejects.toMatchObject({ name: "GeminiUnavailableError" });
+    expect(fetchMock).toHaveBeenCalledTimes(9); // 3 keys x 3 calls
   });
 
   it("a 400 bad request is NOT rotated -- it surfaces immediately after one call", async () => {

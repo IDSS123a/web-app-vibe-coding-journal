@@ -11,7 +11,7 @@
 
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useSession } from "@/lib/auth/use-session";
 import { PremiumGuard } from "@/components/PremiumGuard";
 import { MarkdownContent } from "@/components/MarkdownContent";
@@ -126,6 +126,38 @@ function BlueprintResult({ generation }: { generation: Generation }) {
   );
 }
 
+// A full Blueprint takes 20-40 s to generate. A button that only says
+// "Generating…" for that long reads as a frozen page (Director's report,
+// 2026-09-19: "the chatbot does not work"), so show what is happening, how long
+// it has been, and that leaving the page loses the result.
+const GENERATION_STAGES: { atSeconds: number; text: string }[] = [
+  { atSeconds: 0, text: "Reading your answers…" },
+  { atSeconds: 4, text: "Applying the prompt-engineering canon to your project…" },
+  { atSeconds: 12, text: "Writing your Blueprint (this is the slow part)…" },
+  { atSeconds: 30, text: "Still working — long Blueprints can take up to a minute…" },
+  { atSeconds: 60, text: "Taking longer than usual. Hang on a little more…" },
+];
+
+function GeneratingStatus() {
+  const [seconds, setSeconds] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setSeconds((s) => s + 1), 1000);
+    return () => clearInterval(id);
+  }, []);
+  const stage = [...GENERATION_STAGES].reverse().find((s) => seconds >= s.atSeconds)!;
+  return (
+    <div role="status" aria-live="polite" className="border-4 border-black p-4 text-sm text-black">
+      <p className="font-bold">{stage.text}</p>
+      <p className="mt-1 text-xs text-[#666]">
+        {seconds}s elapsed — please keep this tab open; your Blueprint appears here and is saved to History.
+      </p>
+      <div className="mt-3 h-1 w-full overflow-hidden bg-[#E5E5E5]" aria-hidden="true">
+        <div className="h-full w-1/3 animate-pulse bg-[#FF3000]" />
+      </div>
+    </div>
+  );
+}
+
 function Wizard() {
   const { token } = useSession();
   const [view, setView] = useState<"new" | "history">("new");
@@ -133,6 +165,13 @@ function Wizard() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<Generation | null>(null);
+  const resultRef = useRef<HTMLDivElement>(null);
+
+  // The result renders below a long form; without this the user finishes a
+  // 30 s wait and sees nothing change on screen.
+  useEffect(() => {
+    if (result) resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [result]);
 
   const [history, setHistory] = useState<GenerationSummary[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
@@ -200,14 +239,23 @@ function Wizard() {
           constraints: form.constraints || undefined,
         }),
       });
-      const data = await res.json();
+      // A gateway timeout or platform error can answer with an HTML page, not
+      // JSON; that must not be reported as "network error".
+      const data = await res.json().catch(() => null);
       if (!res.ok) {
-        setError(data.error || "Something went wrong. Please try again.");
+        setError(
+          data?.error ||
+            "The service did not answer properly. Nothing was counted against your daily limit — please try again in a minute.",
+        );
+        return;
+      }
+      if (!data?.data) {
+        setError("The service returned an empty answer. Nothing was counted against your daily limit — please try again.");
         return;
       }
       setResult(data.data as Generation);
     } catch {
-      setError("Network error. Please try again.");
+      setError("Could not reach the server — check your internet connection and try again. Your answers are still in the form.");
     } finally {
       setSubmitting(false);
     }
@@ -387,7 +435,12 @@ function Wizard() {
                 />
               </Field>
 
-              {error && <p className="border-2 border-[#FF3000] p-3 text-sm text-[#FF3000]">{error}</p>}
+              {submitting && <GeneratingStatus />}
+              {error && (
+                <p role="alert" className="border-2 border-[#FF3000] p-3 text-sm text-[#FF3000]">
+                  {error}
+                </p>
+              )}
 
               <button
                 type="submit"
@@ -398,7 +451,11 @@ function Wizard() {
               </button>
             </form>
 
-            {result && <BlueprintResult generation={result} />}
+            {result && (
+              <div ref={resultRef}>
+                <BlueprintResult generation={result} />
+              </div>
+            )}
           </>
         )}
       </div>
