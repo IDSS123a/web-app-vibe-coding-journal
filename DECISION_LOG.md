@@ -2097,7 +2097,7 @@ fully matched. `/plan-feature` is next.
 
 **Director's rule (verbatim intent):** access level follows the subscription. No payment → no access. $10 → one level. $10 + $40 more ($50) → the highest level. "That's all."
 
-**Levels now enforced:** no active access → nothing; **Basic ($10)** → Daily Report, Archive, Bookmarks; **Premium ($50)** → Basic plus University, Dictionary and the Vibe-Coding Assistant (already API-gated). Admin is exempt (P-14). "Active access" means what `evaluateSubscriptionAccess` already meant: an active subscription, or a running P-13 trial; expired, ended-trial and blocked accounts get nothing. The 3-day trial itself was **not** changed (Director to confirm whether it stays).
+**Levels now enforced:** no active access → nothing; **Basic ($10)** → Daily Report, Archive, Bookmarks; **Premium ($50)** → Basic plus University, Dictionary and the Vibe-Coding Assistant (already API-gated). Admin is exempt (P-14). "Active access" means what `evaluateSubscriptionAccess` already meant: an active subscription, or a running P-13 trial; expired, ended-trial and blocked accounts get nothing. The 3-day trial itself was **not** changed — the Director confirmed on 2026-09-19 that the trial stays.
 
 **Problem it fixes:** the session lives in the browser (localStorage), so a server-rendered page cannot know who is asking. `/archive` had no guard at all and `/dashboard` was guarded only visually — the article text was in the page source for any visitor (curl, 2026-09-19).
 
