@@ -73,7 +73,7 @@ function CourseList() {
           </p>
           <a
             href="/dictionary"
-            className="mt-4 inline-block text-xs font-bold uppercase tracking-widest text-black underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]"
+            className="mt-4 inline-flex min-h-11 items-center text-xs font-bold uppercase tracking-widest text-black underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]"
           >
             Browse the Dictionary →
           </a>
@@ -135,7 +135,7 @@ function CourseList() {
                             <li key={lesson.id}>
                               <a
                                 href={`/university/${course.slug}/${lesson.slug}`}
-                                className="flex items-center gap-3 text-sm text-black transition-colors duration-150 ease-out hover:text-[#FF3000]"
+                                className="flex min-h-11 items-center gap-3 text-sm text-black transition-colors duration-150 ease-out hover:text-[#FF3000]"
                               >
                                 <span
                                   className={`inline-block h-3 w-3 shrink-0 border-2 border-black ${lesson.completed ? "bg-black" : "bg-white"}`}
@@ -149,7 +149,7 @@ function CourseList() {
                         {chapter.quizAvailable && !chapter.quizPassed && (
                           <a
                             href={`/university/chapters/${chapter.id}/quiz`}
-                            className="mt-4 inline-flex h-10 items-center justify-center border-4 border-black bg-black px-4 text-xs font-bold uppercase tracking-widest text-white transition-colors duration-150 ease-out hover:border-[#FF3000] hover:bg-[#FF3000]"
+                            className="mt-4 inline-flex h-11 items-center justify-center border-4 border-black bg-black px-4 text-xs font-bold uppercase tracking-widest text-white transition-colors duration-150 ease-out hover:border-[#FF3000] hover:bg-[#FF3000]"
                           >
                             Take Chapter Quiz
                           </a>
@@ -170,7 +170,7 @@ function CourseList() {
                       <li key={lesson.id}>
                         <a
                           href={`/university/${course.slug}/${lesson.slug}`}
-                          className="flex items-center gap-3 text-sm text-black transition-colors duration-150 ease-out hover:text-[#FF3000]"
+                          className="flex min-h-11 items-center gap-3 text-sm text-black transition-colors duration-150 ease-out hover:text-[#FF3000]"
                         >
                           <span
                             className={`inline-block h-3 w-3 shrink-0 border-2 border-black ${lesson.completed ? "bg-black" : "bg-white"}`}

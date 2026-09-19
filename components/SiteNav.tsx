@@ -19,6 +19,12 @@
  * with a real hamburger toggle below the `md` breakpoint, matching the
  * desktop row exactly above it — same links, same order, same Swiss
  * styling, just a different layout for the width available.
+ *
+ * Breakpoint moved md (768) -> lg (1024) on 2026-09-19 (stress test D4):
+ * the audit showed the full desktop row needs ~930 px, so at tablet
+ * width (768) and phone-landscape (812) it overflowed the viewport, squeezed
+ * the logo onto three lines and pushed Sign Out off-screen. Below 1024 px
+ * the hamburger is used. Hamburger and logo tap targets are now >= 44 px.
  */
 
 import { useState } from "react";
@@ -51,16 +57,16 @@ export function SiteNav() {
   }
 
   const linkClass = (href: string) =>
-    `shrink-0 underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000] ${
+    `inline-flex min-h-11 shrink-0 items-center underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000] ${
       pathname === href ? "text-[#FF3000]" : "text-black"
     }`;
 
   return (
     <header className="sticky top-0 z-40 border-b-4 border-black bg-white">
-      <nav className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 md:px-12">
+      <nav className="mx-auto flex max-w-7xl items-center justify-between px-4 py-2 md:px-12">
         <a
           href="/"
-          className="text-sm font-black uppercase tracking-tighter text-black transition-colors duration-150 ease-out hover:text-[#FF3000]"
+          className="flex min-h-11 items-center text-sm font-black uppercase tracking-tighter text-black transition-colors duration-150 ease-out hover:text-[#FF3000]"
         >
           Vibe-Coding Journal
         </a>
@@ -68,7 +74,7 @@ export function SiteNav() {
         {!loading && (
           <>
             {/* Desktop / tablet: full horizontal row, unchanged. */}
-            <div className="hidden items-center gap-4 text-xs font-bold uppercase tracking-widest md:flex">
+            <div className="hidden items-center gap-4 text-xs font-bold uppercase tracking-widest lg:flex">
               {token ? (
                 <>
                   {LOGGED_IN_LINKS.map((link) => (
@@ -80,19 +86,19 @@ export function SiteNav() {
                   <button
                     type="button"
                     onClick={handleSignOut}
-                    className="shrink-0 border-2 border-black px-3 py-1 text-black transition-colors duration-150 ease-out hover:border-[#FF3000] hover:text-[#FF3000]"
+                    className="inline-flex min-h-11 shrink-0 items-center border-2 border-black px-3 py-1 text-black transition-colors duration-150 ease-out hover:border-[#FF3000] hover:text-[#FF3000]"
                   >
                     Sign Out
                   </button>
                 </>
               ) : (
                 <>
-                  <a href="/login" className="shrink-0 text-black underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]">
+                  <a href="/login" className="inline-flex min-h-11 shrink-0 items-center text-black underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]">
                     Sign In
                   </a>
                   <a
                     href="/register"
-                    className="shrink-0 border-2 border-black px-3 py-1 text-black transition-colors duration-150 ease-out hover:border-[#FF3000] hover:text-[#FF3000]"
+                    className="inline-flex min-h-11 shrink-0 items-center border-2 border-black px-3 py-1 text-black transition-colors duration-150 ease-out hover:border-[#FF3000] hover:text-[#FF3000]"
                   >
                     Register
                   </a>
@@ -101,14 +107,14 @@ export function SiteNav() {
             </div>
 
             {/* Mobile: coin balance stays visible next to the hamburger; full detail lives behind CoinBalance's own click-to-expand. */}
-            <div className="flex items-center gap-2 md:hidden">
+            <div className="flex items-center gap-2 lg:hidden">
               {token && <CoinBalance variant="compact" />}
               <button
                 type="button"
                 onClick={() => setMobileOpen((open) => !open)}
                 aria-label={mobileOpen ? "Close menu" : "Open menu"}
                 aria-expanded={mobileOpen}
-                className="flex h-10 w-10 shrink-0 items-center justify-center border-2 border-black text-black transition-colors duration-150 ease-out hover:border-[#FF3000] hover:text-[#FF3000]"
+                className="flex h-11 w-11 shrink-0 items-center justify-center border-2 border-black text-black transition-colors duration-150 ease-out hover:border-[#FF3000] hover:text-[#FF3000]"
               >
                 {mobileOpen ? (
                   <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
@@ -126,7 +132,7 @@ export function SiteNav() {
       </nav>
 
       {!loading && mobileOpen && (
-        <div className="border-t-4 border-black bg-white md:hidden">
+        <div className="border-t-4 border-black bg-white lg:hidden">
           <div className="flex flex-col text-xs font-bold uppercase tracking-widest">
             {token ? (
               <>

@@ -10,7 +10,8 @@
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "test": "vitest",
-    "test:run": "vitest run"
+    "test:run": "vitest run",
+    "audit:responsive": "node --env-file=.env.local scripts/responsive-audit.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.3.0",
@@ -32,6 +33,7 @@
     "@types/react-dom": "^18.2.0",
     "eslint": "^8.55.0",
     "eslint-config-next": "^15.0.0",
+    "playwright-core": "^1.63.0",
     "postcss": "^8.5.28",
     "tailwindcss": "^4.3.3",
     "typescript": "^5.3.0",

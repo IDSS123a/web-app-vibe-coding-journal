@@ -139,7 +139,7 @@ export default function HoldGateCalibrationPage() {
         <button
           onClick={triggerRun}
           disabled={running || latest?.status === "running"}
-          className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+          className="min-h-11 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {running || latest?.status === "running" ? "Running…" : "Re-run now"}
         </button>
@@ -221,7 +221,7 @@ export default function HoldGateCalibrationPage() {
       </div>
 
       {/* Run history */}
-      <div className="rounded-lg border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-950">
+      <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-950">
         <h3 className="mb-3 font-semibold text-gray-900 dark:text-gray-50">Run history</h3>
         {!data || data.runHistory.length === 0 ? (
           <p className="text-sm text-gray-500 dark:text-gray-400">No runs yet.</p>

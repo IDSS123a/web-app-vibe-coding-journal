@@ -2129,4 +2129,28 @@ fully matched. `/plan-feature` is next.
 
 ---
 
+## PDL-055 — Responsive UI on every screen size and OS setting (D4), with a repeatable audit
+
+**Date:** 2026-09-19. **Director's requirement:** every view must adapt automatically to the screen; any device, OS, browser, platform.
+
+**Method (`scripts/responsive-audit.mjs`, `npm run audit:responsive`).** A real Chrome (via `playwright-core`, no browser download) opens every screen — 5 public, 10 subscriber, 5 admin pages — at 320, 375, 812×375 (phone landscape), 768, 1024, 1440 and 1920 px, plus once with the **OS in dark mode**, using minted sessions for the test accounts. Per page it measures horizontal overflow (with the offending element), tap targets under 44 px on touch-size viewports, text under 12 px, failed requests and console errors, and saves a screenshot. Run against the production build (`next start`).
+
+**Found (first run: 133 checks, 32 with overflow):**
+- Site header: the desktop row needs ~930 px but switched on at 768 → at tablet width and phone-landscape it overflowed, wrapped the logo onto three lines and pushed Sign Out off-screen. Breakpoint `md` → `lg` (1024); hamburger below that.
+- Admin header: five links in one non-wrapping row → 325 px of sideways scroll on a phone. Now wraps.
+- Home page: the hero word "REVOLUTION" was cut off at the right edge on phones (60 px fixed size). Now fluid (`clamp`).
+- Dashboard: on a phone the report card, its padding and the article card left a ~180 px text column, so titles wrapped 6 lines beside the Bookmark button. Padding now scales, the button stacks under the title on phones, the footer links wrap.
+- Admin tables (review queue, hold-gate history) were clipped or forced the page wide → own horizontal scroll.
+- The fixed credit line overflowed 320–375 px screens → wraps.
+- **Dark mode (real bug, not only cosmetic):** three admin pages still had `dark:` utilities and Tailwind v4 follows the OS setting, so on a device in dark mode they showed dark cards under a white page and a **white-on-white heading**. `@custom-variant dark` now requires a `.dark` ancestor (never set) and `color-scheme: light` keeps native controls light. The app stays light-only, as P-20 specifies.
+- Tap targets: header logo/hamburger/coin badge, nav links, back-links, list rows, bookmark button, Assistant checkbox and copy button, register options, admin pagination — all ≥ 44 px now.
+
+**Result on the production build:** 152 checks, 0 overflow, 0 failed requests, 0 console errors, no dark surfaces in OS dark mode, no tap target under 44 px except the credit e-mail link (25 px, meets WCAG 2.2 AA's 24 px minimum).
+
+**Accepted deviations (documented, not hidden):** the developer credit line is 10 px text by the Director's own request (PDL-039); article-title links are 28 px tall large text; the tables scroll sideways inside their container instead of reflowing.
+
+**Honest limits:** one engine only (Chromium/Chrome). Safari/WebKit, Firefox, and real iOS/Android devices were not tested — no `viewport-fit=cover`/safe-area work was done blind, and the browsers' default behaviour keeps content clear of notches. Real-device checks on the Director's own phone and tablet remain the final word. Keyboard-only and screen-reader passes are not covered by this audit.
+
+---
+
 *Vibe-Coding Journal — Project Decision Log — updated as decisions are made.*

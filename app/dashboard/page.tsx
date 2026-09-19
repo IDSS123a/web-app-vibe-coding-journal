@@ -58,7 +58,7 @@ export default function DashboardPage() {
         {error && <p className="border-2 border-[#FF3000] p-3 text-sm text-[#FF3000]">{error}</p>}
 
         {!loading && !error && !report && (
-          <div className="border-4 border-black p-8 md:p-12">
+          <div className="border-4 border-black p-4 sm:p-8 md:p-12">
             <p className="text-center text-sm italic text-black opacity-60">
               No Daily Report has been published yet — check back soon.
             </p>
@@ -67,9 +67,9 @@ export default function DashboardPage() {
 
         {/* Daily Report Card */}
         {report && (
-          <div className="border-4 border-black p-8 md:p-12">
+          <div className="border-4 border-black p-4 sm:p-8 md:p-12">
             {/* Meta info */}
-            <div className="mb-8 flex items-center justify-between border-b-2 border-black pb-6">
+            <div className="mb-8 flex flex-wrap items-center justify-between gap-3 border-b-2 border-black pb-6">
               <div>
                 <p className="text-sm font-bold uppercase tracking-wide text-black">
                   {new Date(report.date).toLocaleDateString("en-US", {
@@ -125,20 +125,20 @@ export default function DashboardPage() {
         )}
 
         {/* Navigation */}
-        <div className="mt-8 flex justify-center gap-6 text-xs font-bold uppercase tracking-widest text-black">
-          <a href="/" className="underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]">
+        <div className="mt-8 flex flex-wrap justify-center gap-x-6 gap-y-0 text-xs font-bold uppercase tracking-widest text-black">
+          <a href="/" className="inline-flex min-h-11 items-center underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]">
             ← Home
           </a>
-          <a href="/archive" className="underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]">
+          <a href="/archive" className="inline-flex min-h-11 items-center underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]">
             Archive
           </a>
-          <a href="/bookmarks" className="underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]">
+          <a href="/bookmarks" className="inline-flex min-h-11 items-center underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]">
             My Bookmarks
           </a>
-          <a href="/university" className="underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]">
+          <a href="/university" className="inline-flex min-h-11 items-center underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]">
             University
           </a>
-          <a href="/dictionary" className="underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]">
+          <a href="/dictionary" className="inline-flex min-h-11 items-center underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]">
             Dictionary
           </a>
         </div>

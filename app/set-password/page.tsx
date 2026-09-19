@@ -67,7 +67,7 @@ export default function SetPasswordPage() {
             </p>
             <a
               href="/login"
-              className="text-sm font-bold uppercase tracking-wide underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]"
+              className="inline-flex min-h-11 items-center text-sm font-bold uppercase tracking-wide underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]"
             >
               Go to Sign In
             </a>

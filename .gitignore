@@ -53,3 +53,6 @@ test-*.js
 # Generated/derived archives (repo snapshots, template exports) — never
 # belong in version control, same principle as node_modules
 *.zip
+
+# Responsive audit output (scripts/responsive-audit.mjs)
+/.responsive-audit/

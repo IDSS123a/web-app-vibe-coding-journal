@@ -6,7 +6,7 @@ export default function HomePage() {
         <p className="mb-6 text-xs font-bold uppercase tracking-widest text-[#FF3000]">
           01. Vibe-Coding Journal
         </p>
-        <h1 className="max-w-5xl text-6xl font-black uppercase leading-[0.95] tracking-tighter text-black md:text-8xl lg:text-[7.5rem]">
+        <h1 className="max-w-5xl text-[clamp(2rem,11.5vw,3.75rem)] font-black uppercase leading-[0.95] tracking-tighter text-black md:text-8xl lg:text-[7.5rem]">
           Your daily edge in the AI coding revolution.
         </h1>
         <p className="mt-8 max-w-2xl text-lg leading-relaxed text-black md:text-xl">

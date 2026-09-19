@@ -137,7 +137,7 @@ export default function ReviewQueuePage() {
       </div>
 
       {/* Reports Table */}
-      <div className="bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-lg overflow-hidden">
+      <div className="bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-lg overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-800">
           <thead className="bg-gray-50 dark:bg-gray-900">
             <tr>
@@ -193,7 +193,7 @@ export default function ReviewQueuePage() {
                   <td className="px-6 py-4 text-sm">
                     <Link
                       href={`/admin/review-queue/${report.date}`}
-                      className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
+                      className="inline-flex min-h-11 items-center text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
                     >
                       Review →
                     </Link>
@@ -210,7 +210,7 @@ export default function ReviewQueuePage() {
         <button
           onClick={() => setPage(Math.max(0, page - 1))}
           disabled={page === 0}
-          className="px-4 py-2 text-sm font-medium rounded border border-gray-300 dark:border-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="min-h-11 px-4 py-2 text-sm font-medium rounded border border-gray-300 dark:border-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Previous
         </button>
@@ -220,7 +220,7 @@ export default function ReviewQueuePage() {
         <button
           onClick={() => setPage(Math.min(totalPages - 1, page + 1))}
           disabled={page >= totalPages - 1}
-          className="px-4 py-2 text-sm font-medium rounded border border-gray-300 dark:border-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="min-h-11 px-4 py-2 text-sm font-medium rounded border border-gray-300 dark:border-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Next
         </button>

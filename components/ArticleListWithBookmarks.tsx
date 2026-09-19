@@ -127,14 +127,14 @@ export function ArticleListWithBookmarks({
         return (
           <div
             key={article.id}
-            className={`border-black p-6 md:p-8 ${i === 0 ? "border-2" : "border-2 border-t-0"}`}
+            className={`border-black p-4 sm:p-6 md:p-8 ${i === 0 ? "border-2" : "border-2 border-t-0"}`}
           >
-            <div className="flex items-start justify-between gap-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
               <a
                 href={article.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-lg font-black uppercase tracking-tight text-black transition-colors duration-150 ease-out hover:text-[#FF3000]"
+                className="break-words text-lg font-black uppercase tracking-tight text-black transition-colors duration-150 ease-out hover:text-[#FF3000]"
               >
                 {article.title}
               </a>
@@ -144,7 +144,7 @@ export function ArticleListWithBookmarks({
                   onClick={() => (token ? toggleBookmark(article.id) : undefined)}
                   disabled={!token || !bookmarksLoaded}
                   title={token ? (isBookmarked ? "Remove bookmark" : "Bookmark") : "Sign in to bookmark"}
-                  className={`shrink-0 border-2 px-3 py-1 text-xs font-bold uppercase tracking-widest transition-colors duration-150 ease-out ${
+                  className={`min-h-11 shrink-0 self-start border-2 px-3 py-1 text-xs font-bold uppercase tracking-widest transition-colors duration-150 ease-out ${
                     isBookmarked
                       ? "border-[#FF3000] bg-[#FF3000] text-white"
                       : "border-black bg-white text-black"

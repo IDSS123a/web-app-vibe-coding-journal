@@ -13,6 +13,17 @@
 @import "tailwindcss";
 
 /*
+ * The app is light-only (P-20 Swiss palette; see the `html` rule below). Three
+ * admin pages still carry `dark:` utilities from before the retrofit, and
+ * Tailwind v4's default `dark:` variant follows the OS setting -- so on a phone
+ * or laptop in dark mode those pages rendered dark cards under a white page
+ * and a white-on-white heading (found by the D4 audit, 2026-09-19). Redefining
+ * the variant to require a `.dark` ancestor, which nothing ever sets, turns
+ * every `dark:` utility off without editing each page.
+ */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
  * Found live 2026-09-14 verifying the homepage retrofit: a plain
  * (unlayered) CSS rule always wins over Tailwind's utility classes
  * regardless of specificity, because CSS cascade layers put ANY
@@ -43,6 +54,8 @@
        the old prefers-color-scheme block is deliberately removed here). */
     color: #000000;
     background: #ffffff;
+    /* Keep native controls, scrollbars and form autofill light on OS dark mode. */
+    color-scheme: light;
   }
 
   body {

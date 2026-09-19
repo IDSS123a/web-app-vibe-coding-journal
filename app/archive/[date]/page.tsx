@@ -33,7 +33,7 @@ export default function ArchiveDatePage() {
         <div className="mb-8">
           <a
             href="/archive"
-            className="text-xs font-bold uppercase tracking-widest text-black underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]"
+            className="inline-flex min-h-11 items-center text-xs font-bold uppercase tracking-widest text-black underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]"
           >
             ← Archive
           </a>

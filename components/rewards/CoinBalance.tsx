@@ -78,7 +78,7 @@ export function CoinBalance({ variant = "full" }: { variant?: "full" | "compact"
         onClick={() => setExpanded((v) => !v)}
         aria-expanded={expanded}
         aria-label={`${state.coinBalance} Vibe Coins, Level ${state.level}, ${state.currentStreak}-day streak. Show details.`}
-        className="flex shrink-0 items-center gap-2 border-2 border-black px-3 py-1 text-xs font-bold uppercase tracking-widest text-black transition-colors duration-150 ease-out hover:border-[#FF3000]"
+        className={`flex shrink-0 items-center gap-2 border-2 border-black px-3 py-1 text-xs${variant === "compact" ? " min-h-11" : ""} font-bold uppercase tracking-widest text-black transition-colors duration-150 ease-out hover:border-[#FF3000]`}
       >
         <span className="inline-block h-2.5 w-2.5 shrink-0 bg-[#D4A017]" aria-hidden />
         <span>{displayCoins}</span>

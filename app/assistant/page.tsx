@@ -75,7 +75,7 @@ function CopyButton({ text }: { text: string }) {
           })
           .catch(() => undefined);
       }}
-      className="h-10 shrink-0 border-4 border-black bg-black px-4 text-xs font-bold uppercase tracking-widest text-white transition-colors duration-150 ease-out hover:border-[#FF3000] hover:bg-[#FF3000]"
+      className="h-11 shrink-0 border-4 border-black bg-black px-4 text-xs font-bold uppercase tracking-widest text-white transition-colors duration-150 ease-out hover:border-[#FF3000] hover:bg-[#FF3000]"
     >
       {copied ? "Copied ✓" : "Copy"}
     </button>
@@ -405,7 +405,7 @@ function Wizard() {
                   placeholder="e.g. Next.js, Supabase"
                   className="h-11 w-full border-4 border-black px-3 text-sm text-black disabled:opacity-40"
                 />
-                <label className="mt-2 flex items-center gap-2 text-xs text-black">
+                <label className="mt-2 flex min-h-11 items-center gap-2 text-xs text-black">
                   <input
                     type="checkbox"
                     checked={form.noTechPreference}

@@ -69,7 +69,7 @@ export function RegisterForm() {
         <div className="mt-3 space-y-3">
           {(["no_code_low_code", "ai_assisted_ide", "agent_based_coding", "other"] as const).map(
             (tool) => (
-              <label key={tool} className="flex items-center gap-3">
+              <label key={tool} className="flex min-h-11 items-center gap-3">
                 <input
                   type="checkbox"
                   {...register("tools_used")}
