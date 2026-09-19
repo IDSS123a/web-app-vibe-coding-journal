@@ -18,94 +18,19 @@
  * webhook has landed, rather than trusting the client-side approval event.
  */
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import Link from "next/link";
+import { useEffect, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "@/lib/auth/use-session";
-import { loadPayPalSdk } from "@/lib/payments/load-paypal-sdk";
+import { PayPalCheckout } from "@/components/PayPalCheckout";
+import { BASIC_PRICE_USD, PREMIUM_PRICE_USD, centsPerDay } from "@/lib/pricing";
 
 type GuardState = "checking" | "anon" | "blocked" | "ok";
-type TierName = "basic" | "premium";
 
 interface MeResponse {
   authenticated: boolean;
   hasAccess: boolean;
   accessReason: string;
-}
-
-function PayPalTierButton({
-  tier,
-  token,
-  onApproved,
-}: {
-  tier: TierName;
-  token: string;
-  onApproved: () => void;
-}) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [sdkError, setSdkError] = useState<string | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    loadPayPalSdk()
-      .then(() => {
-        if (cancelled || !containerRef.current) return;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const paypal = (window as any).paypal;
-        if (!paypal) {
-          setSdkError("PayPal SDK unavailable");
-          return;
-        }
-        paypal
-          .Buttons({
-            createOrder: async () => {
-              const response = await fetch("/api/payments/create-order", {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  authorization: `Bearer ${token}`,
-                },
-                body: JSON.stringify({ tier }),
-              });
-              const data = await response.json();
-              if (!response.ok || !data.orderId) {
-                throw new Error(data.error || "Failed to create order");
-              }
-              return data.orderId;
-            },
-            // Capture is required for PayPal to ever emit
-            // PAYMENT.CAPTURE.COMPLETED (what the webhook activates on) --
-            // without it an approved order just sits uncaptured forever.
-            // Capture does NOT itself grant access (Decision 2): only the
-            // verified webhook writes subscription_status. This callback
-            // just finalizes payment with PayPal, then tells the UI to
-            // start polling for the real, server-confirmed state.
-            onApprove: async (data: { orderID: string }) => {
-              await fetch("/api/payments/capture-order", {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  authorization: `Bearer ${token}`,
-                },
-                body: JSON.stringify({ orderId: data.orderID }),
-              }).catch(() => undefined);
-              onApproved();
-            },
-          })
-          .render(containerRef.current);
-      })
-      .catch((err: Error) => setSdkError(err.message));
-
-    return () => {
-      cancelled = true;
-    };
-  }, [tier, token, onApproved]);
-
-  if (sdkError) {
-    return <p className="text-sm text-[#FF3000]">{sdkError}</p>;
-  }
-
-  return <div ref={containerRef} />;
 }
 
 export function SubscriptionGuard({ children }: { children: ReactNode }) {
@@ -175,11 +100,11 @@ export function SubscriptionGuard({ children }: { children: ReactNode }) {
         });
     }, 2000);
     return () => clearInterval(interval);
-  }, [awaitingWebhook, token]);
+  }, [awaitingWebhook, token, router]);
 
   if (loading || state === "checking") {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-white">
+      <div className="flex min-h-dvh items-center justify-center bg-white">
         <div className="text-sm font-bold uppercase tracking-widest text-black">Checking access…</div>
       </div>
     );
@@ -189,12 +114,12 @@ export function SubscriptionGuard({ children }: { children: ReactNode }) {
     return (
       <div className="border-4 border-black py-16 text-center">
         <p className="mb-4 text-sm text-black">You must be signed in to view this page.</p>
-        <a
+        <Link
           href="/login"
           className="text-sm font-bold uppercase tracking-widest underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]"
         >
           Sign In →
-        </a>
+        </Link>
       </div>
     );
   }
@@ -235,7 +160,7 @@ export function SubscriptionGuard({ children }: { children: ReactNode }) {
     }
 
     return (
-      <div className="mx-auto max-w-2xl px-4 py-16 text-center">
+      <div className="mx-auto w-full max-w-5xl px-4 py-12 text-center sm:py-16">
         <p className="mb-2 text-xs font-bold uppercase tracking-widest text-[#FF3000]">
           Access
         </p>
@@ -250,32 +175,35 @@ export function SubscriptionGuard({ children }: { children: ReactNode }) {
         <div className="grid gap-0 border-black sm:grid-cols-2 sm:border-4">
           <div className="border-4 border-black p-6 text-left sm:border-4 sm:border-r-0">
             <h3 className="mb-1 text-xs font-bold uppercase tracking-widest text-black">Basic</h3>
-            <p className="mb-4 text-4xl font-black text-black">
-              $10<span className="text-sm font-normal">/year</span>
+            <p className="mb-1 text-4xl font-black text-black">
+              ${BASIC_PRICE_USD}<span className="text-sm font-normal">/year</span>
             </p>
-            <p className="mb-6 text-sm text-black">Daily Report, Archive, and Bookmarks.</p>
+            <p className="mb-4 text-xs text-black/70">About {centsPerDay(BASIC_PRICE_USD)} cents a day</p>
+            <p className="mb-6 text-sm text-black">The Daily Report every day, the full Archive, and Bookmarks.</p>
             {token && (
-              <PayPalTierButton
-                tier="basic"
+              <PayPalCheckout
+                checkout={{ kind: "tier", tier: "basic" }}
                 token={token}
                 onApproved={() => setAwaitingWebhook(true)}
               />
             )}
           </div>
           <div className="border-4 border-t-0 border-[#FF3000] p-6 text-left sm:border-t-4">
-            <h3 className="mb-1 text-xs font-bold uppercase tracking-widest text-[#FF3000]">
+            <h3 className="mb-1 flex flex-wrap items-center gap-2 text-xs font-bold uppercase tracking-widest text-[#FF3000]">
               Premium
+              <span className="border-2 border-[#FF3000] bg-[#FF3000] px-2 py-0.5 text-[11px] text-white">Best value</span>
             </h3>
-            <p className="mb-4 text-4xl font-black text-black">
-              $50<span className="text-sm font-normal">/year</span>
+            <p className="mb-1 text-4xl font-black text-black">
+              ${PREMIUM_PRICE_USD}<span className="text-sm font-normal">/year</span>
             </p>
+            <p className="mb-4 text-xs text-black/70">About {centsPerDay(PREMIUM_PRICE_USD)} cents a day, for everything</p>
             <p className="mb-6 text-sm text-black">
-              Everything in Basic, plus Vibe-Coding University, the Dictionary and the
-              Vibe-Coding Assistant.
+              Everything in Basic, plus Vibe-Coding University (75 lessons, quizzes and level tests), the
+              Dictionary of 2,600+ terms and the Assistant that writes your build-ready prompts.
             </p>
             {token && (
-              <PayPalTierButton
-                tier="premium"
+              <PayPalCheckout
+                checkout={{ kind: "tier", tier: "premium" }}
                 token={token}
                 onApproved={() => setAwaitingWebhook(true)}
               />

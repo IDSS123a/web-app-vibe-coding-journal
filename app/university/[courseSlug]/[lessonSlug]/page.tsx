@@ -4,6 +4,7 @@
 
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { useSession } from "@/lib/auth/use-session";
@@ -61,7 +62,7 @@ function LessonReader() {
 
   if (error || !data) {
     return (
-      <div className="min-h-screen bg-white px-4 py-12">
+      <div className="min-h-dvh bg-white px-4 py-12">
         <p className="mx-auto max-w-2xl border-2 border-[#FF3000] p-3 text-sm text-[#FF3000]">
           {error ?? "Lesson not found."}
         </p>
@@ -70,14 +71,14 @@ function LessonReader() {
   }
 
   return (
-    <div className="min-h-screen bg-white px-4 py-12 md:px-12">
-      <div className="mx-auto max-w-2xl">
-        <a
+    <div className="min-h-dvh bg-white px-4 py-12 md:px-12">
+      <div className="mx-auto max-w-2xl xl:max-w-3xl">
+        <Link
           href="/university"
           className="inline-flex min-h-11 items-center text-xs font-bold uppercase tracking-widest text-black underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]"
         >
           ← University
-        </a>
+        </Link>
         <p className="mt-6 text-xs font-bold uppercase tracking-widest text-[#FF3000]">
           {data.course.title}
         </p>

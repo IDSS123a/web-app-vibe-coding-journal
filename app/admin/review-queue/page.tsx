@@ -46,6 +46,8 @@ export default function ReviewQueuePage() {
       return;
     }
     fetchReports();
+    // fetchReports is re-created every render and only reads page and token, which are listed.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, token, sessionLoading]);
 
   async function fetchReports() {
@@ -79,7 +81,7 @@ export default function ReviewQueuePage() {
 
   if (sessionLoading || loading) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
+      <div className="flex justify-center items-center min-h-dvh">
         <div className="text-gray-600 dark:text-gray-400">Loading reports...</div>
       </div>
     );
@@ -91,9 +93,9 @@ export default function ReviewQueuePage() {
         <p className="text-gray-600 dark:text-gray-400 mb-4">
           You must be signed in as an admin to view the review queue.
         </p>
-        <a href="/login" className="text-blue-600 hover:text-blue-800 font-semibold">
+        <Link href="/login" className="text-blue-600 hover:text-blue-800 font-semibold">
           Sign in →
-        </a>
+        </Link>
       </div>
     );
   }

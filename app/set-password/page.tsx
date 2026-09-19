@@ -12,6 +12,7 @@
  * app to set or change a password after the invite link was used.
  */
 
+import Link from "next/link";
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/db/client";
@@ -53,7 +54,7 @@ export default function SetPasswordPage() {
   const labelClass = "mb-1 block text-xs font-bold uppercase tracking-widest text-black";
 
   return (
-    <div className="swiss-noise flex min-h-screen items-center justify-center bg-white px-4">
+    <div className="swiss-noise flex min-h-dvh items-center justify-center bg-white px-4">
       <div className="w-full max-w-md border-4 border-black p-8 md:p-12">
         <p className="mb-2 text-xs font-bold uppercase tracking-widest text-[#FF3000]">Invitation</p>
         <h1 className="mb-8 text-4xl font-black uppercase tracking-tighter text-black">Set Password</h1>
@@ -65,12 +66,12 @@ export default function SetPasswordPage() {
             <p className="mb-6 border-2 border-[#FF3000] p-3 text-sm text-[#FF3000]">
               This invitation link is invalid or has expired. Ask the administrator to send you a new one.
             </p>
-            <a
+            <Link
               href="/login"
               className="inline-flex min-h-11 items-center text-sm font-bold uppercase tracking-wide underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]"
             >
               Go to Sign In
-            </a>
+            </Link>
           </div>
         )}
 

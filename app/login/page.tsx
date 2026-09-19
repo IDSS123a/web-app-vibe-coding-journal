@@ -16,6 +16,7 @@
  * already uses) and routes by actual role.
  */
 
+import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/db/client";
@@ -63,7 +64,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="swiss-noise flex min-h-screen items-center justify-center bg-white px-4">
+    <div className="swiss-noise flex min-h-dvh items-center justify-center bg-white px-4">
       <div className="w-full max-w-md border-4 border-black p-8 md:p-12">
         <p className="mb-2 text-xs font-bold uppercase tracking-widest text-[#FF3000]">
           Access
@@ -118,12 +119,12 @@ export default function LoginPage() {
 
         <p className="mt-8 text-sm text-black">
           No account?{" "}
-          <a
+          <Link
             href="/register"
             className="font-bold uppercase tracking-wide underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]"
           >
             Register
-          </a>
+          </Link>
         </p>
       </div>
     </div>

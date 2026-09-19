@@ -11,12 +11,12 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { z } from "zod";
+import { calendarDateSchema } from "@/lib/validation/dates";
 import { requirePaidContentAccess } from "@/features/daily-report/access";
 import { getPublishedReportByDate, getArticlesForReport } from "@/features/archive/repository";
 import { getRelatedSourcesForArticles } from "@/features/pipeline/repository";
 
-const dateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
+const dateSchema = calendarDateSchema;
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ date: string }> }) {
   try {

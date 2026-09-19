@@ -10,6 +10,7 @@
  * gets a clean "not authorized" screen instead of a raw 401 fetch error.
  */
 
+import Link from "next/link";
 import { useEffect, useState, type ReactNode } from "react";
 import { useSession } from "@/lib/auth/use-session";
 
@@ -41,7 +42,7 @@ export function AdminGuard({ children }: { children: ReactNode }) {
 
   if (loading || state === "checking") {
     return (
-      <div className="flex min-h-screen items-center justify-center">
+      <div className="flex min-h-dvh items-center justify-center">
         <div className="text-sm font-bold uppercase tracking-widest text-black">Checking access…</div>
       </div>
     );
@@ -51,12 +52,12 @@ export function AdminGuard({ children }: { children: ReactNode }) {
     return (
       <div className="border-4 border-black py-12 text-center">
         <p className="mb-4 text-sm text-black">You must be signed in as an admin to access this area.</p>
-        <a
+        <Link
           href="/login"
           className="text-sm font-bold uppercase tracking-widest text-black underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]"
         >
           Sign In →
-        </a>
+        </Link>
       </div>
     );
   }
@@ -66,12 +67,12 @@ export function AdminGuard({ children }: { children: ReactNode }) {
       <div className="border-4 border-black py-12 text-center">
         <h2 className="mb-2 text-xl font-black uppercase tracking-tight text-black">Not Authorized</h2>
         <p className="mb-4 text-sm text-black">Your account does not have admin access.</p>
-        <a
+        <Link
           href="/dashboard"
           className="text-sm font-bold uppercase tracking-widest text-black underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]"
         >
           Back to Dashboard →
-        </a>
+        </Link>
       </div>
     );
   }

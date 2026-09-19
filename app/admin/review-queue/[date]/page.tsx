@@ -5,6 +5,7 @@
 
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "@/lib/auth/use-session";
@@ -42,6 +43,8 @@ export default function ReviewDetailPage({ params }: { params: Promise<{ date: s
       setDate(d);
       fetchReportDetails(d);
     });
+    // fetchReportDetails is re-created every render and only reads token and the date argument.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params, token, sessionLoading]);
 
   async function fetchReportDetails(dateStr: string) {
@@ -127,7 +130,7 @@ export default function ReviewDetailPage({ params }: { params: Promise<{ date: s
 
   if (sessionLoading || loading) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
+      <div className="flex justify-center items-center min-h-dvh">
         <div className="text-gray-600 dark:text-gray-400">Loading report...</div>
       </div>
     );
@@ -139,9 +142,9 @@ export default function ReviewDetailPage({ params }: { params: Promise<{ date: s
         <p className="text-gray-600 dark:text-gray-400 mb-4">
           You must be signed in as an admin to review reports.
         </p>
-        <a href="/login" className="text-blue-600 hover:text-blue-800 font-semibold">
+        <Link href="/login" className="text-blue-600 hover:text-blue-800 font-semibold">
           Sign in →
-        </a>
+        </Link>
       </div>
     );
   }

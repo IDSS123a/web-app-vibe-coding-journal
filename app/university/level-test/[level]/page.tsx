@@ -7,6 +7,7 @@
 
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { useSession } from "@/lib/auth/use-session";
@@ -71,7 +72,7 @@ function LevelTest() {
 
   if (error || (!loading && questions.length === 0)) {
     return (
-      <div className="min-h-screen bg-white px-4 py-12">
+      <div className="min-h-dvh bg-white px-4 py-12">
         <p className="mx-auto max-w-2xl border-2 border-[#FF3000] p-3 text-sm text-[#FF3000]">
           {error ?? "This level's final test isn't available yet."}
         </p>
@@ -80,14 +81,14 @@ function LevelTest() {
   }
 
   return (
-    <div className="min-h-screen bg-white px-4 py-12 md:px-12">
-      <div className="mx-auto max-w-2xl">
-        <a
+    <div className="min-h-dvh bg-white px-4 py-12 md:px-12">
+      <div className="mx-auto max-w-2xl xl:max-w-3xl">
+        <Link
           href="/university"
           className="inline-flex min-h-11 items-center text-xs font-bold uppercase tracking-widest text-black underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]"
         >
           ← University
-        </a>
+        </Link>
         <p className="mt-6 text-xs font-bold uppercase tracking-widest text-[#FF3000]">
           {params.level} , Final Test
         </p>
@@ -150,12 +151,12 @@ function LevelTest() {
               </button>
             )}
             {result.passed && (
-              <a
+              <Link
                 href="/university"
                 className="mt-6 inline-flex h-12 items-center justify-center border-4 border-black bg-black px-6 text-xs font-bold uppercase tracking-widest text-white transition-colors duration-150 ease-out hover:border-[#FF3000] hover:bg-[#FF3000]"
               >
                 Back to University
-              </a>
+              </Link>
             )}
           </div>
         ) : (

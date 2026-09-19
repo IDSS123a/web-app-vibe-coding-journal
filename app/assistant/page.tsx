@@ -262,8 +262,8 @@ function Wizard() {
   }
 
   return (
-    <div className="min-h-screen bg-white px-4 py-12 md:px-12">
-      <div className="mx-auto max-w-3xl">
+    <div className="min-h-dvh bg-white px-4 py-12 md:px-12">
+      <div className="mx-auto max-w-3xl xl:max-w-4xl">
         <div className="mb-10 border-b-4 border-black pb-8">
           <p className="mb-2 text-xs font-bold uppercase tracking-widest text-[#FF3000]">Premium</p>
           <h1 className="text-4xl font-black uppercase tracking-tighter text-black md:text-5xl">
@@ -477,10 +477,7 @@ function Field({ label, required, children }: { label: string; required?: boolea
 
 export default function AssistantPage() {
   return (
-    <PremiumGuard
-      accessKey="hasAssistantAccess"
-      blockedMessage="The Vibe-Coding Assistant is included with Premium."
-    >
+    <PremiumGuard accessKey="hasAssistantAccess" feature="assistant">
       <Wizard />
     </PremiumGuard>
   );

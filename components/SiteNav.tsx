@@ -27,6 +27,7 @@
  * the hamburger is used. Hamburger and logo tap targets are now >= 44 px.
  */
 
+import Link from "next/link";
 import { useState } from "react";
 import { usePathname } from "next/navigation";
 import { useSession } from "@/lib/auth/use-session";
@@ -64,12 +65,12 @@ export function SiteNav() {
   return (
     <header className="sticky top-0 z-40 border-b-4 border-black bg-white">
       <nav className="mx-auto flex max-w-7xl items-center justify-between px-4 py-2 md:px-12">
-        <a
+        <Link
           href="/"
           className="flex min-h-11 items-center text-sm font-black uppercase tracking-tighter text-black transition-colors duration-150 ease-out hover:text-[#FF3000]"
         >
           Vibe-Coding Journal
-        </a>
+        </Link>
 
         {!loading && (
           <>
@@ -93,15 +94,15 @@ export function SiteNav() {
                 </>
               ) : (
                 <>
-                  <a href="/login" className="inline-flex min-h-11 shrink-0 items-center text-black underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]">
+                  <Link href="/login" className="inline-flex min-h-11 shrink-0 items-center text-black underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]">
                     Sign In
-                  </a>
-                  <a
+                  </Link>
+                  <Link
                     href="/register"
                     className="inline-flex min-h-11 shrink-0 items-center border-2 border-black px-3 py-1 text-black transition-colors duration-150 ease-out hover:border-[#FF3000] hover:text-[#FF3000]"
                   >
                     Register
-                  </a>
+                  </Link>
                 </>
               )}
             </div>
@@ -158,20 +159,20 @@ export function SiteNav() {
               </>
             ) : (
               <>
-                <a
+                <Link
                   href="/login"
                   onClick={() => setMobileOpen(false)}
                   className="border-b-2 border-black px-4 py-4 text-black transition-colors duration-150 ease-out hover:bg-[#F2F2F2] hover:text-[#FF3000]"
                 >
                   Sign In
-                </a>
-                <a
+                </Link>
+                <Link
                   href="/register"
                   onClick={() => setMobileOpen(false)}
                   className="px-4 py-4 text-black transition-colors duration-150 ease-out hover:bg-[#F2F2F2] hover:text-[#FF3000]"
                 >
                   Register
-                </a>
+                </Link>
               </>
             )}
           </div>

@@ -28,6 +28,7 @@ export async function GET(request: NextRequest) {
         hasUniversityAccess: false,
         hasAssistantAccess: false,
         subscriptionTier: null,
+        subscriptionStatus: null,
         isBlocked: false,
       },
       { status: 200 },
@@ -70,6 +71,9 @@ export async function GET(request: NextRequest) {
       // whether to render without a second endpoint -- the server
       // already computed this value above for the two checks it made.
       subscriptionTier: user.subscriptionTier,
+      // trial | active | expired. The upgrade screens need it: only an ACTIVE Basic subscriber
+      // (who has paid) may pay the $40 difference; a trial user has tier basic but paid nothing.
+      subscriptionStatus: user.subscriptionStatus,
       isBlocked: user.isBlocked,
     },
     { status: 200 },

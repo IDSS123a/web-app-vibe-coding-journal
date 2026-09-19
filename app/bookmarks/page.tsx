@@ -8,6 +8,7 @@
  * pattern components/AdminGuard already uses for the admin area.
  */
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useSession } from "@/lib/auth/use-session";
 import type { Article, Bookmark } from "@/lib/validation/schemas";
@@ -50,8 +51,8 @@ export default function BookmarksPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white px-4 py-12 md:px-12">
-      <div className="mx-auto max-w-4xl">
+    <div className="min-h-dvh bg-white px-4 py-12 md:px-12">
+      <div className="mx-auto max-w-4xl xl:max-w-5xl">
         <div className="mb-12 border-b-4 border-black pb-8">
           <p className="mb-2 text-xs font-bold uppercase tracking-widest text-[#FF3000]">
             Saved
@@ -67,12 +68,12 @@ export default function BookmarksPage() {
         {!loading && !token && (
           <div className="border-4 border-black py-16 text-center">
             <p className="mb-4 text-sm text-black">You must be signed in to see your bookmarks.</p>
-            <a
+            <Link
               href="/login"
               className="inline-flex min-h-11 items-center text-sm font-bold uppercase tracking-widest underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]"
             >
               Sign In →
-            </a>
+            </Link>
           </div>
         )}
 
@@ -85,13 +86,13 @@ export default function BookmarksPage() {
         {!loading && token && bookmarks !== null && bookmarks.length === 0 && (
           <p className="border-4 border-black py-16 text-center text-sm italic text-black opacity-60">
             No bookmarks yet, bookmark an article from the{" "}
-            <a href="/dashboard" className="font-bold uppercase not-italic underline decoration-2 underline-offset-4 hover:text-[#FF3000]">
+            <Link href="/dashboard" className="font-bold uppercase not-italic underline decoration-2 underline-offset-4 hover:text-[#FF3000]">
               dashboard
-            </a>{" "}
+            </Link>{" "}
             or{" "}
-            <a href="/archive" className="font-bold uppercase not-italic underline decoration-2 underline-offset-4 hover:text-[#FF3000]">
+            <Link href="/archive" className="font-bold uppercase not-italic underline decoration-2 underline-offset-4 hover:text-[#FF3000]">
               archive
-            </a>
+            </Link>
             .
           </p>
         )}
@@ -131,12 +132,12 @@ export default function BookmarksPage() {
         )}
 
         <div className="mt-8 flex justify-center gap-6 text-xs font-bold uppercase tracking-widest text-black">
-          <a href="/dashboard" className="inline-flex min-h-11 items-center underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]">
+          <Link href="/dashboard" className="inline-flex min-h-11 items-center underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]">
             ← Dashboard
-          </a>
-          <a href="/archive" className="inline-flex min-h-11 items-center underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]">
+          </Link>
+          <Link href="/archive" className="inline-flex min-h-11 items-center underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]">
             Archive
-          </a>
+          </Link>
         </div>
       </div>
     </div>

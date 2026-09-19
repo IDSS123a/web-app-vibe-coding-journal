@@ -4,6 +4,7 @@
  * Auth: Admin only
  */
 
+import { isCalendarDate } from "@/lib/validation/dates";
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/db/client";
 import { sendAdminNotification } from "@/lib/email/resend";
@@ -27,8 +28,7 @@ export async function PUT(
     const approverEmail = verified.email;
 
     // E-6 Step 3: Validate date and body
-    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-    if (!dateRegex.test(date)) {
+    if (!isCalendarDate(date)) {
       return NextResponse.json({ error: "Invalid date format" }, { status: 400 });
     }
 

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import type { DailyReport } from "@/lib/validation/schemas";
 import { useAuthedJson } from "@/lib/auth/use-authed-json";
@@ -25,8 +26,8 @@ export default function ArchivePage() {
   const hasMore = data?.hasMore ?? false;
 
   return (
-    <div className="min-h-screen bg-white px-4 py-12 md:px-12">
-      <div className="mx-auto max-w-4xl">
+    <div className="min-h-dvh bg-white px-4 py-12 md:px-12">
+      <div className="mx-auto max-w-4xl xl:max-w-5xl">
         <div className="mb-12 border-b-4 border-black pb-8">
           <p className="mb-2 text-xs font-bold uppercase tracking-widest text-[#FF3000]">
             Record
@@ -96,12 +97,12 @@ export default function ArchivePage() {
         </div>
 
         <div className="mt-8 flex justify-center gap-6 text-xs font-bold uppercase tracking-widest text-black">
-          <a href="/dashboard" className="inline-flex min-h-11 items-center underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]">
+          <Link href="/dashboard" className="inline-flex min-h-11 items-center underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]">
             ← Dashboard
-          </a>
-          <a href="/bookmarks" className="inline-flex min-h-11 items-center underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]">
+          </Link>
+          <Link href="/bookmarks" className="inline-flex min-h-11 items-center underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]">
             My Bookmarks
-          </a>
+          </Link>
         </div>
       </div>
     </div>

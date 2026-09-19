@@ -31,13 +31,17 @@ const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const REF = new URL(SUPABASE_URL).hostname.split(".")[0];
 
 const VIEWPORTS = [
+  { name: "fold-280", width: 280, height: 653, touch: true },
   { name: "phone-320", width: 320, height: 568, touch: true },
   { name: "phone-375", width: 375, height: 812, touch: true },
   { name: "phone-landscape-812", width: 812, height: 375, touch: true },
   { name: "tablet-768", width: 768, height: 1024, touch: true },
   { name: "laptop-1024", width: 1024, height: 768, touch: true },
   { name: "desktop-1440", width: 1440, height: 900, touch: false },
+  { name: "tablet-landscape-1180", width: 1180, height: 820, touch: true },
   { name: "wide-1920", width: 1920, height: 1080, touch: false },
+  { name: "qhd-2560", width: 2560, height: 1440, touch: false },
+  { name: "ultrawide-3440", width: 3440, height: 1440, touch: false },
   // The app is light-only; on an OS in dark mode no surface may turn dark.
   { name: "desktop-1440-osdark", width: 1440, height: 900, touch: false, colorScheme: "dark" },
 ];

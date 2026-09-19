@@ -8,6 +8,10 @@ change, newest first.
 
 ## 2026-09-19
 
+- **Upgrade screens that sell (PDL-060).** When a reader reaches the University, the Dictionary or the Assistant without Premium, they now see what that feature gives them, what Premium includes, the price ($40 for a paying Basic subscriber, $50 otherwise, about 14 cents a day) and a checkout button on the same screen. A trial user no longer sees a $40 upgrade offer that could not work.
+- **Fills any screen (PDL-060).** The layout now scales up on large monitors instead of staying a narrow column, follows the visible height of phone browsers, and shows a clear focus outline for keyboard users. Checked from a 280 px foldable to a 3440 px ultrawide.
+- **Second stress test (PDL-060).** A date such as 2026-13-45 in a report link no longer causes a server error; internal links no longer reload the whole page; lint is configured and part of CI; security, end to end and responsive checks can be re-run with one command each.
+
 - **Dictionary (PDL-059).** The Dictionary now holds 2,639 terms (was 13), organised so it stays easy to use: instant search that also finds abbreviations, 14 topic tiles with counts, an A to Z list, beginner / intermediate / advanced filters, "see also" links, and a switch that keeps deep machine learning and infrastructure vocabulary out of the default view. It also learns: terms that appear repeatedly in the day's articles from several sources are added automatically and marked "new", and terms mentioned a lot this week are marked "trending".
 - **More sources (PDL-059).** 20 verified feeds added (32 in total): vendor changelogs, independent analysts and developer communities. University lessons are now generated daily instead of weekly.
 - **Clean-up (PDL-059).** 309 off-topic stored articles and 40 pile-up reports from before the relevance gate were removed (full backup kept), and removed items cannot come back from their feeds.

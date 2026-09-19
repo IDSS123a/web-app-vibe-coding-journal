@@ -2211,4 +2211,22 @@ fully matched. `/plan-feature` is next.
 
 ---
 
+## PDL-060 Premium upsell screens, screen-filling layout, and the second stress test
+
+**Date:** 2026-09-19. Director: the Premium-required screen was one bare sentence and a back link, and every view must adapt to the whole screen of any device, then an overall stress test, fix everything, push clean.
+
+**Upsell.** `components/PremiumPitch.tsx` replaces the bare screen for the University, the Dictionary and the Assistant. It leads with what that feature does for the reader (real facts only: 75 lessons in 15 chapters with quizzes and level tests, 2,600+ terms, up to 5 Blueprints a day), shows the price and a live PayPal checkout on the same screen, and lists what else Premium includes. An ACTIVE Basic subscriber sees "$40, the difference"; a trial or expired user sees "$50, about 14 cents a day". On a phone the price and the button come right after the headline. No invented scarcity, countdown or testimonial. One shared `PayPalCheckout` now serves the tier purchase, the pitch and the dashboard banner (three copies before); prices for display live in `lib/pricing.ts` with a test that they equal the charged amounts. Checked in Chrome from a 280 px foldable to 2560 px: correct price per audience, PayPal buttons render, no overflow; the test account was restored exactly.
+
+**Bug found on the way:** the dashboard upgrade banner also showed to TRIAL users (tier basic, nothing paid); the server refuses their $40 upgrade order (403), so they saw a button that could only fail. `/api/me` now returns `subscriptionStatus` and both screens require status active.
+
+**Screen-filling layout.** The root font size is fluid (16 px up to about 1400 px wide, about 18.7 px at 1920, 22 px cap from about 2500 px), so every rem based size, including the content column widths, grows with the screen instead of leaving a narrow column in the middle of a large monitor; content columns also widen one step at xl. `min-h-screen` became `min-h-dvh` (a phone browser's shrinking address bar no longer cuts pages; fallback for browsers without dvh). Added: no text inflation on landscape phones, no tap delay, a visible keyboard focus ring. The responsive audit now covers 280, 320, 375, 812x375, 768, 1024, 1180, 1440, 1920, 2560 and 3440 px plus OS dark mode: 228 checks, 0 issues. Still not testable here: Safari, Firefox and real devices.
+
+**Second stress test, method and results** (all re-runnable): `npm run lint` (was never configured: `next lint` opened an interactive wizard; now configured and clean, and part of CI), unit tests (226), typecheck, production build, `npm run probe:security` (96 checks: anonymous and forged callers on every protected route, cron secrets, headers, direct database access with the public key on 13 tables, ordinary user versus admin, self-promotion attempt, input fuzzing, and the tier matrix premium, basic, trial, ended trial, expired, blocked), `npm run smoke:e2e` (20 checks in real Chrome: reader and admin journeys, bookmark round trip, Dictionary search, signed-out visitor), `npm run audit:responsive`, a data integrity pass (no duplicate hashes or slugs, no orphaned links, every article in a published report relevant and summarised, counts equal to links), and a dependency and secret scan of tracked files and the whole git history (none found).
+
+**Found and fixed:** (1) an impossible date such as 2026-13-45 in `/api/reports/[date]` and the three admin report routes reached the database and returned a 500; a shared `calendarDateSchema` now answers 400 or 404; (2) 22 internal links used plain anchors (full page reload on every click), now `next/link`; (3) ESLint findings (an unescaped quote, missing hook dependencies, an unused variable); (4) the trial-user upgrade banner above; (5) README said "Sprint 01 not yet started" and cited Commander v1.2, rewritten; (6) `tsconfig.tsbuildinfo` was tracked and always showed as modified, now ignored.
+
+**Accepted and recorded, not fixed:** admin routes answer an ordinary signed-in user with 401 instead of 403 (nothing leaks, changing sixteen routes is churn); `npm audit` reports the PostCSS copy bundled inside Next.js (build time only, never processes attacker CSS, the fix needs Next 16); the root HANDOFF files stay because sprint documents link to them; CSP is still report-only. Open items are listed at the top of `sprints/STRESS_TEST_2026-09-18_AND_PLAN.md`.
+
+---
+
 *Vibe-Coding Journal — Project Decision Log — updated as decisions are made.*

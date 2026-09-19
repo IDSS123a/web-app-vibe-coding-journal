@@ -8,6 +8,7 @@
 
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useSession } from "@/lib/auth/use-session";
 import { PremiumGuard } from "@/components/PremiumGuard";
@@ -60,23 +61,23 @@ function CourseList() {
   }, [token, sessionLoading]);
 
   return (
-    <div className="min-h-screen bg-white px-4 py-12 md:px-12">
-      <div className="mx-auto max-w-4xl">
+    <div className="min-h-dvh bg-white px-4 py-12 md:px-12">
+      <div className="mx-auto max-w-4xl xl:max-w-5xl">
         <div className="mb-12 border-b-4 border-black pb-8">
           <p className="mb-2 text-xs font-bold uppercase tracking-widest text-[#FF3000]">Premium</p>
           <h1 className="text-4xl font-black uppercase tracking-tighter text-black md:text-5xl">
             Vibe-Coding University
           </h1>
           <p className="mt-2 text-sm text-black">
-            25 core lessons per level across 5 chapters. Pass each chapter's quiz to unlock the
+            25 core lessons per level across 5 chapters. Pass each chapter&apos;s quiz to unlock the
             next, then clear the level final test.
           </p>
-          <a
+          <Link
             href="/dictionary"
             className="mt-4 inline-flex min-h-11 items-center text-xs font-bold uppercase tracking-widest text-black underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]"
           >
             Browse the Dictionary →
-          </a>
+          </Link>
         </div>
 
         {loading && <p className="text-sm text-black opacity-60">Loading…</p>}

@@ -395,7 +395,7 @@ async function callGeminiJSONForModel(
           }),
           signal: controller.signal,
         });
-      } catch (fetchErr) {
+      } catch {
         if (controller.signal.aborted) {
           throw new GeminiUnavailableError(`Gemini request timed out after ${timeoutMs}ms`);
         }

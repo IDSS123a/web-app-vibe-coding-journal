@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useParams } from "next/navigation";
 import type { Article, DailyReport } from "@/lib/validation/schemas";
 import { formatPublicTimestamp } from "@/lib/time/format-public-timestamp";
@@ -28,15 +29,15 @@ export default function ArchiveDatePage() {
   const articles = data?.articles ?? [];
 
   return (
-    <div className="min-h-screen bg-white px-4 py-12 md:px-12">
-      <div className="mx-auto max-w-4xl">
+    <div className="min-h-dvh bg-white px-4 py-12 md:px-12">
+      <div className="mx-auto max-w-4xl xl:max-w-5xl">
         <div className="mb-8">
-          <a
+          <Link
             href="/archive"
             className="inline-flex min-h-11 items-center text-xs font-bold uppercase tracking-widest text-black underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]"
           >
             ← Archive
-          </a>
+          </Link>
         </div>
 
         {loading && <p className="text-sm text-black opacity-60">Loading…</p>}

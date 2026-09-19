@@ -9,6 +9,7 @@
 
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { useSession } from "@/lib/auth/use-session";
 import { MarkdownContent } from "@/components/MarkdownContent";
@@ -121,9 +122,9 @@ export default function HoldGateCalibrationPage() {
         <p className="mb-4 text-gray-600 dark:text-gray-400">
           You must be signed in as an admin to view this page.
         </p>
-        <a href="/login" className="font-semibold text-blue-600 hover:text-blue-800">
+        <Link href="/login" className="font-semibold text-blue-600 hover:text-blue-800">
           Sign in →
-        </a>
+        </Link>
       </div>
     );
   }

@@ -11,7 +11,9 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest",
     "test:run": "vitest run",
-    "audit:responsive": "node --env-file=.env.local scripts/responsive-audit.mjs"
+    "audit:responsive": "node --env-file=.env.local scripts/responsive-audit.mjs",
+    "probe:security": "node --env-file=.env.local scripts/security-probe.mjs",
+    "smoke:e2e": "node --env-file=.env.local scripts/e2e-smoke.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.3.0",

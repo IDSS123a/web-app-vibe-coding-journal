@@ -8,6 +8,7 @@
  * the new subscriber can now do with it.
  */
 
+import Link from "next/link";
 import { Mascot } from "@/components/rewards/Mascot";
 
 const FEATURES = [
@@ -43,8 +44,8 @@ const FEATURES = [
 
 export default function WelcomePage() {
   return (
-    <div className="min-h-screen bg-white px-4 py-16 md:px-12">
-      <div className="mx-auto max-w-3xl">
+    <div className="min-h-dvh bg-white px-4 py-16 md:px-12">
+      <div className="mx-auto max-w-3xl xl:max-w-4xl">
         <div className="mb-4 flex justify-center">
           <Mascot size={64} />
         </div>
@@ -93,12 +94,12 @@ export default function WelcomePage() {
         </div>
 
         <div className="mt-8 text-center">
-          <a
+          <Link
             href="/dashboard"
             className="inline-flex min-h-11 items-center text-xs font-bold uppercase tracking-widest text-black underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]"
           >
             Skip to Dashboard →
-          </a>
+          </Link>
         </div>
       </div>
     </div>

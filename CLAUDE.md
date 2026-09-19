@@ -30,10 +30,15 @@ Base URL: `https://raw.githubusercontent.com/IDSS123a/commander/main/`
 ## 🔴 READ FIRST — open stress-test plan (2026-09-18)
 
 `sprints/STRESS_TEST_2026-09-18_AND_PLAN.md` holds the full stress-test
-findings and the agreed order of work (two critical security holes were
-fixed that night; further HIGH items — content readable by any registered
-user, no database backups, Gemini key rotation — are still open). Read it
-before starting; update or remove items as they are closed.
+findings and the agreed order of work; its "Status at the end of 2026-09-19"
+section lists what is closed and what is still open (database backups, key
+rotation, test accounts, several decisions). Read it before starting; update
+or remove items as they are closed. Re-run `npm run probe:security`,
+`npm run smoke:e2e` and `npm run audit:responsive` after any change that
+touches access, payments, pages or layout. Also read
+`specs/knowledge-growth-and-dictionary/LEARNING_LOOPS.md` before touching the
+pipeline: the free Gemini tier allows only about 20 requests per day per key
+per model, and everything there is sized to that.
 
 ## 🔴 SESSION START — BACKEND HEALTH FIRST (P-21, Director directive 2026-09-16)
 

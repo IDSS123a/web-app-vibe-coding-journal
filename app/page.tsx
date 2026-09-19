@@ -1,6 +1,8 @@
+import Link from "next/link";
+
 export default function HomePage() {
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-dvh bg-white">
       {/* Hero */}
       <section className="swiss-noise border-b-4 border-black px-6 py-24 md:px-12 md:py-32">
         <p className="mb-6 text-xs font-bold uppercase tracking-widest text-[#FF3000]">
@@ -17,20 +19,20 @@ export default function HomePage() {
         </p>
 
         <div className="mt-12 flex flex-wrap items-center gap-6">
-          <a
+          <Link
             href="/register"
             className="inline-flex h-16 items-center justify-center border-4 border-black bg-black px-10 text-sm font-bold uppercase tracking-widest text-white transition-colors duration-150 ease-out hover:bg-[#FF3000] hover:border-[#FF3000]"
           >
             Enter the Journal
-          </a>
+          </Link>
           <p className="text-sm text-black">
             Already a member?{" "}
-            <a
+            <Link
               href="/login"
               className="font-bold uppercase tracking-wide underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]"
             >
               Sign in
-            </a>
+            </Link>
           </p>
         </div>
       </section>
@@ -94,12 +96,12 @@ export default function HomePage() {
 
       {/* Closing CTA strip */}
       <section className="swiss-dots border-t-4 border-black bg-[#F2F2F2] px-6 py-16 text-center md:px-12">
-        <a
+        <Link
           href="/register"
           className="inline-flex h-16 items-center justify-center border-4 border-black bg-black px-10 text-sm font-bold uppercase tracking-widest text-white transition-colors duration-150 ease-out hover:bg-[#FF3000] hover:border-[#FF3000]"
         >
           Enter the Journal
-        </a>
+        </Link>
       </section>
     </div>
   );

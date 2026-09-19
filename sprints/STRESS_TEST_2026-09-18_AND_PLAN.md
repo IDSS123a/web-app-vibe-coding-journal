@@ -14,6 +14,21 @@ traceability read of governance/spec/decision documents. Test sessions
 were minted for `user@test.local` only; every state change made by a test
 was reverted and verified.
 
+## Status at the end of 2026-09-19 (second stress test, PDL-060)
+
+Closed since this plan was written: S1, S1b (paywall), R1 (Gemini 5xx rotation), S5 (cron fail closed), S6 (security headers,
+CSP still report-only), S8 (dead auth code), D1 to D4 (favicon, dashboard cues, chatbot UX, responsive UI), the third daily
+timeout and the pipeline that did not grow (PDL-058), the writing rule (PDL-057), Dictionary, sources and clean-up (PDL-059),
+the Premium upsell screens, lint, and a security probe plus an end to end smoke test that can be re-run at any time
+(`npm run probe:security`, `npm run smoke:e2e`, `npm run audit:responsive`).
+
+Still open, in this order: S4 (rotate the pasted Resend key and Supabase token, the Director), S2 (database backups, a
+decision), S3 (test accounts, still used by the probes), R2 (Gemini key 7 and key 3), R3 to R6, B1 to B8 (decisions), S7
+(registration abuse), S9 (monitoring and audit log), CSP from report-only to enforced, Next.js upgrade for the bundled
+PostCSS advisory (build time only, needs Next 16), Anthropic, Cursor and Windsurf feeds (no RSS), quiz questions for
+supplementary lessons, scoring the remaining unscored articles (automatic, then re-run
+`scripts/cleanup-articles.ts` and `scripts/rebuild-archive.ts`).
+
 ## 1. Fixed during the test (live, verified on production)
 
 | # | Severity | Finding | Fix | Decision |

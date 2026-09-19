@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import type { Article, DailyReport } from "@/lib/validation/schemas";
 import { formatPublicTimestamp } from "@/lib/time/format-public-timestamp";
 import { useAuthedJson } from "@/lib/auth/use-authed-json";
@@ -36,9 +37,9 @@ export default function DashboardPage() {
   const articles = data?.articles ?? [];
 
   return (
-    <div className="min-h-screen bg-white px-4 py-12 md:px-12">
+    <div className="min-h-dvh bg-white px-4 py-12 md:px-12">
       {report && <DailyReportOpenTracker reportId={report.id} />}
-      <div className="mx-auto max-w-4xl">
+      <div className="mx-auto max-w-4xl xl:max-w-5xl">
         {/* Header */}
         <div className="mb-12 border-b-4 border-black pb-8">
           <p className="mb-2 text-xs font-bold uppercase tracking-widest text-[#FF3000]">
@@ -126,21 +127,21 @@ export default function DashboardPage() {
 
         {/* Navigation */}
         <div className="mt-8 flex flex-wrap justify-center gap-x-6 gap-y-0 text-xs font-bold uppercase tracking-widest text-black">
-          <a href="/" className="inline-flex min-h-11 items-center underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]">
+          <Link href="/" className="inline-flex min-h-11 items-center underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]">
             ← Home
-          </a>
-          <a href="/archive" className="inline-flex min-h-11 items-center underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]">
+          </Link>
+          <Link href="/archive" className="inline-flex min-h-11 items-center underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]">
             Archive
-          </a>
-          <a href="/bookmarks" className="inline-flex min-h-11 items-center underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]">
+          </Link>
+          <Link href="/bookmarks" className="inline-flex min-h-11 items-center underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]">
             My Bookmarks
-          </a>
-          <a href="/university" className="inline-flex min-h-11 items-center underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]">
+          </Link>
+          <Link href="/university" className="inline-flex min-h-11 items-center underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]">
             University
-          </a>
-          <a href="/dictionary" className="inline-flex min-h-11 items-center underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]">
+          </Link>
+          <Link href="/dictionary" className="inline-flex min-h-11 items-center underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]">
             Dictionary
-          </a>
+          </Link>
         </div>
       </div>
     </div>
