@@ -1,23 +1,28 @@
-import { getPublishedReportsPage } from "@/features/archive/repository";
+"use client";
+
+import { useState } from "react";
+import type { DailyReport } from "@/lib/validation/schemas";
+import { useAuthedJson } from "@/lib/auth/use-authed-json";
 
 /**
  * Archive — paginated list of past Daily Reports (Sprint 10).
- * P-6: getPublishedReportsPage() already filters to
- * auto_published/manually_approved only -- never held_for_review or
- * rejected, same rule as /dashboard.
- * Public, same access level as /dashboard today (see HANDOFF note on
- * the P-13 paywall not actually being enforced on either page).
+ * P-6: GET /api/reports only ever returns auto_published/manually_approved
+ * reports — never held_for_review or rejected.
+ * Paid content (2026-09-19): rendered client-side from the server-side-
+ * paywalled API instead of a server component, so nothing is in the page
+ * source for an unpaid or anonymous visitor (see features/daily-report/access.ts).
  */
-export const dynamic = "force-dynamic";
 
-export default async function ArchivePage({
-  searchParams,
-}: {
-  searchParams: Promise<{ page?: string }>;
-}) {
-  const { page: pageParam } = await searchParams;
-  const page = Math.max(0, parseInt(pageParam ?? "0", 10) || 0);
-  const { reports, hasMore } = await getPublishedReportsPage(page);
+interface ArchivePayload {
+  reports: DailyReport[];
+  hasMore: boolean;
+}
+
+export default function ArchivePage() {
+  const [page, setPage] = useState(0);
+  const { data, loading, error } = useAuthedJson<ArchivePayload>(`/api/reports?page=${page}`);
+  const reports = data?.reports ?? [];
+  const hasMore = data?.hasMore ?? false;
 
   return (
     <div className="min-h-screen bg-white px-4 py-12 md:px-12">
@@ -30,11 +35,16 @@ export default async function ArchivePage({
           <p className="mt-2 text-sm text-black">Past Daily Reports</p>
         </div>
 
-        {reports.length === 0 ? (
+        {loading && <p className="text-sm text-black opacity-60">Loading…</p>}
+        {error && <p className="border-2 border-[#FF3000] p-3 text-sm text-[#FF3000]">{error}</p>}
+
+        {!loading && !error && reports.length === 0 && (
           <p className="border-4 border-black py-16 text-center text-sm italic text-black opacity-60">
             No past reports yet.
           </p>
-        ) : (
+        )}
+
+        {reports.length > 0 && (
           <div className="border-black md:border-4">
             {reports.map((report, i) => (
               <a
@@ -64,16 +74,24 @@ export default async function ArchivePage({
 
         <div className="mt-8 flex items-center justify-between text-xs font-bold uppercase tracking-widest">
           {page > 0 ? (
-            <a href={`/archive?page=${page - 1}`} className="text-black underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]">
+            <button
+              type="button"
+              onClick={() => setPage((p) => p - 1)}
+              className="text-black underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]"
+            >
               ← Newer
-            </a>
+            </button>
           ) : (
             <span />
           )}
           {hasMore && (
-            <a href={`/archive?page=${page + 1}`} className="text-black underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]">
+            <button
+              type="button"
+              onClick={() => setPage((p) => p + 1)}
+              className="text-black underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]"
+            >
               Older →
-            </a>
+            </button>
           )}
         </div>
 

@@ -4,11 +4,8 @@
  * Gamification Wave 2: fires the `open_daily_report` reward once per
  * report (dedupeKey = report.id, same idempotency pattern
  * bookmark_article already uses with article ids), the first time a
- * user views it. Renders nothing -- app/dashboard/page.tsx is a server
- * component and can't call award() itself, so this is the smallest
- * possible client boundary for that one side effect, following the
- * same "small client component embedded in a server page" shape as
- * ArticleListWithBookmarks already uses.
+ * user views it. Renders nothing; a tiny component so the one reward side
+ * effect stays out of the dashboard page's rendering logic.
  */
 
 import { useEffect, useRef } from "react";

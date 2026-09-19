@@ -1,25 +1,25 @@
 /**
  * GET /api/bookmarks — list the caller's bookmarked articles, newest first.
  * POST /api/bookmarks — bookmark an article. Body: { article_id: uuid }
- * Role required: any authenticated user (bookmarks are per-user, not
- * subscription-gated -- same access level as /api/me).
+ * Role required: authenticated with currently-active paid access (Basic or
+ * Premium, or trial) -- admin exempt. Changed 2026-09-19: bookmarks used to be
+ * open to any signed-in user, which returned full article content to an
+ * unpaid or lapsed account. No payment -> no access.
  * E-6 five-step: authenticate → authorize → validate → execute → return.
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { getVerifiedUser } from "@/lib/auth/verify-token";
+import { requirePaidContentAccess } from "@/features/daily-report/access";
 import { createBookmarkInputSchema } from "@/lib/validation/schemas";
 import { addBookmark, getUserBookmarks } from "@/features/bookmarks/repository";
 
 export async function GET(request: NextRequest) {
   try {
-    // 1. AUTHENTICATE
-    const user = await getVerifiedUser(request.headers.get("authorization"));
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    // 1+2. AUTHENTICATE + AUTHORIZE (verified token AND active paid access)
+    const access = await requirePaidContentAccess(request);
+    if (!access.ok) return access.response;
+    const user = access.user;
 
-    // 2. AUTHORIZE (any authenticated user may read their own bookmarks)
     // 3. VALIDATE (no request body)
 
     // 4. EXECUTE
@@ -36,13 +36,11 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    // 1. AUTHENTICATE
-    const user = await getVerifiedUser(request.headers.get("authorization"));
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    // 1+2. AUTHENTICATE + AUTHORIZE (verified token AND active paid access)
+    const access = await requirePaidContentAccess(request);
+    if (!access.ok) return access.response;
+    const user = access.user;
 
-    // 2. AUTHORIZE (any authenticated user may bookmark an article)
 
     // 3. VALIDATE
     const body = await request.json().catch(() => null);

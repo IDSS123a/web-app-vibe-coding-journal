@@ -11,15 +11,17 @@ export function middleware(_request: NextRequest) {
   //   2. API: every /api/admin/* route re-verifies the admin role server-side.
   // If we later adopt @supabase/ssr cookie sessions, add the redirect here too.
 
-  // /dashboard and /archive are intentionally PUBLIC today, same content
-  // to every visitor whether signed in or not -- there is no paywall
-  // enforcement anywhere in the app despite P-13's subscription/trial
-  // data model existing at the DB layer (found live 2026-09-11; this
-  // array used to list them as "protected" while doing nothing about
-  // it -- `void protectedRoutes.some(...)`, dead code, removed). Whether
-  // that's intentional (public content as a growth/marketing choice) or
-  // an oversight is a product decision for the Director, not inferred
-  // here (M-4) -- see DECISION_LOG.md / the corresponding HANDOFF note.
+  // /dashboard, /archive and /bookmarks are PAID content (Director,
+  // 2026-09-19: no payment -> no access; $10 Basic -> Daily Report, Archive,
+  // Bookmarks; $50 Premium -> everything incl. University + Assistant).
+  // They used to be public: /archive had no guard and /dashboard was guarded
+  // only in the browser, so the article text was in the page source for any
+  // visitor (PDL-026 open item, proven by curl 2026-09-19). Because this
+  // middleware cannot see the browser-held session, enforcement is in the
+  // data path instead: these pages are rendered client-side from
+  // /api/reports/* and /api/bookmarks, which verify the token and the
+  // subscription server-side (features/daily-report/access.ts). The
+  // server-rendered shell of these pages contains no report data.
   //
   // /bookmarks IS effectively gated, but at the page/API level, not
   // here: the page (app/bookmarks/page.tsx) and every /api/bookmarks/*

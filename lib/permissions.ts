@@ -22,14 +22,18 @@ export function requireAuth(context: PermissionContext): UserProfile {
   return context.user;
 }
 
-export function canViewDailyReport(context: PermissionContext): boolean {
-  // All authenticated users can view daily reports
-  return !!context.user;
-}
-
-export function canSaveArticle(context: PermissionContext): boolean {
-  // All authenticated users can save articles to their bookmarks
-  return !!context.user;
+// Access levels (Director, 2026-09-19): no payment -> no access; $10 Basic ->
+// Daily Report, Archive, Bookmarks; $50 Premium -> all of that PLUS
+// University, Dictionary and the Vibe-Coding Assistant (see
+// hasPremiumTierAccess below). This is the Basic level: any tier with
+// currently active access (paid subscription or the P-13 trial), or an
+// admin. The two functions that used to live here ("any authenticated user
+// can view daily reports / save articles") were the opposite of this rule
+// and were only ever exercised by tests, so they were removed rather than
+// left around as a misleading source of truth (M-7).
+export function canReadPaidContent(user: { role: string; hasActiveAccess: boolean }): boolean {
+  if (isBillingExempt({ role: user.role })) return true;
+  return user.hasActiveAccess;
 }
 
 export function canAccessAdminPanel(context: PermissionContext): boolean {

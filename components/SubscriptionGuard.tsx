@@ -270,7 +270,8 @@ export function SubscriptionGuard({ children }: { children: ReactNode }) {
               $50<span className="text-sm font-normal">/year</span>
             </p>
             <p className="mb-6 text-sm text-black">
-              Everything in Basic, plus the Vibe-Coding Assistant chatbot.
+              Everything in Basic, plus Vibe-Coding University, the Dictionary and the
+              Vibe-Coding Assistant.
             </p>
             {token && (
               <PayPalTierButton

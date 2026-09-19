@@ -2087,7 +2087,25 @@ fully matched. `/plan-feature` is next.
 
 **Fix:** migration `022_drop_broad_authenticated_read_policies.sql` drops the ten policies. The application only reads these tables from server code with the service role (no browser-side `supabase.from()` exists), so nothing depended on them. Verified on production after applying: before 1000/15/3/93/61/13/77/36/75/14 rows visible to an ordinary logged-in user, after 0 on every table; own-row reads (profile) still work; `/api/university/courses`, `/api/dictionary`, `/api/rewards/state`, `/api/assistant/history`, `/api/me`, `/dashboard`, `/archive` all still return 200 with content.
 
-**Not changed, needs a Director decision (S1b):** the Daily Report itself is still readable without logging in — `/archive` has no guard and `/dashboard` is guarded only client-side (the article text is in the page source). This is the already-recorded open item from PDL-026 / `middleware.ts`; see the stress-test plan for the options.
+**Not changed by this entry, decided the same day in PDL-053 (S1b):** the Daily Report itself was still readable without logging in.
+
+---
+
+## PDL-053 — Server-side paywall: access levels by subscription (resolves S1b, PDL-026's open item)
+
+**Date:** 2026-09-19
+
+**Director's rule (verbatim intent):** access level follows the subscription. No payment → no access. $10 → one level. $10 + $40 more ($50) → the highest level. "That's all."
+
+**Levels now enforced:** no active access → nothing; **Basic ($10)** → Daily Report, Archive, Bookmarks; **Premium ($50)** → Basic plus University, Dictionary and the Vibe-Coding Assistant (already API-gated). Admin is exempt (P-14). "Active access" means what `evaluateSubscriptionAccess` already meant: an active subscription, or a running P-13 trial; expired, ended-trial and blocked accounts get nothing. The 3-day trial itself was **not** changed (Director to confirm whether it stays).
+
+**Problem it fixes:** the session lives in the browser (localStorage), so a server-rendered page cannot know who is asking. `/archive` had no guard at all and `/dashboard` was guarded only visually — the article text was in the page source for any visitor (curl, 2026-09-19).
+
+**Design:** the paid pages no longer render data on the server. `/dashboard`, `/archive` and `/archive/[date]` are static shells that fetch from new API routes — `GET /api/reports/latest`, `/api/reports?page=`, `/api/reports/[date]` — which verify the token (PDL-050) and the subscription before returning anything (`features/daily-report/access.ts`, `requirePaidContentAccess`). `/api/bookmarks` (GET, POST) now uses the same check (it used to serve full articles to any signed-in user, even a lapsed one). `/archive` got a `SubscriptionGuard` layout for the user-facing paywall screen. Permission code: `canReadPaidContent` added; the misleading `canViewDailyReport`/`canSaveArticle` ("any authenticated user") removed. Cookie-based SSR sessions (`@supabase/ssr`) were considered and rejected as a much larger change than needed.
+
+**Small side fixes in the same change:** the dashboard's empty state no longer fakes a report dated today with an "AUTO-PUBLISHED" badge (now an honest "No Daily Report has been published yet"); the Premium pricing card now lists University, Dictionary and Assistant.
+
+**Verified locally against real Supabase, 36 checks all PASS:** anonymous → 401 on every paid route and no article text in the source of the three pages; Premium and Basic → 200; Basic → 403 on University and Assistant; expired, ended-trial and blocked → 403 (running trial → 200); a held report → 404 (P-6). The test account was restored exactly. UI checked in the browser: a Premium session sees the report, an expired one sees only the pricing screen.
 
 ---
 

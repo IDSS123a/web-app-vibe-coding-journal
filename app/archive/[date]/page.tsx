@@ -1,36 +1,31 @@
-import { notFound } from "next/navigation";
-import { getPublishedReportByDate, getArticlesForReport } from "@/features/archive/repository";
-import { getRelatedSourcesForArticles } from "@/features/pipeline/repository";
+"use client";
+
+import { useParams } from "next/navigation";
+import type { Article, DailyReport } from "@/lib/validation/schemas";
 import { formatPublicTimestamp } from "@/lib/time/format-public-timestamp";
+import { useAuthedJson } from "@/lib/auth/use-authed-json";
 import { ArticleListWithBookmarks } from "@/components/ArticleListWithBookmarks";
 import { MarkdownContent } from "@/components/MarkdownContent";
 
 /**
- * A single historical Daily Report (Sprint 10). P-6: 404s rather than
- * ever rendering a held/rejected report -- getPublishedReportByDate()
- * applies the same status filter as the /archive list and /dashboard.
+ * A single historical Daily Report (Sprint 10). P-6: GET /api/reports/[date]
+ * answers 404 for a held or rejected report, same as for a missing one.
+ * Paid content (2026-09-19): rendered client-side from the server-side-
+ * paywalled API — nothing about the report is in the page source for an
+ * unpaid or anonymous visitor (see features/daily-report/access.ts).
  */
-export const dynamic = "force-dynamic";
 
-export default async function ArchiveDatePage({
-  params,
-}: {
-  params: Promise<{ date: string }>;
-}) {
-  const { date } = await params;
-  const report = await getPublishedReportByDate(date);
-  if (!report) {
-    notFound();
-  }
+interface ReportPayload {
+  report: DailyReport;
+  articles: Article[];
+  relatedSources: Record<string, string[]>;
+}
 
-  const articles = await getArticlesForReport(report.id);
-  // Phase 4 (specs/vibe-coding-intelligence-engine/ROADMAP.md): which
-  // other sources covered the same event as each of these articles.
-  const relatedSourcesMap =
-    articles.length > 0
-      ? await getRelatedSourcesForArticles(articles.map((a) => a.id))
-      : new Map<string, string[]>();
-  const relatedSources = Object.fromEntries(relatedSourcesMap);
+export default function ArchiveDatePage() {
+  const params = useParams<{ date: string }>();
+  const { data, loading, status, error } = useAuthedJson<ReportPayload>(`/api/reports/${params.date}`);
+  const report = data?.report ?? null;
+  const articles = data?.articles ?? [];
 
   return (
     <div className="min-h-screen bg-white px-4 py-12 md:px-12">
@@ -44,34 +39,46 @@ export default async function ArchiveDatePage({
           </a>
         </div>
 
-        <div className="border-4 border-black p-8 md:p-12">
-          <div className="mb-8 flex items-center justify-between border-b-2 border-black pb-6">
-            <div>
-              <p className="text-sm font-bold uppercase tracking-wide text-black">
-                {new Date(report.date).toLocaleDateString("en-US", {
-                  weekday: "long",
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                })}
-              </p>
-              <p className="mt-1 text-sm text-black">
-                {report.article_count} articles • {report.reading_time_minutes || "< 1"} min read
-              </p>
-              <p className="mt-1 text-xs text-black opacity-60">
-                Updated {formatPublicTimestamp(report.updated_at)}
-              </p>
-            </div>
-          </div>
+        {loading && <p className="text-sm text-black opacity-60">Loading…</p>}
+        {status === 404 && (
+          <p className="border-4 border-black py-16 text-center text-sm italic text-black opacity-60">
+            This report does not exist.
+          </p>
+        )}
+        {error && status !== 404 && (
+          <p className="border-2 border-[#FF3000] p-3 text-sm text-[#FF3000]">{error}</p>
+        )}
 
-          {articles.length > 0 ? (
-            <ArticleListWithBookmarks articles={articles} relatedSources={relatedSources} />
-          ) : (
-            <div className="swiss-grid-pattern mt-6 border-2 border-black bg-[#F2F2F2] p-6">
-              <MarkdownContent>{report.markdown}</MarkdownContent>
+        {report && (
+          <div className="border-4 border-black p-8 md:p-12">
+            <div className="mb-8 flex items-center justify-between border-b-2 border-black pb-6">
+              <div>
+                <p className="text-sm font-bold uppercase tracking-wide text-black">
+                  {new Date(report.date).toLocaleDateString("en-US", {
+                    weekday: "long",
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  })}
+                </p>
+                <p className="mt-1 text-sm text-black">
+                  {report.article_count} articles • {report.reading_time_minutes || "< 1"} min read
+                </p>
+                <p className="mt-1 text-xs text-black opacity-60">
+                  Updated {formatPublicTimestamp(report.updated_at)}
+                </p>
+              </div>
             </div>
-          )}
-        </div>
+
+            {articles.length > 0 ? (
+              <ArticleListWithBookmarks articles={articles} relatedSources={data?.relatedSources ?? {}} />
+            ) : (
+              <div className="swiss-grid-pattern mt-6 border-2 border-black bg-[#F2F2F2] p-6">
+                <MarkdownContent>{report.markdown}</MarkdownContent>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

@@ -4,8 +4,9 @@ import {
   canAccessAdminPanel,
   canApproveReports,
   canRejectReports,
-  canSaveArticle,
-  canViewDailyReport,
+  canAccessPromptAssistant,
+  canAccessUniversity,
+  canReadPaidContent,
   isBillingExempt,
   requireAuth,
 } from "./permissions";
@@ -74,15 +75,41 @@ describe("role-gated checks (admin only: canAccessAdminPanel/canApproveReports/c
   });
 });
 
-describe("canViewDailyReport / canSaveArticle (any authenticated user)", () => {
-  it("is true for any authenticated user, admin or not", () => {
-    expect(canViewDailyReport({ user: makeUser({ role: "user" }) })).toBe(true);
-    expect(canSaveArticle({ user: makeUser({ role: "user" }) })).toBe(true);
+describe("access levels: no payment -> nothing, Basic -> daily content, Premium -> everything", () => {
+  const active = { role: "user", hasActiveAccess: true };
+  const inactive = { role: "user", hasActiveAccess: false };
+
+  it("canReadPaidContent: an unpaid/expired/blocked user (no active access) is refused", () => {
+    expect(canReadPaidContent(inactive)).toBe(false);
   });
 
-  it("is false when unauthenticated", () => {
-    expect(canViewDailyReport({ user: null })).toBe(false);
-    expect(canSaveArticle({ user: null })).toBe(false);
+  it("canReadPaidContent: any tier with active access may read (Basic and Premium alike)", () => {
+    expect(canReadPaidContent(active)).toBe(true);
+  });
+
+  it("canReadPaidContent: an admin is always allowed (billing-exempt, P-14)", () => {
+    expect(canReadPaidContent({ role: "admin", hasActiveAccess: false })).toBe(true);
+  });
+
+  it("Basic ($10) with active access reads daily content but NOT University or the Assistant", () => {
+    const basic = { ...active, subscriptionTier: "basic" as const };
+    expect(canReadPaidContent(basic)).toBe(true);
+    expect(canAccessUniversity(basic)).toBe(false);
+    expect(canAccessPromptAssistant(basic)).toBe(false);
+  });
+
+  it("Premium ($50) with active access reads everything", () => {
+    const premium = { ...active, subscriptionTier: "premium" as const };
+    expect(canReadPaidContent(premium)).toBe(true);
+    expect(canAccessUniversity(premium)).toBe(true);
+    expect(canAccessPromptAssistant(premium)).toBe(true);
+  });
+
+  it("Premium tier WITHOUT active access (lapsed) gets nothing at any level", () => {
+    const lapsed = { ...inactive, subscriptionTier: "premium" as const };
+    expect(canReadPaidContent(lapsed)).toBe(false);
+    expect(canAccessUniversity(lapsed)).toBe(false);
+    expect(canAccessPromptAssistant(lapsed)).toBe(false);
   });
 });
 
