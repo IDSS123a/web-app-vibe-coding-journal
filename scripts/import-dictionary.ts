@@ -107,7 +107,7 @@ async function main() {
       level: f?.level ?? null,
       tier: f?.tier ?? null,
       classified: !!f,
-      section_hint: t.section,
+      section_hint: stripAiTells(t.section),
       aliases: [...new Set([...((prior?.aliases as string[]) ?? []), ...t.aliases.map((x) => stripAiTells(x))])],
       related_terms: related.get(t.term) ?? [],
       origin: (prior?.origin as string) ?? t.origin,

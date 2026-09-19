@@ -24,7 +24,7 @@ Order follows FEATURE_LIFECYCLE Step 3, grouped in work packages. Tick as done. 
 - [x] 2.3 Dry run report, then remove articles below threshold (309 done; re-run after scoring completes)
 - [x] 2.4 Rebuild or remove reports, remove the two 900 article reports
 - [ ] 2.5 Summarise the relevant articles that lack a summary (paced, waits for 2.2)
-- [ ] 2.6 Rebuild historical reports from the good remainder (waits for 2.2 and 2.5)
+- [x] 2.6 Rebuild historical reports from the good remainder (13 done; re-run after 2.2 completes)
 
 ## WP3 Dictionary (item 1)
 - [x] 3.1 Migration 023 part B and RLS

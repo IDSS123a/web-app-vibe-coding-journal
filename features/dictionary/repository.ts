@@ -9,8 +9,15 @@ const PUBLIC_COLUMNS =
  * per request, and the Dictionary now holds about 2,600, so this pages until it has them
  * all (a single select would silently truncate).
  */
+// The list is identical for every reader and changes only when the hourly cycle files or
+// discovers terms, so a warm server instance keeps it for a few minutes instead of running
+// three paged queries (about 2,600 rows) on every request.
+const CACHE_TTL_MS = 5 * 60 * 1000;
+let cached: { at: number; terms: PublicDictionaryTerm[] } | null = null;
+
 export async function getAllTerms(): Promise<PublicDictionaryTerm[]> {
   if (!supabaseAdmin) throw new Error("Admin client not available");
+  if (cached && Date.now() - cached.at < CACHE_TTL_MS) return cached.terms;
   const out: PublicDictionaryTerm[] = [];
   for (let from = 0; ; from += 1000) {
     const { data, error } = await supabaseAdmin
@@ -23,6 +30,7 @@ export async function getAllTerms(): Promise<PublicDictionaryTerm[]> {
     out.push(...(data as unknown as PublicDictionaryTerm[]));
     if (!data || data.length < 1000) break;
   }
+  cached = { at: Date.now(), terms: out };
   return out;
 }
 

@@ -32,7 +32,7 @@ import { evaluateReportHold } from "@/features/pipeline/quality-engine";
 import { clusterDuplicateEvents } from "@/features/pipeline/domain";
 import { sendReviewQueueAlert } from "@/lib/email/resend";
 import { ensureAIProviderInitialized } from "@/lib/ai/init";
-import type { Article } from "@/lib/validation/schemas";
+import { formatDigestEntry } from "@/features/daily-report/format";
 import { isValidCronSecret } from "@/lib/cron/auth";
 
 /**
@@ -415,8 +415,13 @@ async function deduplicateArticles(): Promise<{
 // and stops cleanly, leaving the rest of the queue for the next hourly run. The
 // enrichment deadline leaves about a minute for the report and the response.
 const ENRICHMENT_DEADLINE_MS = 215_000;
-// Off-target hours do backlog work only, with the same ceiling.
-const BACKLOG_DEADLINE_MS = 230_000;
+// Off-target hours do backlog work only. The first live cycle (2026-09-19) took 266 s of the
+// 300 s limit and the Dictionary steps never got to run, because article enrichment used the
+// whole window: AI calls dominate (about 30 to 40 s each while one model is overloaded and the
+// other spent). So enrichment gets the first part of the window, and the Dictionary
+// classification and learning steps are guaranteed the rest, all inside 225 s in total.
+const BACKLOG_ENRICH_DEADLINE_MS = 130_000;
+const BACKLOG_DEADLINE_MS = 225_000;
 const MAX_ARTICLES_PER_ENRICHMENT_RUN = 150;
 // Per-article summary calls are the expensive part. A report holds at most 20 articles.
 const MAX_SUMMARIES_REPORT_RUN = 30;
@@ -446,7 +451,7 @@ async function runBacklogCycle(startTime: number) {
   const remaining = Math.max(0, BACKLOG_DAILY_AI_CALL_BUDGET - usedToday);
   const enrichment = await runEnrichment({
     limit: MAX_ARTICLES_PER_ENRICHMENT_RUN,
-    deadlineAt: startTime + BACKLOG_DEADLINE_MS,
+    deadlineAt: startTime + BACKLOG_ENRICH_DEADLINE_MS,
     maxAiCalls: remaining,
     maxSummaries: MAX_SUMMARIES_BACKLOG_RUN,
   });
@@ -487,48 +492,6 @@ async function runBacklogCycle(startTime: number) {
     },
     durationMs: Date.now() - startTime,
   };
-}
-
-/**
- * Phase 5 (specs/vibe-coding-intelligence-engine/ROADMAP.md, Daily/
- * Weekly Intelligence Format): restructures each digest entry into the
- * mandate's WHAT HAPPENED / WHY IT MATTERS / EVIDENCE / CONFIDENCE /
- * WHAT TO WATCH shape, replacing the original "simple aggregation for
- * MVP" markdown (which only ever rendered summary/Source/Category/Why
- * it matters -- who_it_affects and worth_trying were collected by
- * summarize() this whole time but never actually shown to a reader).
- * Every field here already existed except what_to_watch (migration
- * 012, folded into the existing summarize() call, no new AI cost).
- * `alsoCoveredBy` comes from getRelatedSourcesForArticles() (Phase 4,
- * Sprint 17) -- multi-source coverage is real corroborating evidence,
- * not just a UI nicety, so it belongs in the EVIDENCE line here too,
- * not only in the dashboard/archive components that already show it.
- */
-function formatDigestEntry(article: Article, alsoCoveredBy: string[]): string {
-  const confidencePct =
-    article.confidence_score != null ? `${Math.round(article.confidence_score * 100)}%` : "n/a";
-  const relevance = article.relevance_score != null ? `${article.relevance_score}/100` : "n/a";
-  const evidence = [
-    `Reported by ${article.source || "Unknown"}`,
-    alsoCoveredBy.length > 0 ? `also covered by ${alsoCoveredBy.join(", ")}` : null,
-    `relevance ${relevance}`,
-  ]
-    .filter((part): part is string => part !== null)
-    .join(", ");
-  const worthTrying =
-    article.worth_trying === "yes" ? "Yes" : article.worth_trying === "no" ? "No" : "Maybe";
-
-  return `## ${article.title}
-
-**What happened:** ${article.summary || article.raw_summary || "TBD"}
-
-**Why it matters:** ${article.why_it_matters || "TBD"}${article.who_it_affects ? ` (${article.who_it_affects})` : ""}
-
-**Evidence:** ${evidence}
-
-**Confidence:** ${confidencePct}, **Worth trying:** ${worthTrying}
-
-**What to watch:** ${article.what_to_watch || "n/a"}`;
 }
 
 /**
