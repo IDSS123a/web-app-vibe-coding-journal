@@ -2079,4 +2079,16 @@ fully matched. `/plan-feature` is next.
 
 ---
 
+## PDL-052 — SECURITY: content tables readable by every registered user via the REST API — fixed
+
+**Date:** 2026-09-19 (item S1 of the 2026-09-18 stress test)
+
+**Vulnerability (HIGH):** ten policies `auth.role() = 'authenticated'` let any registered account, including a free trial, read these tables directly through Supabase's REST API: `lessons` (all 77 University lessons), `quiz_questions` and `level_test_questions` (with `correct_option_index` — every answer), `daily_reports` (including 55 held-for-review and 5 rejected reports, defeating the P-6 review gate), `daily_report_articles`, `articles`, `chapters`, `courses`, `dictionary_terms`, `sources`. Anonymous users could read nothing.
+
+**Fix:** migration `022_drop_broad_authenticated_read_policies.sql` drops the ten policies. The application only reads these tables from server code with the service role (no browser-side `supabase.from()` exists), so nothing depended on them. Verified on production after applying: before 1000/15/3/93/61/13/77/36/75/14 rows visible to an ordinary logged-in user, after 0 on every table; own-row reads (profile) still work; `/api/university/courses`, `/api/dictionary`, `/api/rewards/state`, `/api/assistant/history`, `/api/me`, `/dashboard`, `/archive` all still return 200 with content.
+
+**Not changed, needs a Director decision (S1b):** the Daily Report itself is still readable without logging in — `/archive` has no guard and `/dashboard` is guarded only client-side (the article text is in the page source). This is the already-recorded open item from PDL-026 / `middleware.ts`; see the stress-test plan for the options.
+
+---
+
 *Vibe-Coding Journal — Project Decision Log — updated as decisions are made.*

@@ -6,6 +6,10 @@ reconstructed here retroactively — this file covers from its own start
 date forward). One entry per user-visible or operationally significant
 change, newest first.
 
+## 2026-09-19
+
+- **SECURITY (high):** registered users could read all University lessons, quiz answers and unpublished Daily Reports directly through the database API; the ten broad read policies were removed (migration 022, PDL-052). The Daily Report itself is still publicly readable — open decision, see the stress-test plan (S1b).
+
 ## 2026-09-18
 
 - **SECURITY (critical):** fixed a database-policy hole that let any signed-in user set their own role/tier/status (migration 021). See PDL-051. Full stress-test report and next-session plan: `sprints/STRESS_TEST_2026-09-18_AND_PLAN.md`.
