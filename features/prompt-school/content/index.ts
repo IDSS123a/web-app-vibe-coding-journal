@@ -7,6 +7,10 @@ import { FIVE_PILLARS_EXERCISES, FIVE_PILLARS_LESSONS, type ExerciseWithSamples,
 import { CRAFT_EXERCISES, CRAFT_LESSONS } from "./craft-of-prompting";
 import { FOUNDATIONAL_EXERCISES, FOUNDATIONAL_LESSONS } from "./foundational-techniques";
 import { MARKDOWN_EXERCISES, MARKDOWN_LESSONS } from "./markdown-for-prompts";
+import { REASONING_EXERCISES, REASONING_LESSONS } from "./reasoning-techniques";
+import { STRUCTURE_EXERCISES, STRUCTURE_LESSONS } from "./structure-and-protection";
+import { CODE_RESEARCH_EXERCISES, CODE_RESEARCH_LESSONS } from "./code-and-research";
+import { OPTIMIZE_EXERCISES, OPTIMIZE_LESSONS } from "./optimize-and-debug";
 
 export interface AuthoredChapter {
   slug: string;
@@ -19,4 +23,8 @@ export const AUTHORED_CHAPTERS: AuthoredChapter[] = [
   { slug: "five-pillars", lessons: FIVE_PILLARS_LESSONS, exercises: FIVE_PILLARS_EXERCISES },
   { slug: "foundational-techniques", lessons: FOUNDATIONAL_LESSONS, exercises: FOUNDATIONAL_EXERCISES },
   { slug: "markdown-for-prompts", lessons: MARKDOWN_LESSONS, exercises: MARKDOWN_EXERCISES },
+  { slug: "reasoning-techniques", lessons: REASONING_LESSONS, exercises: REASONING_EXERCISES },
+  { slug: "structure-and-protection", lessons: STRUCTURE_LESSONS, exercises: STRUCTURE_EXERCISES },
+  { slug: "code-and-research", lessons: CODE_RESEARCH_LESSONS, exercises: CODE_RESEARCH_EXERCISES },
+  { slug: "optimize-and-debug", lessons: OPTIMIZE_LESSONS, exercises: OPTIMIZE_EXERCISES },
 ];

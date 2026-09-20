@@ -24,10 +24,10 @@ fine, as long as every section of the book is properly covered. The lesson count
 | Beginner | five-pillars | Chapter 2 | 8 | written, 25 of 25 |
 | Beginner | foundational-techniques | Chapter 3 | 5 | written, 18 of 18 |
 | Beginner | markdown-for-prompts | Appendix C | 5 | written, 11 of 11 (2026-09-20) |
-| Intermediate | reasoning-techniques | Chapter 4 | 6 | to do |
-| Intermediate | structure-and-protection | Chapter 5 | 7 | to do |
-| Intermediate | code-and-research | Chapter 6 | 7 | to do |
-| Intermediate | optimize-and-debug | Chapter 7 | 7 | to do |
+| Intermediate | reasoning-techniques | Chapter 4 | 6 | written, 22 of 22 (2026-09-20) |
+| Intermediate | structure-and-protection | Chapter 5 | 7 | written, 21 of 21 (2026-09-20) |
+| Intermediate | code-and-research | Chapter 6 | 7 | written, 23 of 23 (2026-09-20) |
+| Intermediate | optimize-and-debug | Chapter 7 | 7 | written, 25 of 25 (2026-09-20) |
 | Advanced | ethics-and-bias | Chapter 8 | 5 | to do |
 | Advanced | tools-and-multimodal | Chapter 9 | 4 | to do |
 | Advanced | case-studies | Chapter 10 | 5 | to do |

@@ -2305,6 +2305,19 @@ Chapter "Formatting Prompts Clearly" (`markdown-for-prompts`, book Appendix C, r
 
 ---
 
+## PDL-067 Prompt School: chapters 4 to 7, the intermediate level is complete
+
+**Date:** 2026-09-20. Director: continue with chapter 4 and the following chapters. Each chapter was read in full from the book before it was written, its section list in `book-map.ts` was made final (no provisional entries), and the content test enforces that every section is covered.
+
+- **Chapter 4, "Making the Model Think"** (6 lessons, 10 exercises, 22 sections): the clockwork method (chain of thought) with its zero-shot and few-shot forms, the refund reasoning example, value and limitations; the forking paths technique (tree of thoughts) with the four moves, the library and City Hall simulations, advantages and challenges; knowledge distillation with the process, the style prompt example and the mindset; the whole Anya debate case study; the closing on choosing a technique.
+- **Chapter 5, "Structuring and Protecting Interaction"** (7 lessons, 10 exercises, 21 sections): tagged output as the Dewey Decimal System for machines (schema, gold star examples, both worked examples, benefits, considerations); delimiters as defensive boundaries, prompt injection and why it works; the two defenses and the secured prompt structure; adversarial input strategies and how to stress-test; the SupportBot workshop in two lessons with the complete protected prompt V2. The material is defensive: attacks appear only as things to test against.
+- **Chapter 6, "Prompting for Code and Research"** (7 lessons, 10 exercises, 23 sections): the blacksmith's forge (four techniques and all five common tasks with the book's code examples), working the forge responsibly; the archivist's lens (RAG, the manual non-coder version, the three worked examples), large documents, the power of the lens, key considerations and the closing contrast.
+- **Chapter 7, "Optimizing and Debugging Prompts"** (7 lessons, 10 exercises, 25 sections): the five stages of iterative refinement including the flaw to pillar diagnosis; A/B testing with its seven steps, metrics and the tone example; all seven common failures with symptoms, causes and diagnostic questions, and the debugging mindset; the three-cycle blog workshop (V0 to V3) and the pursuit of perfection.
+
+Every repair exercise has a rubric tested against its model answer, good samples and bad samples (for example the SupportBot exercise shows that delimiters without the guard order are only half a defense). The intermediate level is 27 lessons and 40 exercises; the School stands at 50 lessons in 8 chapters, 153 of 231 book sections (66 percent). Verified: 107 Prompt School tests, integrity pass (stored text equals the content files), responsive audit on all 50 lesson pages at 280 px and on the chapter, practice and overview pages at 280, 375 and 1440 px, no overflow. Next: chapters 8 to 11 (the advanced level), then Appendix B (three blueprint workshops), D, A, E and F.
+
+---
+
 ---
 
 *Vibe-Coding Journal — Project Decision Log — updated as decisions are made.*

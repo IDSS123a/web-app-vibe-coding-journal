@@ -76,6 +76,7 @@ async function dynamicPaths() {
     for (const c of chs) {
       const { data: ls } = await admin.from("ps_lessons").select("slug").eq("chapter_id", c.id).order("order_index");
       out.promptSchoolPaths.push(`/prompt-school/${c.slug}`, `/prompt-school/${c.slug}/practice`, `/prompt-school/${c.slug}/${ls[0].slug}`);
+      if (process.env.AUDIT_ALL_LESSONS) for (const l of ls.slice(1, -1)) out.promptSchoolPaths.push(`/prompt-school/${c.slug}/${l.slug}`);
       if (ls.length > 1) out.promptSchoolPaths.push(`/prompt-school/${c.slug}/${ls[ls.length - 1].slug}`);
     }
   }
