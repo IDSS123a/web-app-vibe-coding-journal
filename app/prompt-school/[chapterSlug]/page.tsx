@@ -9,6 +9,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { useSession } from "@/lib/auth/use-session";
 import { PremiumGuard } from "@/components/PremiumGuard";
+import { BookCrossSell } from "@/components/prompt-school/BookCrossSell";
 
 interface ChapterData {
   chapter: { slug: string; level: string; title: string; summary: string; bookRef: string | null };
@@ -112,6 +113,8 @@ function Chapter() {
                 </p>
               )}
             </div>
+
+            <BookCrossSell variant="compact" />
           </>
         )}
       </div>

@@ -10,7 +10,8 @@ export type RewardEventType =
   | "open_daily_report"
   | "streak_milestone"
   | "level_up"
-  | "onboarding_complete";
+  | "onboarding_complete"
+  | "book_discovery";
 
 /**
  * Coin amounts per event, centralized here (P-5-style documented
@@ -25,6 +26,8 @@ export const COIN_AWARDS: Record<RewardEventType, number> = {
   streak_milestone: 100,
   level_up: 0, // Level-ups are a consequence of earned coins, not a separate payout.
   onboarding_complete: 50,
+  // Prompt School cross-sell (2026-09-20): finding the Director's book on the School page, once per reader.
+  book_discovery: 25,
 };
 
 /**

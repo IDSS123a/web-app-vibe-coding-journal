@@ -157,6 +157,7 @@ export const awardCoinsInputSchema = z.object({
     "streak_milestone",
     "level_up",
     "onboarding_complete",
+    "book_discovery",
   ] as const),
   dedupeKey: z.string().min(1).nullable().optional(),
 });

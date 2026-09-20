@@ -48,6 +48,8 @@ interface CelebrationState {
 interface RewardsContextValue {
   state: RewardState | null;
   award: (eventType: RewardEventType, dedupeKey: string | null) => Promise<void>;
+  /** Confetti only, for a delight moment that pays no coins (a repeat click on the book). */
+  sparkle: () => void;
 }
 
 const RewardsContext = createContext<RewardsContextValue | null>(null);
@@ -94,7 +96,14 @@ export function RewardsProvider({ children }: { children: ReactNode }) {
 
         setState(result.newState);
 
-        if (result.leveledUp) {
+        if (eventType === "book_discovery") {
+          setConfettiActive(true);
+          setCelebration({
+            title: "You found the book",
+            subtitle: "Mastering Prompt Engineering is the book behind this School. Here is a bonus for finding it.",
+            coins: result.coinsAwarded || undefined,
+          });
+        } else if (result.leveledUp) {
           setConfettiActive(true);
           setCelebration({
             title: `Level ${result.newState.level}`,
@@ -120,8 +129,10 @@ export function RewardsProvider({ children }: { children: ReactNode }) {
     [token],
   );
 
+  const sparkle = useCallback(() => setConfettiActive(true), []);
+
   return (
-    <RewardsContext.Provider value={{ state, award }}>
+    <RewardsContext.Provider value={{ state, award, sparkle }}>
       {children}
       {toastCoins != null && <CoinToast coins={toastCoins} onDone={() => setToastCoins(null)} />}
       <ConfettiSystem active={confettiActive} onDone={() => setConfettiActive(false)} />

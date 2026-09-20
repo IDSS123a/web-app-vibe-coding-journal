@@ -10,6 +10,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useSession } from "@/lib/auth/use-session";
 import { PremiumGuard } from "@/components/PremiumGuard";
+import { BookCrossSell } from "@/components/prompt-school/BookCrossSell";
 
 type ChapterCard =
   | { slug: string; title: string; summary: string; bookRef: string; plannedLessons: number; open: false }
@@ -82,10 +83,12 @@ function Overview() {
           </p>
           {levels.length > 0 && (
             <p className="mt-3 text-xs font-bold uppercase tracking-widest text-black">
-              {open} of {chapterTotal} chapters open, about {planned} lessons planned
+              {open} of {chapterTotal} chapters written, about {planned} lessons planned
             </p>
           )}
         </div>
+
+        <BookCrossSell />
 
         {loading && <p className="text-sm text-black opacity-60">Loading…</p>}
         {error && <p role="alert" className="border-2 border-[#FF3000] p-3 text-sm text-[#FF3000]">{error}</p>}

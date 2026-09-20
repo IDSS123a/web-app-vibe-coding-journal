@@ -148,6 +148,18 @@
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
+/* Prompt School book cross-sell: the cover jumps when clicked (a deliberate, scoped bit of play like the celebration overlay). */
+@keyframes book-jump {
+  0% { transform: translateY(0) rotate(0deg) scale(1); }
+  20% { transform: translateY(-14px) rotate(-4deg) scale(1.06); }
+  40% { transform: translateY(0) rotate(3deg) scale(1.02); }
+  60% { transform: translateY(-8px) rotate(-2deg) scale(1.05); }
+  100% { transform: translateY(0) rotate(0deg) scale(1); }
+}
+.book-jump {
+  animation: book-jump 1.2s ease-out;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
