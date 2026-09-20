@@ -15,6 +15,9 @@ import { ETHICS_EXERCISES, ETHICS_LESSONS } from "./ethics-and-bias";
 import { TOOLS_EXERCISES, TOOLS_LESSONS } from "./tools-and-multimodal";
 import { CASE_STUDY_EXERCISES, CASE_STUDY_LESSONS } from "./case-studies";
 import { FUTURE_EXERCISES, FUTURE_LESSONS } from "./the-future";
+import { BLUEPRINTS_1_EXERCISES, BLUEPRINTS_1_LESSONS } from "./blueprints-1";
+import { BLUEPRINTS_2_EXERCISES, BLUEPRINTS_2_LESSONS } from "./blueprints-2";
+import { BLUEPRINTS_3_EXERCISES, BLUEPRINTS_3_LESSONS } from "./blueprints-3";
 
 export interface AuthoredChapter {
   slug: string;
@@ -35,4 +38,7 @@ export const AUTHORED_CHAPTERS: AuthoredChapter[] = [
   { slug: "tools-and-multimodal", lessons: TOOLS_LESSONS, exercises: TOOLS_EXERCISES },
   { slug: "case-studies", lessons: CASE_STUDY_LESSONS, exercises: CASE_STUDY_EXERCISES },
   { slug: "the-future", lessons: FUTURE_LESSONS, exercises: FUTURE_EXERCISES },
+  { slug: "blueprints-1", lessons: BLUEPRINTS_1_LESSONS, exercises: BLUEPRINTS_1_EXERCISES },
+  { slug: "blueprints-2", lessons: BLUEPRINTS_2_LESSONS, exercises: BLUEPRINTS_2_EXERCISES },
+  { slug: "blueprints-3", lessons: BLUEPRINTS_3_LESSONS, exercises: BLUEPRINTS_3_EXERCISES },
 ];

@@ -26,6 +26,18 @@ function group(chapter: string, prefix: string, items: Array<[string, string]>, 
   return items.map(([id, title]) => ({ id: `${prefix}-${id}`, chapter, title, ...(provisional ? { provisional: true } : {}) }));
 }
 
+/** The four parts every Appendix B blueprint has in the book, as map entries. */
+function blueprint(n: number, title: string): Array<[string, string]> {
+  const id = `bp${String(n).padStart(2, "0")}`;
+  const name = `Blueprint ${n}: ${title}`;
+  return [
+    [`${id}-explained`, `${name}, the scenario, goal and detailed explanation (techniques used and why)`],
+    [`${id}-prompt`, `${name}, the Markdown prompt blueprint`],
+    [`${id}-flowchart`, `${name}, the flowchart of the prompt's logic`],
+    [`${id}-next-steps`, `${name}, suggested next steps (refinement, output application, integration)`],
+  ];
+}
+
 export const BOOK_MAP: BookSection[] = [
   // ---------- Foreword and chapter 1 ----------
   ...group("craft-of-prompting", "foreword", [["dawn", "The Dawn of the Prompt Engineer"]]),
@@ -294,28 +306,31 @@ export const BOOK_MAP: BookSection[] = [
   ]),
 
   // ---------- Appendix B: Template library (15 blueprints, three workshops of five) ----------
+  // Every blueprint has the same four parts in the book: the scenario with its detailed explanation, the Markdown prompt
+  // blueprint, the flowchart and the suggested next steps.
   ...group("blueprints-1", "appB", [
-    ["intro", "Template Library: the workshop blueprints, how to read a blueprint"],
-    ["bp01", "Blueprint 1: Sales and Marketing Strategy Analysis (Perfume Launch)"],
-    ["bp02", "Blueprint 2: Warehouse Inventory and Dispatch Planning"],
-    ["bp03", "Blueprint 3: Production Material Flow Planning (Shift-Based)"],
-    ["bp04", "Blueprint 4: Banking Customer Analysis and Service Personalization"],
-    ["bp05", "Blueprint 5: Educational Lesson Plan Generation"],
-  ], true),
+    ["intro", "Template Library: the workshop blueprints, starting with sound structures and how to use them"],
+    ...blueprint(1, "Sales and Marketing Strategy Analysis (Perfume Launch)"),
+    ...blueprint(2, "Warehouse Inventory and Dispatch Planning"),
+    ...blueprint(3, "Production Material Flow Planning (Shift-Based)"),
+    ...blueprint(4, "Banking Customer Analysis and Service Personalization"),
+    ...blueprint(5, "Educational Lesson Plan Generation"),
+  ]),
   ...group("blueprints-2", "appB", [
-    ["bp06", "Blueprint 6: Retail Inventory Replenishment and Shelf Allocation Strategy"],
-    ["bp07", "Blueprint 7: Pharmaceutical Market Analysis (Drug Registration and Potential)"],
-    ["bp08", "Blueprint 8: Call Center Interaction Analysis (Quality Assurance)"],
-    ["bp09", "Blueprint 9: Personalized Personal Finance Guidance (Authenticated User)"],
-    ["bp10", "Blueprint 10: Interactive To-Do List Management and Reporting"],
-  ], true),
+    ...blueprint(6, "Retail Inventory Replenishment and Shelf Allocation Strategy"),
+    ...blueprint(7, "Pharmaceutical Market Analysis (Drug Registration and Potential)"),
+    ...blueprint(8, "Call Center Interaction Analysis (Quality Assurance)"),
+    ...blueprint(9, "Personalized Personal Finance Guidance (Authenticated User)"),
+    ...blueprint(10, "Interactive To-Do List Management and Reporting"),
+  ]),
   ...group("blueprints-3", "appB", [
-    ["bp11", "Blueprint 11: Language Learning Center Program and Student Management"],
-    ["bp12", "Blueprint 12: Laboratory Sample Analysis Tracking and Reporting"],
-    ["bp13", "Blueprint 13: Fitness Center Client Needs Assessment and Program Suggestion"],
-    ["bp14", "Blueprint 14: Investigative Journalism Assistance (Information Triage and Analysis)"],
-    ["bp15", "Blueprint 15: Scientific Research Paper Writing Assistance"],
-  ], true),
+    ...blueprint(11, "Language Learning Center Program and Student Management"),
+    ...blueprint(12, "Laboratory Sample Analysis Tracking and Reporting"),
+    ...blueprint(13, "Fitness Center Client Needs Assessment and Program Suggestion"),
+    ...blueprint(14, "Investigative Journalism Assistance (Information Triage and Analysis)"),
+    ...blueprint(15, "Scientific Research Paper Writing Assistance"),
+    ["closing", "From Blueprints to Bespoke Tools: customization, contextualization, refinement and ethical scrutiny"],
+  ]),
 
   // ---------- Appendix D: Techniques quick reference ----------
   ...group("techniques-reference", "appD", [

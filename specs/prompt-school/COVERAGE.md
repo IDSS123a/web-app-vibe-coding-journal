@@ -32,7 +32,9 @@ fine, as long as every section of the book is properly covered. The lesson count
 | Advanced | tools-and-multimodal | Chapter 9 | 5 | written, 16 of 16 (2026-09-20) |
 | Advanced | case-studies | Chapter 10 | 5 | written, 18 of 18 (2026-09-20) |
 | Advanced | the-future | Chapter 11 | 4 | written, 13 of 13 (2026-09-20) |
-| Advanced | blueprints-1, 2, 3 | Appendix B, 15 blueprints | 6 + 5 + 5 | to do |
+| Advanced | blueprints-1 | Appendix B, blueprints 1 to 5 | 6 | written, 21 of 21 (2026-09-20) |
+| Advanced | blueprints-2 | Appendix B, blueprints 6 to 10 | 5 | written, 20 of 20 (2026-09-20) |
+| Advanced | blueprints-3 | Appendix B, blueprints 11 to 15 and the closing | 6 | written, 21 of 21 (2026-09-20) |
 | Advanced | techniques-reference | Appendix D | 4 | to do |
 | Advanced | glossary | Appendix A | 6 | to do |
 | Advanced | resources-and-platforms | Appendices E and F | 4 | to do |
