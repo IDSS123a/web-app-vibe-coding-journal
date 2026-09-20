@@ -98,9 +98,12 @@ export function RewardsProvider({ children }: { children: ReactNode }) {
 
         if (eventType === "book_discovery") {
           setConfettiActive(true);
+          // The bonus can carry the reader over a level threshold; that news must not be lost behind the book message.
           setCelebration({
-            title: "You found the book",
-            subtitle: "Mastering Prompt Engineering is the book behind this School. Here is a bonus for finding it.",
+            title: result.leveledUp ? `Level ${result.newState.level}` : "You found the book",
+            subtitle: result.leveledUp
+              ? "You found the book behind this School, and the bonus took you to a new level."
+              : "Mastering Prompt Engineering is the book behind this School. Here is a bonus for finding it.",
             coins: result.coinsAwarded || undefined,
           });
         } else if (result.leveledUp) {

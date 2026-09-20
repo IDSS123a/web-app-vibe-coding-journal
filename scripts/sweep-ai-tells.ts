@@ -18,6 +18,7 @@ const sb = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPAB
 const TABLES = [
   "articles", "daily_reports", "lessons", "chapters", "quiz_questions", "level_test_questions",
   "courses", "dictionary_terms", "prompt_blueprint_generations", "sources", "term_candidates",
+  "ps_chapters", "ps_lessons", "ps_exercises",
 ];
 const SKIP_COLUMN = /^(id|url|hash|slug|source_url|.*_id|.*_at|date|report_date|duplicate_of|review_status|status|role)$/;
 

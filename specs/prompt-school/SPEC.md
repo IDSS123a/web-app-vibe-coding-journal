@@ -35,6 +35,11 @@ not only read: they complete, repair, order and write prompts inside exercises.
 - [ ] Progress (lessons done, best score per exercise, chapter passed at 75 percent) is stored per user.
 - [ ] Chapters open one after another like the University's: practice after all lessons are done, the next chapter
       only when the previous one is complete (Director, 2026-09-20).
+- [ ] The School covers the COMPLETE book, no segment skipped (Director, 2026-09-20): every section of the book is
+      in `content/book-map.ts`, every lesson declares what it covers, and the content test fails for an authored
+      chapter that skips a section. See COVERAGE.md.
+- [ ] The School page cross-sells the book: its cover is shown, a click plays a small reward and opens the book's
+      payment page in a new window (Director, 2026-09-20).
 - [ ] First slice: the chapter "The Five Pillars" (book chapter 2) complete with 6 lessons and 8 exercises.
 - [ ] Responsive audit and end to end smoke test cover the new pages with 0 issues.
 - [ ] No em dash anywhere in content or UI.

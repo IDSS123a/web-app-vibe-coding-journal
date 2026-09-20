@@ -1,5 +1,5 @@
 /**
- * Chapter "The Five Pillars" (book chapter 2, "Anatomy of an Effective Prompt"): 6 lessons and 8
+ * Chapter "The Five Pillars" (book chapter 2, "Anatomy of an Effective Prompt"): 8 lessons and 10
  * exercises. Authored from the Director's book; the book is the only source. Lesson text is condensed
  * and in plain language. No em dashes (writing rule, PDL-057). `samples` on repair exercises exist only
  * for the content test that proves each rubric accepts a good rewrite and rejects a bad one; they are
@@ -12,6 +12,8 @@ export interface LessonContent {
   title: string;
   minutes: number;
   body: string;
+  /** Ids of the book sections this lesson teaches (content/book-map.ts). The content test enforces complete coverage. */
+  covers: string[];
 }
 
 export type ExerciseWithSamples = ExerciseContent & { samples?: { good: string[]; bad: string[] } };
@@ -21,6 +23,7 @@ export const FIVE_PILLARS_LESSONS: LessonContent[] = [
     slug: "why-prompts-have-an-anatomy",
     title: "Why a prompt has an anatomy",
     minutes: 5,
+    covers: ["ch2-intro-anatomy"],
     body: `Picture an old calculating engine or an elaborate automaton clock. Looking at the finished machine tells you very little. To understand how it works you take it apart piece by piece: each gear, each lever, each connection. A pile of parts does no useful work. The structure and the interplay of the parts is what makes it function.
 
 Talking to a language system is similar. The exchange feels like conversation, but throwing words at the system is like tossing parts into a box. These systems respond to the patterns and structure of the instructions you give them, so for anything beyond a simple question you have to build the prompt with the care of an engineer.
@@ -47,11 +50,16 @@ In the next five lessons you meet each pillar through a simple analogy, then you
     slug: "pillar-1-context",
     title: "Pillar 1: Context, setting the stage",
     minutes: 6,
+    covers: ["ch2-context-setting-the-stage", "ch2-context-why-it-matters", "ch2-context-types", "ch2-context-setting-effectively"],
     body: `Imagine stepping into a conversation halfway through. People refer to earlier points and people you do not know. You hear the words but the meaning is broken. You are missing **context**, the background that turns noise into signal.
 
 Context is everything you provide before the main command: the background, circumstances and viewpoint the model needs to read your request correctly. The model has broad general knowledge, but it does not know your situation, your goal or the perspective you need. Context is like tuning a radio: out of all the possible answers in its training, it tunes the model to the one you care about.
 
-A prompt with no context forces the model to fill the gaps with statistical averages of its training data, and those averages rarely match what you need.
+Think of building instructions. "Place a brick" means nothing until you know where in the structure, in what orientation and in which course it belongs. The architectural blueprint supplies that context. A prompt without context forces the model to fill the gaps with statistical averages of its training data, and those averages rarely match what you need.
+
+## Why context matters for a language system
+
+These systems work by predicting likely sequences of text from the input they receive, and context **narrows the field of probable predictions**. If you establish a role ("Act as a skeptical historian"), the model is more likely to produce text consistent with that role, such as critical analysis and requests for evidence, than if you gave no role. If you provide a specific document and ask questions about it, the context focuses the model on that text, so answers are more likely to come from the document than from its general knowledge.
 
 ## Types of context
 
@@ -71,6 +79,7 @@ Before writing the instruction, ask: what does the model need to know to underst
     slug: "pillar-2-instructions",
     title: "Pillar 2: Instructions, the control panel",
     minutes: 6,
+    covers: ["ch2-instructions-control-panel", "ch2-instructions-characteristics", "ch2-instructions-operating"],
     body: `Once the stage is set, you direct the performance. **Instructions** are the active commands: the verbs of the prompt, the knobs and levers on a control panel. On a printing press, pulling the wrong lever smudges the page. Vague instructions are like pressing buttons at random. You may get a useful result by chance, but usually you get errors or something unexpected.
 
 ## What makes an instruction effective
@@ -97,6 +106,7 @@ Choosing the right family, and stating it precisely, is what moves you from simp
     slug: "pillar-3-examples",
     title: "Pillar 3: Examples, learning by demonstration",
     minutes: 6,
+    covers: ["ch2-examples-apprenticeship", "ch2-examples-why-works", "ch2-examples-using-effectively", "ch2-examples-gold-star"],
     body: `Try to learn sculpting or a musical instrument only from written descriptions. You may grasp the theory, but the feel of the clay and the exact fingering are very hard to get without watching a master and copying. That is **apprenticeship**, and **examples** bring the same idea into a prompt.
 
 Instructions tell the model what to do. Examples show exactly **how** you want it done. This is the idea behind few-shot prompting, and it matters most when the format, style or reasoning pattern is subtle or hard to describe.
@@ -127,6 +137,7 @@ An apprentice copies the master's flaws as faithfully as the strengths. If your 
     slug: "pillar-4-constraints",
     title: "Pillar 4: Constraints, guardrails and speed limits",
     minutes: 6,
+    covers: ["ch2-constraints-guardrails", "ch2-constraints-why-necessary", "ch2-constraints-types", "ch2-constraints-implementing"],
     body: `Driving a powerful car on a narrow cliff road feels free, until you realize that guardrails and speed limits are what make the trip safe. **Constraints** play that role in a prompt. Language systems are highly generative: given an instruction they can produce a lot of text, wander into tangents or pick a different tone. Instructions say what to do. Constraints say what to avoid and set the limits within which to do it.
 
 Think of building codes. The blueprints are the instructions. The codes set maximum height and required safety features. They do not design the building, but they make sure the result is safe and fits the conditions.
@@ -157,6 +168,7 @@ Too many or conflicting constraints make a useful answer impossible. Too few lea
     slug: "pillar-5-delimiters-and-synergy",
     title: "Pillar 5: Delimiters, and putting the pillars together",
     minutes: 8,
+    covers: ["ch2-delimiters-fences", "ch2-delimiters-why-crucial", "ch2-delimiters-building", "ch2-delimiters-common-choices", "ch2-delimiters-power", "ch2-synergy"],
     body: `A farmer keeps cattle, sheep and horses in different zones with fences so they do not mix or wander. **Delimiters** are the fences of a prompt: special characters, symbols or tags that mark clear limits between Context, Instructions, Examples, Constraints and above all any outside input such as a user's question or a source text.
 
 Without them the model can mistake an instruction for part of the text to summarize, or treat an example's output as a new command. Compare:
@@ -177,19 +189,159 @@ Tell me about books on Bosnian history, focus on the medieval period.
 ### RESPONSE ###
 \`\`\`
 
-## Choosing delimiters
+Here \`### ROLE ###\`, \`### INSTRUCTION ###\`, \`### USER QUERY ###\`, the \`<user_query>\` tags and \`### RESPONSE ###\` are all fences. The model can tell the persona from the task, the task from the user's own words, and where its own answer should begin.
 
-Pick markers that are consistent and unlikely to appear inside your content: triple hashes such as \`### SECTION ###\`, XML-like tags such as \`<user_input>...</user_input>\`, or Markdown fenced blocks. Tags and titled hashes are excellent for complex prompts.
+## Common delimiter choices
 
-Clear fences reduce ambiguity, improve accuracy, make outputs more predictable and improve **security**: separating untrusted user input from your trusted instructions is the cornerstone of defending against prompt injection, which the Intermediate level covers.
+Consistency and distinctiveness are the keys: choose markers that are unlikely to appear naturally inside the content itself.
 
-## The pillars working together
+- **Triple hashes, asterisks or dashes:** \`### Section Title ###\`, \`*** Example Start ***\`, or \`---\` as a horizontal rule.
+- **XML-like tags:** \`<context>...</context>\`, \`<instruction>...</instruction>\`, \`<user_input>...</user_input>\`. Very clear, especially for nesting and complex structures.
+- **Markdown fenced code blocks:** excellent for multi-line blocks of text, and they preserve formatting.
 
-Context sets the stage. Instructions direct the action. Examples show the format. Constraints set the limits. Delimiters hold it all together. They rarely work alone. Real prompt engineering is choosing, combining and refining them, then using them as a checklist to find out why an output failed.
+The choice depends on complexity and personal preference. XML-style tags, or triple hashes with clear titles, are excellent for readability in complex prompts.
 
-## The repair workshop
+## The power of clear fences
 
-The book repairs the vague prompt "Tell me about travel in Bosnia and Herzegovina" in five steps: add **context** (two adults, 14 days, September, mid-range budget, interests, rental car), sharpen the **instruction** (suggest a 14-day driving itinerary around named regions), add an **example** of one region formatted exactly as wanted, add **constraints** (follow the format, brief justifications, no hotel names, 600 to 800 words) and assemble it with **delimiters**. A vague sentence becomes a precise specification. You will do this yourself in the practice.`,
+1. **Reduces ambiguity.** The structure is crystal clear to the model and to other humans.
+2. **Improves accuracy.** It lowers the risk of the model treating one section as another kind, such as executing instructions it found inside example text.
+3. **Increases reliability.** Outputs become more predictable and consistent, especially when a prompt combines several pillars.
+4. **Enhances security.** Clearly separating potentially untrusted user input from your trusted instructions, and telling the model to treat that section differently, is the cornerstone of preventing prompt injection. The fence keeps the untrusted cattle safely contained. (The Intermediate level goes deep on this.)
+
+Delimiters are the punctuation and structural markers of prompt engineering. They impose order, prevent conceptual confusion and make sure every component is read in its intended role.
+
+## Bringing it all together: the synergy of the pillars
+
+The five pillars are rarely used alone, especially for non-trivial tasks. Like the systems of a well-engineered machine, they work together:
+
+- **Context** sets the stage.
+- **Instructions** direct the core action.
+- **Examples** demonstrate specific formats or nuances.
+- **Constraints** define the limits of acceptable output.
+- **Delimiters** provide the structure that holds it all together.
+
+Mastering prompt engineering means learning to select, combine and refine these pillars for the demands of your task. The process is usually iterative: test your first construction, analyze the output using the pillars as a diagnostic framework, and adjust the components. Knowing what each pillar does lets you build sophisticated instructions methodically and troubleshoot failures effectively.
+
+In the next two lessons you do exactly that, in a workshop.`,
+  },
+  {
+    slug: "workshop-diagnose-the-broken-prompt",
+    title: "Workshop part 1: diagnose a broken prompt",
+    minutes: 6,
+    covers: ["ch2-workshop-broken-prompt"],
+    body: `Let us apply the pillars to a common kind of vague request, using the book's Bosnia and Herzegovina travel scenario.
+
+## The broken prompt
+
+\`\`\`
+Tell me about travel in Bosnia and Herzegovina.
+\`\`\`
+
+This is like asking an architect to "design a building": utterly insufficient. Diagnose it pillar by pillar.
+
+1. **Context: completely missing.** Who is travelling? When, and for how long? What are their interests (history, nature, food, adventure)? What budget? Which regions? Without this framing, any advice is guesswork based on generic data.
+2. **Instructions: extremely vague.** "Tell me about" gives no specific task. Does the reader want history, practical tips, city guides, food recommendations or a travel plan? The model does not know what action to perform.
+3. **Examples: absent.** If the reader wanted a specific format, such as a day-by-day itinerary, nothing shows the model how to structure the output. The format is left to the model's default behaviour, which may be inconsistent or unsuitable.
+4. **Constraints: none.** The output could be too long or too short, cover irrelevant topics such as neighbouring countries, use overly academic language, or ignore implicit needs such as staying within a budget. There are no guardrails.
+5. **Delimiters: not applicable in such a trivial prompt.** But their absence would become a major problem in a repaired, multi-part version, causing confusion between the context, the instructions and the example.
+
+## Why the pillars are a diagnostic tool
+
+Notice what happened. Instead of feeling vaguely that the prompt is "bad", you named exactly what is missing under five headings. That turns a hunch into a repair plan, which is the subject of the next lesson.
+
+**Try this:** run the same five-pillar diagnosis on the task you wrote down in the first chapter.`,
+  },
+  {
+    slug: "workshop-repair-step-by-step",
+    title: "Workshop part 2: the repair, step by step",
+    minutes: 9,
+    covers: ["ch2-workshop-repair-steps", "ch2-workshop-why-it-works"],
+    body: `We rebuild the broken prompt systematically, adding one pillar at a time. The goal: a tailored itinerary suggestion for travellers interested in history, nature and food.
+
+## Step 1: add context
+
+Define the traveller profile and the trip parameters specifically for Bosnia and Herzegovina:
+
+> We are two adults planning a 14-day trip to Bosnia and Herzegovina in early September. We prefer mid-range accommodation and activities (budget about 120 EUR / 235 BAM per person per day, excluding flights). Our main interests are exploring history (especially Ottoman and Austro-Hungarian influences), stunning nature (rivers, mountains, waterfalls), unique historic towns, delicious regional food (ćevapi, pita, Bosnian coffee, local Herzegovinian wine) and some moderate hiking. We strongly dislike large, noisy cities and prefer scenic drives over quick highway routes. We plan to rent a car.
+
+## Step 2: refine the instructions and request a structure
+
+Make the action specific, suggest relevant regions and state the required output structure explicitly:
+
+> Suggest a potential 14-day driving itinerary through Bosnia and Herzegovina based on our interests. Focus route suggestions primarily around Sarajevo, the Konjic area and the Mostar area (including Blagaj, Počitelj and Kravica), and possibly include Sutjeska National Park if feasible for moderate hiking. Allocate days logically. For each major stop or region, structure the output exactly as in the example below, giving 1 to 2 specific historic sites, 1 to 2 authentic regional food or drink experiences, and 1 to 2 accessible scenic spots or moderate hiking options, each with a brief justification.
+
+## Step 3: add an example (a few-shot demonstration)
+
+Provide a "recipe card" showing the exact format for one itinerary segment, here the Mostar area (about 3 days): a heading with the region and days, then three labelled groups, each item with a one-sentence justification.
+
+\`\`\`
+**Region/Stop: Mostar Area (Approx. 3 Days)**
+* **Historic Sites:**
+  * Explore Mostar's Old Town & Stari Most (Old Bridge): A UNESCO site rebuilt after the war, showcasing stunning Ottoman architecture and history. *Justification: Core historical interest.*
+  * Visit the Blagaj Tekija (Dervish House): A beautiful historic monastery built into a cliff beside the Buna river spring. *Justification: Unique historical/cultural site.*
+* **Food & Drink:**
+  * Try traditional Herzegovinian grilled meats in the Old Town: Experience local ćevapi or pljeskavica near the bridge. *Justification: Authentic regional food experience.*
+  * Sample Žilavka or Blatina wines from local vineyards: Visit a nearby winery or ask for local wine recommendations. *Justification: Regional wine interest.*
+* **Nature & Scenery:**
+  * Visit Kravica Waterfalls: Stunning, wide waterfalls offering a refreshing break and beautiful photo opportunities (possible to swim in summer). *Justification: Major natural attraction.*
+  * Walk along the Buna River spring in Blagaj: Enjoy the powerful river source and scenic surroundings near the Tekija. *Justification: Accessible scenic beauty.*
+\`\`\`
+
+## Step 4: add constraints
+
+Set limits for content, length and adherence to the demonstrated format:
+
+- Follow the exact structure of the example for every region or stop.
+- Keep justifications brief, ideally one sentence.
+- Do **not** recommend specific hotel or restaurant names. Suggest types instead, such as a traditional guesthouse, a mountain motel, a local ćevabdžinica or a riverside cafe.
+- Total length for the full 14-day itinerary: approximately 600 to 800 words.
+- Present the itinerary in a logical sequence, by day ranges or regions.
+- Avoid routing through large industrial cities such as Zenica unless unavoidable to reach a key site.
+
+## Step 5: assemble with delimiters, the final blueprint
+
+Combine everything using clear Markdown separators:
+
+\`\`\`\`
+### CONTEXT ###
+Travelers: Two adults
+Trip Length: 14 days
+Time of Year: Early September
+Budget: Mid-range (approx. 120 EUR / 235 BAM per person per day, excluding flights)
+Interests: History (Ottoman/Austro-Hungarian influences), stunning nature (rivers,
+mountains, waterfalls), unique historic towns, regional food, moderate hiking.
+Dislikes: Large/noisy cities, rushing between places.
+Transport: Rental car (prefer scenic routes).
+
+### INSTRUCTION ###
+Suggest a potential 14-day driving itinerary through Bosnia and Herzegovina based
+on our interests. Focus on Sarajevo, Konjic area, Mostar area (including Blagaj,
+Pocitelj, Kravica), and possibly Sutjeska National Park. Allocate days logically.
+For each major stop or region, structure the output exactly as shown in the
+example below, providing:
+1. 1-2 specific historic site recommendations. Justify briefly.
+2. 1-2 authentic regional food/drink experiences. Justify briefly.
+3. 1-2 accessible scenic spots or moderate hiking options. Justify briefly.
+
+### EXAMPLE OUTPUT FORMAT (Follow this structure for EACH suggested stop/region) ###
+(the complete Mostar area example from step 3, unchanged)
+
+### CONSTRAINTS ###
+* Follow the exact formatting structure of the example for each region or stop.
+* Keep justifications brief (1 sentence ideally).
+* Do NOT recommend specific hotel or restaurant names.
+* Total output length for the full itinerary: approximately 600-800 words.
+* Present the full itinerary in a logical sequence.
+* Avoid routing through large industrial cities (like Zenica) unless unavoidable.
+
+### ITINERARY SUGGESTION OUTPUT ###
+\`\`\`\`
+
+## Why the repaired prompt works
+
+This systematically built prompt now uses all five pillars and turns a vague request into a precise specification. The clear **context** tailors the advice to the travellers' needs and to Bosnia and Herzegovina. The detailed **instructions** define the exact task and the information required. The crucial **example** demonstrates the expected output structure without ambiguity. The **constraints** control length and content, and enforce the format. Finally the **delimiters** (\`### TAG ###\`) organize the components clearly. Together they give the model everything it needs to produce a genuinely helpful, relevant, structured and actionable suggestion: the power of methodical prompt engineering.
+
+**Every effective prompt is composed of five pillars:** context (background and role), instructions (directing the action specifically), examples (demonstrating the wanted format or style), constraints (setting limits and rules) and delimiters (structuring the prompt clearly).`,
   },
 ];
 
@@ -335,5 +487,40 @@ export const FIVE_PILLARS_EXERCISES: ExerciseWithSamples[] = [
       good: ["Describe the top 3 benefits of our software for small business owners. Under 200 words. Avoid jargon and keep an encouraging tone."],
       bad: ["Describe the benefits of using our software, please be thorough.", "Describe the benefits of using our software."],
     },
+  },
+  {
+    slug: "diagnose-by-pillar",
+    kind: "fill",
+    title: "Diagnose the broken prompt",
+    promptText: "The broken prompt \"Tell me about travel in Bosnia and Herzegovina\" fails on every pillar. Name the missing or weak pillar in each finding.",
+    public: {
+      template:
+        "There is no traveller profile, no dates and no budget, so the missing pillar is {{a}}.\n\"Tell me about\" names no task, so the weak pillar is {{b}}.\nNo sample of a wanted day-by-day format is shown, so the missing pillar is {{c}}.\nNothing limits length, content or budget, so the missing pillar is {{d}}.\nNothing would separate the parts of a longer version, so the missing pillar is {{e}}.",
+      blanks: [
+        { id: "a", choices: ["Context", "Instructions", "Examples", "Constraints", "Delimiters"] },
+        { id: "b", choices: ["Context", "Instructions", "Examples", "Constraints", "Delimiters"] },
+        { id: "c", choices: ["Context", "Instructions", "Examples", "Constraints", "Delimiters"] },
+        { id: "d", choices: ["Context", "Instructions", "Examples", "Constraints", "Delimiters"] },
+        { id: "e", choices: ["Context", "Instructions", "Examples", "Constraints", "Delimiters"] },
+      ],
+    },
+    answer: { correct: { a: "Context", b: "Instructions", c: "Examples", d: "Constraints", e: "Delimiters" } },
+    explanation: "Each finding points to exactly one pillar. Naming the missing pillar turns a vague feeling that the prompt is bad into a concrete repair plan.",
+  },
+  {
+    slug: "which-repair-step-adds-the-example",
+    kind: "choice",
+    title: "Which repair step?",
+    promptText: "In the repair workshop, which step adds a \"recipe card\" that shows the exact output format for one itinerary segment?",
+    public: {
+      options: [
+        "Step 4, add constraints",
+        "Step 3, add an example (a few-shot demonstration)",
+        "Step 5, assemble with delimiters",
+        "Step 1, add context",
+      ],
+    },
+    answer: { correct: 1 },
+    explanation: "Step 3 adds the example: one region shown exactly as every region should be formatted. Step 4 then adds a constraint that every region must follow that format.",
   },
 ];

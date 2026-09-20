@@ -142,6 +142,12 @@ export default function DashboardPage() {
           <Link href="/dictionary" className="inline-flex min-h-11 items-center underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]">
             Dictionary
           </Link>
+          <Link href="/assistant" className="inline-flex min-h-11 items-center underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]">
+            Assistant
+          </Link>
+          <Link href="/prompt-school" className="inline-flex min-h-11 items-center underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]">
+            Prompt School
+          </Link>
         </div>
       </div>
     </div>

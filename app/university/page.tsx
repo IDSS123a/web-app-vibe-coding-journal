@@ -65,8 +65,8 @@ function CourseList() {
       <div className="mx-auto max-w-4xl xl:max-w-5xl">
         <div className="mb-12 border-b-4 border-black pb-8">
           <p className="mb-2 text-xs font-bold uppercase tracking-widest text-[#FF3000]">Premium</p>
-          <h1 className="text-4xl font-black uppercase tracking-tighter text-black md:text-5xl">
-            Vibe-Coding University
+          <h1 className="break-words text-4xl font-black uppercase tracking-tighter text-black md:text-5xl">
+            Vibe-Coding University - <span lang="grc" className="normal-case">Στοά</span>
           </h1>
           <p className="mt-2 text-sm text-black">
             25 core lessons per level across 5 chapters. Pass each chapter&apos;s quiz to unlock the

@@ -81,13 +81,14 @@ export function UpgradeToPremiumBanner() {
           </h3>
           <p className="mb-3 text-sm leading-relaxed text-black">
             Your ${PREMIUM_PRICE_USD - UPGRADE_PRICE_USD} already counts. Pay only the difference and open Vibe-Coding University
-            (75 lessons with quizzes and level tests), the Dictionary of 2,600+ terms and the Assistant that writes your
-            build-ready prompts.
+            (75 lessons with quizzes and level tests), the Dictionary of 2,600+ terms, the Assistant that writes your
+            build-ready prompts and the Prompt School.
           </p>
           <ul className="flex flex-wrap gap-x-5 gap-y-1 text-xs font-bold uppercase tracking-widest text-black">
             <li>University</li>
             <li>Dictionary</li>
             <li>Assistant</li>
+            <li>Prompt School</li>
           </ul>
         </div>
         <div className="w-full md:w-72">

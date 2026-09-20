@@ -74,7 +74,9 @@ function Overview() {
       <div className="mx-auto max-w-4xl xl:max-w-5xl">
         <div className="mb-10 border-b-4 border-black pb-8">
           <p className="mb-2 text-xs font-bold uppercase tracking-widest text-[#FF3000]">Premium</p>
-          <h1 className="text-4xl font-black uppercase tracking-tighter text-black md:text-5xl">Prompt School</h1>
+          <h1 className="break-words text-4xl font-black uppercase tracking-tighter text-black md:text-5xl">
+            Prompt School - <span lang="grc" className="normal-case">Ἀγορά</span>
+          </h1>
           <p className="mt-3 max-w-2xl text-sm leading-relaxed text-black">
             Learn to write prompts that work, from a first clear request to advanced techniques. The course follows the
             book Mastering Prompt Engineering. Every chapter has short lessons and hands-on practice: you complete,

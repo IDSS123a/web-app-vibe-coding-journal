@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { computeSourceFailure, isSourceDue, SOURCE_RETRY_BACKOFF_HOURS } from "./domain";
+import { computeSourceFailure, dropKnownUrls, isSourceDue, SOURCE_RETRY_BACKOFF_HOURS } from "./domain";
 
 const NOW = new Date("2026-09-19T12:00:00.000Z");
 
@@ -30,5 +30,21 @@ describe("source cool-down policy", () => {
 
   it("a source disabled by a person (no retry_after) is never retried automatically", () => {
     expect(isSourceDue({ enabled: false, retry_after: null }, NOW)).toBe(false);
+  });
+});
+
+describe("dropKnownUrls", () => {
+  it("drops items whose URL is already stored and keeps the first of a repeated URL", () => {
+    const items = [
+      { url: "https://a.example/1", title: "A" },
+      { url: "https://a.example/2", title: "B" },
+      { url: "https://a.example/1", title: "A again, retitled" },
+      { url: "https://a.example/3", title: "C" },
+    ];
+    const kept = dropKnownUrls(items, new Set(["https://a.example/2"]));
+    expect(kept.map((i) => i.title)).toEqual(["A", "C"]);
+  });
+  it("keeps everything when nothing is known", () => {
+    expect(dropKnownUrls([{ url: "x" }, { url: "y" }], new Set())).toHaveLength(2);
   });
 });

@@ -89,6 +89,13 @@ function Practice() {
 
             <h1 className="mb-6 text-3xl font-black uppercase tracking-tighter text-black md:text-4xl">Practice</h1>
 
+            {passed && (
+              <p role="status" className="mb-6 border-l-8 border-black py-1 pl-3 text-sm text-black">
+                You have passed this chapter. The next chapter opens in the School once it is written.{" "}
+                <Link href="/prompt-school" className="font-bold underline decoration-2 underline-offset-4 hover:text-[#FF3000]">Back to the School</Link>
+              </p>
+            )}
+
             <div className="space-y-8">
               {data.exercises.map((ex, i) => (
                 <ExercisePlayer key={ex.id} exercise={{ ...ex, bestScore: best[ex.id] ?? null }} token={token} index={i + 1} total={data.exercises.length} onChecked={onChecked} />

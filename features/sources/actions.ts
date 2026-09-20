@@ -9,7 +9,7 @@
 import { createHash } from "crypto";
 import Parser from "rss-parser";
 import { getEnabledSources, updateSource } from "./repository";
-import { computeSourceFailure, SOURCE_HEALTH_CONFIG, SOURCE_RECOVERED } from "./domain";
+import { computeSourceFailure, dropKnownUrls, SOURCE_HEALTH_CONFIG, SOURCE_RECOVERED } from "./domain";
 import { supabaseAdmin } from "@/lib/db/client";
 import { stripAiTells } from "@/lib/text/no-ai-tells";
 
@@ -178,6 +178,22 @@ export async function collectArticlesFromAllSources(): Promise<{
       if (byHash.size > 0) {
         const { data: rejected } = await supabaseAdmin.from("rejected_articles").select("hash").in("hash", [...byHash.keys()]);
         for (const r of rejected ?? []) byHash.delete(r.hash as string);
+      }
+
+      // One row per URL across ALL sources (data integrity pass, 2026-09-20): the hash includes the title, so the
+      // same story under a slightly different title used to be stored twice. Known URLs are looked up in small
+      // chunks to keep the request line short.
+      if (byHash.size > 0) {
+        const candidates = [...byHash.values()] as Array<{ url: string; hash: string } & Record<string, unknown>>;
+        const urls = [...new Set(candidates.map((c) => c.url))];
+        const known = new Set<string>();
+        for (let i = 0; i < urls.length; i += 20) {
+          const { data: rows, error: knownError } = await supabaseAdmin.from("articles").select("url").in("url", urls.slice(i, i + 20));
+          if (knownError) throw new Error(`Failed to look up known URLs: ${knownError.message}`);
+          for (const r of rows ?? []) known.add(r.url as string);
+        }
+        byHash.clear();
+        for (const kept of dropKnownUrls(candidates, known)) byHash.set(kept.hash, kept);
       }
 
       let added = 0;

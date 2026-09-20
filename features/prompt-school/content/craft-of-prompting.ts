@@ -1,5 +1,5 @@
 /**
- * Chapter "The Prompt Engineer's Craft" (book chapter 1, "Mindset and Workflow"): 4 lessons and 8 exercises,
+ * Chapter "The Prompt Engineer's Craft" (book chapter 1, "Mindset and Workflow"): 5 lessons and 10 exercises,
  * condensed from the Director's book, which is the only source. No em dashes (writing rule, PDL-057).
  * `samples` on repair exercises exist only for the content test; they are never stored.
  */
@@ -7,9 +7,49 @@ import type { ExerciseWithSamples, LessonContent } from "./five-pillars";
 
 export const CRAFT_LESSONS: LessonContent[] = [
   {
+    slug: "welcome-the-dawn-of-the-prompt-engineer",
+    title: "Welcome: the dawn of the prompt engineer",
+    minutes: 5,
+    covers: ["foreword-dawn"],
+    body: `Chances are you have already talked to one of these systems. They converse, write, summarize and even generate code with startling fluency. It can feel almost magical, like a tireless, knowledgeable assistant at your fingertips. You type a question and an answer appears. Simple.
+
+Or is it? As you have probably found, truly useful, reliable and precisely tailored results usually need more than a basic question. A vague request may return a generic answer. An ambiguous instruction can send the system somewhere entirely unexpected. Sometimes the output is brilliant, sometimes it is baffling. **Why the inconsistency?**
+
+## Prompting is a craft, like the telegraph
+
+Think of the early telegraph operators. They could not simply shout into the machine. They had to learn a precise code, Morse code, that turned complex thoughts into unambiguous signals of dots and dashes, and their success depended entirely on the **clarity and structure of their input**.
+
+We are in a similar position today, except our code is made of natural language. **Prompt engineering** is the craft of shaping your words, context and instructions into signals that reliably guide these systems toward the outcome you intend. It is the move from simply talking to the machine to **skillfully directing** it.
+
+## Who this course is for
+
+It follows a book written for experts in their own fields, such as marketing, research, education, business and the arts, who do not necessarily write computer code. You can see what these tools can do, and you want more than basic interaction: sophisticated, reliable results, and an understanding of **why** some prompts work wonders while others fall flat.
+
+There is no heavy jargon and no complicated algorithms. The ideas come through everyday analogies: prompts as architectural blueprints, reasoning as clockwork, refinement as a watchmaker's patient adjustments.
+
+## The road ahead
+
+1. The mindset and workflow of a prompt engineer: how to think, plan and iterate.
+2. The anatomy of a great prompt, its essential building blocks, the five pillars.
+3. Foundational and advanced techniques.
+4. Practice on real-world scenarios.
+5. How to optimize and debug your work.
+6. The vital questions of ethics and responsibility.
+7. A look at the future of this fast-changing field.
+
+## Your personal workshop
+
+Treat this School as your personal workshop: conceptual understanding, practical techniques (the blueprints and tools), and hands-on exercises to build real proficiency. Precisely guiding language systems is becoming an essential skill in almost every field. It helps you create better content, analyze information more effectively, automate tasks more reliably and work more creatively. Like any valuable craft, it takes practice and dedication.
+
+The journey begins with the first prompt you choose to deliberately craft and refine.
+
+**Try this:** write down one task at work where an AI answer disappointed you. Keep it at hand: by the end of this chapter you will know how to repair it.`,
+  },
+  {
     slug: "casual-user-to-deliberate-designer",
     title: "From casual user to deliberate designer",
     minutes: 5,
+    covers: ["ch1-beyond-basic-questions"],
     body: `Almost everyone starts the same way. You ask a question, the system answers fluently, and it feels almost too easy. Then comes the other side: the reply that misses the point, the output that ignores half of your request, the complex task that never works twice in a row.
 
 The gap between those hit-or-miss results and consistently good ones is rarely the model. It is the **method** of the person guiding it. Prompt engineering is a craft, and a craft needs two things: a mindset and a workflow. This chapter gives you both.
@@ -36,6 +76,7 @@ Think of a napkin sketch next to an architect's blueprint. The sketch conveys an
     slug: "the-iterative-heartbeat",
     title: "The iterative heartbeat: draft, test, analyze, refine",
     minutes: 5,
+    covers: ["ch1-iterative-heartbeat"],
     body: `No complex design is perfect on its first try. An architect redraws plans, a writer revises drafts, an engineer tests prototypes. Prompts are no different, and probably need it more: language is nuanced, and the inner workings of these models are not fully visible to you. For any non-trivial task you usually cannot predict the exact output in advance.
 
 So the core of the workflow is a loop.
@@ -66,6 +107,7 @@ Expecting a perfect first prompt for a real task is unrealistic. Plan time for t
     slug: "define-success-and-plan-on-paper",
     title: "Define success first, then plan on paper",
     minutes: 6,
+    covers: ["ch1-goal-definition", "ch1-paper-and-pencil"],
     body: `A watchmaker knows exactly what they are building before they touch a gear. An architect understands the purpose of the building before drawing a line. The most important step in prompting also happens **before you write a single word of the prompt**: defining your goal with absolute clarity.
 
 ## A goal you can check
@@ -103,7 +145,8 @@ A few minutes of sketching saves a lot of time in refinement, and gives you a mu
   {
     slug: "think-like-an-engineer",
     title: "Think like an engineer, work like a scientist",
-    minutes: 6,
+    minutes: 7,
+    covers: ["ch1-thinking-like-engineer", "ch1-role-of-experimentation", "ch1-laying-groundwork"],
     body: `Good engineers do not design only for ideal conditions. They think about stress, wear, mistakes and misuse, and they build in safety margins. A skilled prompt writer does the same, with a slightly skeptical eye: language is ambiguous, and the model does not truly grasp your intent the way a colleague would.
 
 ## Design defensively
@@ -130,11 +173,49 @@ Change **one** thing at a time, so you know what caused the difference. Try diff
 
 Write down what works for which kind of task and model. Over time you build a personal library of patterns and templates, and that library is where speed comes from. The best prompt writers are curious, systematic and willing to learn from every result.
 
+## Laying the groundwork for mastery
+
+Mastering prompt engineering does not begin with memorizing commands. It begins with the right **mindset** and a **methodical workflow**: moving from passive user to deliberate designer, embracing the iterative heartbeat of refinement, defining goals with precision, planning the structure of a prompt, thinking like an engineer to anticipate failures, and experimenting continuously. Grounded in this craft-focused approach, you are ready for the anatomy and techniques in the chapters that follow.
+
 **Try this:** take one prompt and list three ambiguous words or missing-information cases in it. Rewrite it so each one is handled.`,
   },
 ];
 
 export const CRAFT_EXERCISES: ExerciseWithSamples[] = [
+  {
+    slug: "why-the-telegraph",
+    kind: "choice",
+    title: "Why the telegraph?",
+    promptText: "The book compares prompting to the early telegraph operators. What is the point of the comparison?",
+    public: {
+      options: [
+        "Prompts must be as short as possible, whatever the task",
+        "Success depended on the clarity and structure of the input, not on shouting at the machine",
+        "Language systems only understand Morse code",
+        "Old technology is more reliable than new technology",
+      ],
+    },
+    answer: { correct: 1 },
+    explanation: "Telegraph operators had to encode thoughts into a precise, unambiguous code, and their results depended on the clarity and structure of that input. Prompting is the same discipline in natural language.",
+  },
+  {
+    slug: "order-the-road-ahead",
+    kind: "order",
+    title: "Put the road ahead in order",
+    promptText: "The foreword lays out the path of the book. Put these stages in the order it presents them.",
+    public: {
+      blocks: [
+        { id: "ethics", text: "The vital questions of ethics and responsibility" },
+        { id: "anatomy", text: "The anatomy of a great prompt, the five pillars" },
+        { id: "future", text: "A look at the future of the field" },
+        { id: "mindset", text: "The mindset and workflow of a prompt engineer" },
+        { id: "optimize", text: "How to optimize and debug your work" },
+        { id: "techniques", text: "Foundational and advanced techniques, practised on real-world scenarios" },
+      ],
+    },
+    answer: { order: ["mindset", "anatomy", "techniques", "optimize", "ethics", "future"] },
+    explanation: "The path runs from mindset and workflow, to the anatomy of a prompt, to techniques and practice, then optimizing and debugging, then ethics, and finally the future.",
+  },
   {
     slug: "designer-or-casual",
     kind: "choice",

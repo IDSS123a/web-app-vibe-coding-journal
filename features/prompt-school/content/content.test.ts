@@ -2,14 +2,15 @@ import { describe, expect, it } from "vitest";
 import { gradeExercise, gradeRepair, validateExerciseContent, type RepairAnswer, type RepairPublic } from "../domain";
 import { AUTHORED_CHAPTERS } from "./index";
 import { PLANNED_LESSON_TOTAL, PROMPT_SCHOOL_OUTLINE } from "./outline";
+import { BOOK_MAP, sectionsOfChapter } from "./book-map";
 import { hasAiTells } from "@/lib/text/no-ai-tells";
 
 describe("Prompt School outline", () => {
-  it("has unique slugs and a plan of about 45 lessons", () => {
+  it("has unique slugs and a plan that covers the whole book (about a hundred lessons)", () => {
     const slugs = PROMPT_SCHOOL_OUTLINE.map((c) => c.slug);
     expect(new Set(slugs).size).toBe(slugs.length);
-    expect(PLANNED_LESSON_TOTAL).toBeGreaterThanOrEqual(40);
-    expect(PLANNED_LESSON_TOTAL).toBeLessThanOrEqual(50);
+    expect(PLANNED_LESSON_TOTAL).toBeGreaterThanOrEqual(90);
+    expect(PLANNED_LESSON_TOTAL).toBeLessThanOrEqual(140);
   });
   it("covers all three levels", () => {
     const levels = new Set(PROMPT_SCHOOL_OUTLINE.map((c) => c.level));
@@ -39,9 +40,9 @@ describe.each(AUTHORED_CHAPTERS)("Authored chapter $slug", (chapter) => {
     }
   });
 
-  it("has 8 exercises with unique slugs and a mix of kinds", () => {
-    expect(chapter.exercises).toHaveLength(8);
-    expect(new Set(chapter.exercises.map((e) => e.slug)).size).toBe(8);
+  it("has at least 8 exercises with unique slugs and a mix of kinds", () => {
+    expect(chapter.exercises.length).toBeGreaterThanOrEqual(8);
+    expect(new Set(chapter.exercises.map((e) => e.slug)).size).toBe(chapter.exercises.length);
     expect(new Set(chapter.exercises.map((e) => e.kind)).size).toBeGreaterThanOrEqual(4);
     expect(chapter.exercises.some((e) => e.kind === "repair")).toBe(true);
   });
@@ -108,6 +109,49 @@ describe.each(AUTHORED_CHAPTERS)("Authored chapter $slug", (chapter) => {
     for (const e of chapter.exercises) {
       if (e.kind !== "order") continue;
       expect(e.public.blocks.map((b) => b.id)).not.toEqual(e.answer.order);
+    }
+  });
+});
+
+describe("Book coverage (the Director's rule: the whole book, no segment skipped)", () => {
+  const outlineSlugs = new Set(PROMPT_SCHOOL_OUTLINE.map((c) => c.slug));
+
+  it("the book map has unique section ids, each assigned to a chapter of the outline", () => {
+    const ids = BOOK_MAP.map((b) => b.id);
+    expect(new Set(ids).size).toBe(ids.length);
+    for (const b of BOOK_MAP) expect(outlineSlugs.has(b.chapter), `${b.id} -> ${b.chapter}`).toBe(true);
+  });
+
+  it("every chapter of the outline has at least one section in the book map", () => {
+    for (const c of PROMPT_SCHOOL_OUTLINE) expect(sectionsOfChapter(c.slug).length, c.slug).toBeGreaterThan(0);
+  });
+
+  it("every section a lesson claims exists in the map and belongs to that lesson's chapter", () => {
+    const byId = new Map(BOOK_MAP.map((b) => [b.id, b]));
+    for (const ch of AUTHORED_CHAPTERS) {
+      for (const l of ch.lessons) {
+        expect(l.covers.length, `${ch.slug}/${l.slug} covers something`).toBeGreaterThan(0);
+        for (const id of l.covers) {
+          const sec = byId.get(id);
+          expect(sec, `${l.slug} claims unknown section ${id}`).toBeDefined();
+          expect(sec?.chapter, `${l.slug} claims ${id} of another chapter`).toBe(ch.slug);
+        }
+      }
+    }
+  });
+
+  it("every authored chapter covers EVERY section of its part of the book", () => {
+    for (const ch of AUTHORED_CHAPTERS) {
+      const covered = new Set(ch.lessons.flatMap((l) => l.covers));
+      const missing = sectionsOfChapter(ch.slug).filter((s) => !covered.has(s.id)).map((s) => s.id);
+      expect(missing, `${ch.slug} leaves book sections uncovered`).toEqual([]);
+    }
+  });
+
+  it("an authored chapter has no provisional sections left (its granularity was checked against the source text)", () => {
+    for (const ch of AUTHORED_CHAPTERS) {
+      const provisional = sectionsOfChapter(ch.slug).filter((s) => s.provisional).map((s) => s.id);
+      expect(provisional, ch.slug).toEqual([]);
     }
   });
 });

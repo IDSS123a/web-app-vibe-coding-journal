@@ -35,10 +35,35 @@ const FEATURES = [
   },
   {
     n: "04",
+    premium: true,
     title: "University",
     body: "A full curriculum on building software with AI, 75 lessons across beginner, intermediate, and expert, organized into chapters with quizzes and a final test per level. Start from wherever actually fits you.",
     href: "/university",
     cta: "Start the University",
+  },
+  {
+    n: "05",
+    premium: true,
+    title: "Dictionary",
+    body: "More than 2,600 terms in plain language, searchable in a keystroke and grouped by topic and level. It keeps growing: new terms are added automatically when they start appearing across the daily news.",
+    href: "/dictionary",
+    cta: "Open the Dictionary",
+  },
+  {
+    n: "06",
+    premium: true,
+    title: "Assistant",
+    body: "Answer a few plain questions about your project and get a build-ready prompt for Claude Code, Cursor or any AI coding tool, with a flow diagram and next steps. Up to 5 a day.",
+    href: "/assistant",
+    cta: "Write a Prompt",
+  },
+  {
+    n: "07",
+    premium: true,
+    title: "Prompt School",
+    body: "A hands-on course built on the book Mastering Prompt Engineering: lessons and exercises from your first clear prompt to advanced techniques. Chapters open one after another as you complete them.",
+    href: "/prompt-school",
+    cta: "Enter the School",
   },
 ];
 
@@ -56,7 +81,7 @@ export default function WelcomePage() {
           Welcome to Vibe-Coding Journal
         </h1>
         <p className="mx-auto mt-4 max-w-xl text-center text-sm text-black">
-          Your subscription is active. Here is exactly what you can do now.
+          Your subscription is active. Here is what the Journal offers. Features marked Premium need the $50 tier.
         </p>
 
         <div className="mt-12 border-black md:border-4">
@@ -67,6 +92,7 @@ export default function WelcomePage() {
             >
               <span className="text-xs font-bold uppercase tracking-widest text-[#FF3000]">
                 {feature.n}
+                {"premium" in feature && feature.premium ? " · Premium" : ""}
               </span>
               <h2 className="mt-2 text-2xl font-black uppercase tracking-tight text-black">
                 {feature.title}

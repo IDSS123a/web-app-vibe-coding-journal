@@ -2257,6 +2257,36 @@ fully matched. `/plan-feature` is next.
 
 ---
 
+## PDL-063 Prompt School must cover the whole book, and cross-sells it
+
+**Date:** 2026-09-20. Director, two standing instructions: (1) "Prompt School must include the complete content of my book. We must not skip a single segment. If chapters need more text and a larger number of lessons, that is fine, as long as all content is properly covered." (2) The School page cross-sells the book: show its cover; a click triggers gamification and opens https://www.paypal.com/ncp/payment/FKMN5XAS97TEY in a new window.
+
+**Coverage, made enforceable.** The 47 lessons planned earlier were a floor, not a target. The outline now has 18 chapters and about 98 planned lessons and covers every part of the book, including the foreword and the six appendices that the first outline left out (A glossary, B fifteen blueprints, D techniques quick reference, E further reading, F platforms and tools; C the Markdown manual was already there). `content/book-map.ts` lists 204 sections (the book's own headings and worked examples), each assigned to a School chapter, and every lesson declares `covers`. The content test fails when an authored chapter leaves any of its sections uncovered, when a lesson claims a foreign or unknown section, or when an authored chapter still has provisional sections; `npm run book:coverage` prints the picture. The section list for unwritten chapters is provisional and is re-checked against the source text when each chapter is written. Front matter (copyright, ISBN, acknowledgements, table of contents) is not teaching content and is not listed.
+
+**Audit of chapters 1 to 3 (written the same day, condensed).** Compared with the source text and closed: a lesson for the foreword; chapter 1 gained the closing "laying the groundwork"; chapter 2 gained "why context matters", the full "common delimiter choices" and "power of clear fences", and its workshop became two lessons (diagnosis by pillar; the five repair steps with the complete assembled prompt); chapter 3 gained a lesson with all seven worked examples and the two complete gold star outputs. Chapters 1 to 3 now stand at 5, 8 and 5 lessons and 10 exercises each, 51 of 204 sections (25 percent of the sections, about 15 percent of the book's pages, since the appendices are long). Existing lesson slugs were kept, so nobody's progress is lost; the chapter score now averages over the added exercises too.
+
+**Book cross-sell.** `components/prompt-school/BookCrossSell.tsx` shows the cover (`public/mastering-prompt-engineering-cover.jpg`, from the Director) with a pitch on the overview, and a compact version on chapter pages. A click on the cover or the button plays the gamification, the cover jumps and confetti falls, pays a one-time bonus of 25 coins per reader through the existing rewards system (new event `book_discovery`, deduplicated, so a repeat click only replays the animation, no coin farming), and opens the payment page. The new window is opened inside the click so pop-up blockers allow it, then pointed at PayPal after the celebration; if the browser blocks it, a plain link appears. The reader pays on PayPal's own page and nothing about payment is handled by the app. The pitch states only facts from the book's table of contents and gives no price, since the payment page sets it. The smoke test clicks the cover in a real browser and checks the celebration, the PayPal window and the bonus, then restores the test account's coins.
+
+---
+
+## PDL-064 Greek names on two page titles, and the third stress test
+
+**Date:** 2026-09-20. Director: add the name of the ancient school to the two page titles in Ancient Greek, "Prompt School - Ἀγορά" (the Agora) and "Vibe-Coding University - Στοά" (the Stoa), then run the overall brutal stress test again, fix what it finds, push, and continue with the strict plan.
+
+**Titles.** Both page headings now carry the Greek word, set in a `lang="grc"` span that keeps its own letter case (the headings are otherwise upper case, which would alter polytonic Greek), and both headings can break onto a second line on a 280 px screen. Checked in Chrome: the Greek renders in the site font at phone and laptop width. The smoke test asserts both headings.
+
+**Third stress test, method** (all re-runnable, run against the production build): lint, typecheck, 298 unit tests, production build, `npm run probe:security` (133 checks), `npm run smoke:e2e` (about 40 checks in real Chrome), `npm run audit:responsive` (12 screen settings from 280 to 3440 px plus OS dark mode, 32 pages, 384 checks), the new `npm run check:integrity` (read-only pass over the production database, 40 checks), the writing-rule sweep in dry run (0 rows), a dependency audit, and a secret scan of tracked files and all 224 commits (none found).
+
+**Found and fixed.**
+1. **The same story stored twice (real data bug).** The article hash is SHA-256 of title plus URL, so one story fetched from two feeds under slightly different titles (a blog and its Hacker News post, or an edited title) became two rows with one URL. 26 URLs were stored more than once, 8 of the rows were used in published reports. The collector now looks up known URLs across all sources before inserting and keeps one row per URL (`dropKnownUrls`, tested). `scripts/dedupe-urls.ts` marked the 15 unprotected repeats as duplicates (`duplicate_of`, nothing deleted, reversible); the one repeat that a report uses stays, so published reports and bookmarks are untouched. The integrity pass now fails on any other repeat.
+2. **Overflow at 280 px:** a fill-in exercise whose longest choice was wider than the phone screen (the select box overflowed by 73 px). The exercise box now caps its width and the choice was shortened.
+3. **Overflow at 280 px on the admin University page** once a generated lesson waited for review: the Approve and Reject buttons did not wrap. They do now. This only showed because a lesson was pending, which is why layout audits must run against live data.
+4. **Logical inconsistencies.** The post-payment welcome page listed only the University among Premium features and did not say it needs Premium, and it left out the Dictionary, the Assistant and the Prompt School; it now lists all four, each marked Premium. The upgrade banner, the dashboard links and the README named the Premium features without the Prompt School; fixed. Reaching a level by the book bonus no longer hides the level-up message. After passing a chapter's practice the learner is told where to go next.
+
+**Open, unchanged.** Hourly runs: GitHub delivers the "hourly" trigger every 3 to 5 hours, and each cycle scores about 100 articles before its time budget (18 s per batch call), so the 2,918 unscored articles need about a week; the AI budget itself is far from used (41 of 100 calls in the last 24 h). More frequent triggering, the Next.js PostCSS advisory (build time only), and the items in `sprints/STRESS_TEST_2026-09-18_AND_PLAN.md` remain.
+
+---
+
 ---
 
 *Vibe-Coding Journal — Project Decision Log — updated as decisions are made.*

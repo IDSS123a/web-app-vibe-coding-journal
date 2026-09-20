@@ -13,7 +13,9 @@
     "test:run": "vitest run",
     "audit:responsive": "node --env-file=.env.local scripts/responsive-audit.mjs",
     "probe:security": "node --env-file=.env.local scripts/security-probe.mjs",
-    "smoke:e2e": "node --env-file=.env.local scripts/e2e-smoke.mjs"
+    "smoke:e2e": "node --env-file=.env.local scripts/e2e-smoke.mjs",
+    "book:coverage": "npx --yes tsx scripts/book-coverage.ts",
+    "check:integrity": "npx --yes tsx --env-file=.env.local scripts/data-integrity.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.3.0",

@@ -1,6 +1,6 @@
 /**
- * Chapter "Foundational Techniques" (book chapter 3, "Direct Instruction and Demonstration"): 4 lessons and
- * 8 exercises, condensed from the Director's book, which is the only source. No em dashes (writing rule,
+ * Chapter "Foundational Techniques" (book chapter 3, "Direct Instruction and Demonstration"): 5 lessons and
+ * 10 exercises, written from the Director's book, which is the only source. No em dashes (writing rule,
  * PDL-057). `samples` on repair exercises exist only for the content test; they are never stored.
  */
 import type { ExerciseWithSamples, LessonContent } from "./five-pillars";
@@ -10,6 +10,7 @@ export const FOUNDATIONAL_LESSONS: LessonContent[] = [
     slug: "zero-shot-the-telegraph-method",
     title: "Zero-shot: the telegraph method",
     minutes: 6,
+    covers: ["ch3-intro-two-modes", "ch3-zero-shot-telegraph", "ch3-zero-shot-when-works", "ch3-zero-shot-why-works", "ch3-zero-shot-limitations"],
     body: `You now know the parts of a prompt. This chapter is about how to **operate** them. There are two fundamental ways to guide a language system:
 
 1. **Direct instruction (zero-shot prompting):** you give a clear command and rely on what the system already knows.
@@ -50,6 +51,7 @@ When your telegrams keep missing, it is time to stop only telling and start **sh
     slug: "few-shot-the-recipe-card",
     title: "Few-shot: the recipe card approach",
     minutes: 7,
+    covers: ["ch3-few-shot-recipe-card", "ch3-few-shot-why-show", "ch3-few-shot-structure", "ch3-one-shot-vs-few-shot"],
     body: `Try to teach someone to make perfect Bosnian coffee from written instructions only. You can describe the džezva, the fine grind, the gentle heat and the ritual of serving. But would the reader truly know how the foam should look just before the pot leaves the heat? For subtle crafts, a demonstration, or at least a detailed recipe card with pictures, works far better.
 
 ## Few-shot learning
@@ -103,9 +105,140 @@ The recipe card is a cornerstone technique for control over format and style. It
 **Try this:** take a task where a zero-shot prompt gave you the wrong format and add two input and output examples. Compare.`,
   },
   {
+    slug: "seven-worked-examples-in-markdown",
+    title: "Seven worked examples in Markdown",
+    minutes: 8,
+    covers: ["ch3-zero-shot-examples", "ch3-few-shot-examples"],
+    body: `Seeing a technique at work makes it stick. Here are the book's seven worked examples, four zero-shot and three few-shot, each laid out with Markdown headings. After each one you see what the model is expected to return.
+
+## Four zero-shot prompts, the telegraph method
+
+**Example 1: factual recall**
+
+\`\`\`
+### INSTRUCTION ###
+What year was the Dayton Agreement signed, formally ending the Bosnian War?
+\`\`\`
+
+Expected output: a direct answer, most likely "1995."
+
+**Example 2: simple text generation (a list)**
+
+\`\`\`
+### INSTRUCTION ###
+List three common ingredients found in traditional Bosnian ćevapi. Use a simple bulleted list.
+\`\`\`
+
+Expected output: a short list such as minced meat (beef, lamb or veal), salt, and garlic (often).
+
+**Example 3: basic explanation**
+
+\`\`\`
+### INSTRUCTION ###
+Explain the basic concept of "sevdah" music in one or two sentences.
+\`\`\`
+
+Expected output: a concise definition relating to Bosnian folk music that expresses melancholy or longing.
+
+**Example 4: simple command**
+
+\`\`\`
+### INSTRUCTION ###
+Convert the following sentence to the past tense: "The tourist visits the Baščaršija market."
+\`\`\`
+
+Expected output: "The tourist visited the Baščaršija market."
+
+In all four cases you rely solely on clear instructions and the model's existing knowledge. You give no examples of how to answer a history question, list ingredients, define a term or change a tense. You send a clear telegram and expect an accurate decoding.
+
+## Three few-shot prompts, the recipe card approach
+
+**Example 1: formatting addresses**
+
+\`\`\`
+### INSTRUCTION ###
+Format the following address components into a standard Bosnian address block,
+placing each part on a new line.
+
+### EXAMPLES ###
+Input: Street=Maršala Tita 5, City=Sarajevo, ZIP=71000, Country=BiH
+Output:
+Maršala Tita 5
+71000 Sarajevo
+Bosnia and Herzegovina
+
+Input: City=Banja Luka, Street=Kralja Petra I Karađorđevića 10, Country=Bosnia and Herzegovina, ZIP=78000
+Output:
+Kralja Petra I Karađorđevića 10
+78000 Banja Luka
+Bosnia and Herzegovina
+
+### ACTUAL TASK ###
+Input: ZIP=88000, Street=Braće Fejića 22, Country=BiH, City=Mostar
+Output:
+\`\`\`
+
+Expected output: a correctly formatted address block for Mostar, following the pattern shown. Notice that the components arrive in a different order each time, and the examples teach the model to reorder them.
+
+**Example 2: extracting information into a bulleted list**
+
+\`\`\`
+### INSTRUCTION ###
+Read the event description and extract the Event Name, Date, and Location into a
+bulleted list using the format shown.
+
+### EXAMPLES ###
+Input: The Sarajevo Film Festival starts on August 15th and takes place at various venues across Sarajevo.
+Output:
+* Event Name: Sarajevo Film Festival
+* Date: August 15th onwards
+* Location: Sarajevo
+
+Input: Join us for the Mostar Bridge Diving competition on July 28th, right at the Stari Most in Mostar!
+Output:
+* Event Name: Mostar Bridge Diving competition
+* Date: July 28th
+* Location: Stari Most, Mostar
+
+### ACTUAL TASK ###
+Input: Experience the Una Regatta, a multi-day kayaking event on the Una River near Bihać, typically held in late July.
+Output:
+\`\`\`
+
+Expected output: a bulleted list with the event name, an approximate date and the location.
+
+**Example 3: simple translation with a contextual tone**
+
+\`\`\`
+### INSTRUCTION ###
+Translate the English phrase into Bosnian, adopting a polite, slightly formal tone
+suitable for addressing an elder.
+
+### EXAMPLES ###
+Input: Hello, how are you?
+Output: Dobar dan, kako ste?
+
+Input: Thank you very much.
+Output: Hvala Vam lijepa.
+
+### ACTUAL TASK ###
+Input: Excuse me, can you help me?
+Output:
+\`\`\`
+
+Expected output: a polite translation such as "Izvinite, možete li mi pomoći?", which follows the formal "Vi" form the examples demonstrate.
+
+## What to notice
+
+The examples directly demonstrate the required structure or stylistic nuance, often more effectively than lengthy instructions could. In the third example, no instruction explains the difference between the informal "ti" and the formal "Vi". The two example pairs show it.
+
+**Try this:** pick one of the seven and change the actual task to something new. Predict the output before you run it.`,
+  },
+  {
     slug: "gold-star-selection",
     title: "Gold star selection: only the best examples",
     minutes: 6,
+    covers: ["ch3-gold-star-quality-sampling", "ch3-gold-star-why", "ch3-gold-star-criteria", "ch3-gold-star-finding"],
     body: `Imagine learning woodworking from a master whose joints are crooked and whose finishes are rough. You would learn to make crooked joints. The demonstration sets the ceiling of the skill.
 
 The same applies to few-shot prompts. The system copies the patterns it sees. If your examples contain errors, inconsistencies, bias or a poor match to the task, the output will repeat those flaws. Choosing or writing only the best examples is called **quality sampling**, and the book calls it the **Gold Star Selection**: like a teacher who puts up only the papers that follow the instructions perfectly.
@@ -139,6 +272,7 @@ The same applies to few-shot prompts. The system copies the patterns it sees. If
     slug: "workshop-from-telegraph-to-recipe-card",
     title: "Workshop: from telegraph to recipe card",
     minutes: 8,
+    covers: ["ch3-practical-exercise", "ch3-why-few-shot-superior", "ch3-choosing-tool"],
     body: `Let us do the whole journey on one task: getting key facts about historical events, clearly and consistently.
 
 ## Step 1: the telegraph draft
@@ -170,7 +304,27 @@ Decide on the exact fields, in a clear list:
 
 ## Step 4: craft gold star examples
 
-Write two accurate, identically formatted examples of different events, for instance the signing of the Dayton Agreement and the opening ceremony of the 1984 Winter Olympics in Sarajevo. Each one uses the same six labels, the same style of bullet, the same level of detail. That consistency is what the system will copy.
+Write two accurate, identically formatted examples of different events. Each one uses the same six labels, the same style of bullet and the same level of detail. That consistency is what the system will copy.
+
+\`\`\`
+Example 1 Input: Signing of the Dayton Agreement
+Example 1 Output:
+* **Event:** Signing of the General Framework Agreement for Peace in Bosnia and Herzegovina (Dayton Agreement)
+* **Date:** Initialed November 21, 1995; formally signed December 14, 1995
+* **Location:** Initialed at Wright-Patterson AFB, Dayton, Ohio, USA; signed in Paris, France
+* **Key Figures Involved:** Alija Izetbegović (Bosnia), Slobodan Milošević (Serbia/FR Yugoslavia), Franjo Tuđman (Croatia), US mediators (e.g., Richard Holbrooke)
+* **Outcome/Immediate Result:** Officially ended the Bosnian War (1992-1995); established the political structure of post-war Bosnia and Herzegovina (two entities: Federation of BiH and Republika Srpska)
+* **Historical Significance:** Brought an end to intense conflict in the Balkans; created a complex political framework still in place today
+
+Example 2 Input: 1984 Winter Olympics Opening Ceremony
+Example 2 Output:
+* **Event:** Opening Ceremony of the XIV Olympic Winter Games
+* **Date:** February 8, 1984
+* **Location:** Koševo Stadium (now Asim Ferhatović Hase Stadium), Sarajevo, Yugoslavia (now Bosnia and Herzegovina)
+* **Key Figures Involved:** Skier Jure Franko (Olympic Oath), figure skater Sanda Dubravčić (lit the Olympic Flame), President Mika Špiljak (opened the Games)
+* **Outcome/Immediate Result:** Officially opened the 1984 Winter Olympics
+* **Historical Significance:** Major international event showcasing Sarajevo and Yugoslavia; a symbol of unity and achievement before the conflicts of the 1990s
+\`\`\`
 
 ## Step 5: assemble and assess
 
@@ -181,10 +335,10 @@ format demonstrated in the examples below.
 
 ### EXAMPLES ###
 Example 1 Input: Signing of the Dayton Agreement
-Example 1 Output: (six labelled facts)
+Example 1 Output: (the six labelled facts shown above)
 
 Example 2 Input: 1984 Winter Olympics Opening Ceremony
-Example 2 Output: (six labelled facts)
+Example 2 Output: (the six labelled facts shown above)
 
 ### ACTUAL TASK ###
 Input: Assassination of Archduke Franz Ferdinand
@@ -349,5 +503,39 @@ export const FOUNDATIONAL_EXERCISES: ExerciseWithSamples[] = [
         "Tell me about the Siege of Sarajevo.",
       ],
     },
+  },
+  {
+    slug: "complete-the-extraction-example",
+    kind: "fill",
+    title: "Complete the extraction pattern",
+    promptText: "This few-shot prompt extracts event details. Following the pattern of the example, choose the right value for each blank in the actual task.",
+    public: {
+      template:
+        "### INSTRUCTION ###\nRead the event description and extract the Event Name, Date and Location into a bulleted list using the format shown.\n\n### EXAMPLES ###\nInput: The Sarajevo Film Festival starts on August 15th and takes place at various venues across Sarajevo.\nOutput:\n* Event Name: Sarajevo Film Festival\n* Date: {{a}}\n* Location: {{b}}\n\n### ACTUAL TASK ###\nInput: Experience the Una Regatta, a multi-day kayaking event on the Una River near Bihać, typically held in late July.\nOutput:\n* Event Name: Una Regatta\n* Date: {{c}}\n* Location: {{d}}",
+      blanks: [
+        { id: "a", choices: ["August 15th onwards", "August 15th to 31st", "Various venues", "Film"] },
+        { id: "b", choices: ["Sarajevo", "Sarajevo, Bosnia", "August 15th", "Festival"] },
+        { id: "c", choices: ["Late July", "Multi-day", "July 28th", "Kayaking"] },
+        { id: "d", choices: ["Una River near Bihać", "Bihać, Sarajevo", "Stari Most, Mostar", "Late July"] },
+      ],
+    },
+    answer: { correct: { a: "August 15th onwards", b: "Sarajevo", c: "Late July", d: "Una River near Bihać" } },
+    explanation: "The example keeps the date as the source states it (\"August 15th onwards\") and the location short and clean. Following the same pattern, the regatta is dated \"Late July\", the approximate time in the text, and located at the Una River near Bihać.",
+  },
+  {
+    slug: "pick-the-polite-translation",
+    kind: "choice",
+    title: "Continue the pattern",
+    promptText: "The examples translate \"Hello, how are you?\" as \"Dobar dan, kako ste?\" and \"Thank you very much.\" as \"Hvala Vam lijepa.\" Which output best continues the pattern for \"Excuse me, can you help me?\"",
+    public: {
+      options: [
+        "Izvini, možeš li mi pomoći?",
+        "Pomoć!",
+        "Excuse me, can you help me?",
+        "Izvinite, možete li mi pomoći?",
+      ],
+    },
+    answer: { correct: 3 },
+    explanation: "Both examples use the polite, formal \"Vi\" form (\"ste\", \"Vam\"). The instruction only asks for a polite, slightly formal tone, and the examples show what that means. \"Izvinite, možete li mi pomoći?\" continues it, while the informal \"ti\" form breaks the pattern.",
   },
 ];

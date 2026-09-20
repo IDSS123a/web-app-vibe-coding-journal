@@ -63,7 +63,9 @@ try {
   const { data: rep } = await admin.from("daily_reports").select("date").in("review_status", ["auto_published", "manually_approved"]).order("date", { ascending: false }).limit(3);
   if (rep?.[2]) await visit(userCtx, `/archive/${rep[2].date}`, "In this report");
   await visit(userCtx, "/bookmarks", "Bookmarks");
-  await visit(userCtx, "/university", "University");
+  await visit(userCtx, "/university", "Στοά", async (page) => {
+    ok("University heading carries its Greek name", /Vibe-Coding University - Στοά/i.test(await page.locator("h1").first().innerText()));
+  });
   await visit(userCtx, "/dictionary", "Browse by topic", async (page) => {
     await page.fill("#dictionary-search", "context window");
     await page.waitForTimeout(400);
@@ -81,11 +83,12 @@ try {
     await visit(userCtx, "/prompt-school", "The Five Pillars", async (page) => {
       const text = await page.locator("body").innerText();
       ok("a later chapter shows as locked while the first is incomplete", /Locked: complete/i.test(text));
+      ok("Prompt School heading carries its Greek name", /Prompt School - Ἀγορά/i.test(await page.locator("h1").first().innerText()));
     });
     await visit(userCtx, "/prompt-school/five-pillars", "opens when you complete the previous chapter", undefined, [403]);
-    await visit(userCtx, "/prompt-school/craft-of-prompting", "Finish all 4 lessons to open the practice");
+    await visit(userCtx, "/prompt-school/craft-of-prompting", "lessons to open the practice");
     await completeChaptersBefore(admin, tu.id, "five-pillars");
-    await visit(userCtx, "/prompt-school/five-pillars", "Finish all 6 lessons to open the practice");
+    await visit(userCtx, "/prompt-school/five-pillars", "lessons to open the practice");
     await visit(userCtx, "/prompt-school/five-pillars/practice", "The practice opens when you have finished every lesson");
     await visit(userCtx, "/prompt-school/five-pillars/pillar-1-context", "Mark lesson as done", async (page) => {
       await page.getByRole("button", { name: /Mark lesson as done/ }).click();

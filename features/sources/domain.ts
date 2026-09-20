@@ -174,3 +174,20 @@ export function isSourceDue(source: { enabled: boolean; retry_after?: string | n
 
 /** State to write after a successful poll: fully healthy again. */
 export const SOURCE_RECOVERED = { failure_count: 0, enabled: true, retry_after: null, disabled_at: null } as const;
+
+/**
+ * Keeps one item per URL and drops items whose URL is already stored. Found by the data integrity pass
+ * (2026-09-20): the article hash is SHA-256 of title plus URL, so the same story fetched from two feeds under
+ * slightly different titles (a blog and its Hacker News post, or a title edited later) became two rows with
+ * one URL, and readers could see it twice. `known` holds the URLs already in the database.
+ */
+export function dropKnownUrls<T extends { url: string }>(items: readonly T[], known: ReadonlySet<string>): T[] {
+  const seen = new Set<string>();
+  const out: T[] = [];
+  for (const item of items) {
+    if (known.has(item.url) || seen.has(item.url)) continue;
+    seen.add(item.url);
+    out.push(item);
+  }
+  return out;
+}

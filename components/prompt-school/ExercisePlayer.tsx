@@ -247,7 +247,7 @@ function FillInput({ pub, values, onChange, locked, reveal }: { pub: FillPublic;
         if (!blank) return null;
         const right = correct ? values[blank.id] === correct[blank.id] : null;
         return (
-          <span key={i} className="inline-block align-middle">
+          <span key={i} className="inline-block max-w-full align-middle">
             <label className="sr-only" htmlFor={`${uid}-${blank.id}`}>Blank {blank.id}</label>
             <select
               id={`${uid}-${blank.id}`}
