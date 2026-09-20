@@ -9,7 +9,7 @@
  * temporarily change user@test.local's subscription to walk the tier matrix; that profile is
  * restored to exactly what it was and the restore is verified. No other data is written.
  */
-import { psChapters, completeChapter, completeChaptersBefore, finishLessons, clearPsProgress, psProgressCount } from "./ps-fixture.mjs";
+import { psChapters, completeChapter, completeChaptersBefore, finishLessons, clearPsProgress, psProgressCount, correctSubmission } from "./ps-fixture.mjs";
 import { createClient } from "@supabase/supabase-js";
 
 const BASE = process.argv[2] ?? "http://localhost:3000";
@@ -48,7 +48,7 @@ const FORGED = `${b64({ alg: "HS256", typ: "JWT" })}.${b64({ sub: "00000000-0000
 const PROTECTED_GET = [
   "/api/me/../dictionary", "/api/dictionary", "/api/reports/latest", "/api/reports", "/api/reports/2026-09-19", "/api/bookmarks",
   "/api/assistant/history", "/api/university/courses", "/api/university/progress", "/api/rewards/state",
-  "/api/prompt-school", "/api/prompt-school/chapters/five-pillars", "/api/prompt-school/lessons/five-pillars/pillar-1-context",
+  "/api/prompt-school", "/api/prompt-school/level-tests/beginner", "/api/prompt-school/chapters/five-pillars", "/api/prompt-school/lessons/five-pillars/pillar-1-context",
   "/api/admin/users", "/api/admin/payments", "/api/admin/reports", "/api/admin/university", "/api/admin/hold-gate-calibration", "/api/admin/assistant-usage",
 ];
 const ADMIN_ONLY_GET = ["/api/admin/users", "/api/admin/payments", "/api/admin/reports", "/api/admin/university", "/api/admin/hold-gate-calibration", "/api/admin/assistant-usage"];
@@ -62,6 +62,7 @@ async function main() {
   for (const p of ["/api/dictionary", "/api/reports/latest", "/api/admin/users", "/api/bookmarks"])
     check(`forged admin token refused on ${p}`, (await call("GET", p, { token: FORGED })) === 401);
   check("POST prompt-school exercise check anonymous refused", (await call("POST", "/api/prompt-school/exercises/00000000-0000-0000-0000-000000000000/check", { body: { answer: {} } })) === 401);
+  check("POST prompt-school level test anonymous refused", (await call("POST", "/api/prompt-school/level-tests/beginner", { body: { answers: {} } })) === 401);
   check("POST prompt-school lesson complete anonymous refused", (await call("POST", "/api/prompt-school/lessons/five-pillars/pillar-1-context/complete")) === 401);
   check("POST /api/assistant/generate anonymous refused", (await call("POST", "/api/assistant/generate", { body: {} })) === 401);
   check("POST /api/payments/create-order anonymous refused", (await call("POST", "/api/payments/create-order", { body: { tier: "premium" } })) === 401);
@@ -151,6 +152,31 @@ async function main() {
       check("once practice is open the exercises are listed without any answer, rubric or explanation", openChapter.status === 200 && JSON.parse(openRaw).exercises.length === fp.exerciseIds.length && !/"answer"|"criteria"|"explanation"|"correct"|"flawed"|"anyOf"|"model"/.test(openRaw));
       check("prompt-school check with a wrong-shaped answer is 400 (once the chapter is open)", (await call("POST", `/api/prompt-school/exercises/${ex1[0].id}/check`, { token: userToken, body: { answer: { text: "x" } } })) === 400);
       check("grading works once the lessons are done", (await call("POST", `/api/prompt-school/exercises/${ex1[0].id}/check`, { token: userToken, body: { answer: { index: 0 } } })) === 200);
+
+      // Level tests: locked until every chapter of the level is complete, graded whole on the server, answers never sent.
+      check("a level test is locked for a learner who has not finished the level", (await call("GET", "/api/prompt-school/level-tests/beginner", { token: userToken })) === 403 && (await call("POST", "/api/prompt-school/level-tests/beginner", { token: userToken, body: { answers: {} } })) === 403);
+      check("an unknown level is 400", (await call("GET", "/api/prompt-school/level-tests/expert", { token: userToken })) === 400);
+      const { data: lv } = await admin.from("ps_chapters").select("slug, level").eq("published", true);
+      for (const c of chs.filter((x) => lv.find((l) => l.slug === x.slug)?.level === "beginner")) await completeChapter(admin, tu.id, c);
+      const ltRes = await fetch(`${BASE}/api/prompt-school/level-tests/beginner`, { headers: { authorization: `Bearer ${userToken}` } });
+      const ltRaw = await ltRes.text();
+      const lt = ltRes.status === 200 ? JSON.parse(ltRaw) : { exercises: [] };
+      check("the beginner test opens once every beginner chapter is complete, and lists its questions without any answer", ltRes.status === 200 && lt.exercises.length >= 10 && !/"answer"|"criteria"|"explanation"|"correct"|"flawed"|"anyOf"|"model"|"chapter_slug"/.test(ltRaw));
+      check("the intermediate test is still locked", (await call("GET", "/api/prompt-school/level-tests/intermediate", { token: userToken })) === 403);
+      check("a level test submission with non-uuid keys is 400", (await call("POST", "/api/prompt-school/level-tests/beginner", { token: userToken, body: { answers: { nope: {} } } })) === 400);
+      const emptyRes = await fetch(`${BASE}/api/prompt-school/level-tests/beginner`, { method: "POST", headers: { "content-type": "application/json", authorization: `Bearer ${userToken}` }, body: JSON.stringify({ answers: {} }) });
+      const emptyRaw = await emptyRes.text();
+      const empty = emptyRes.status === 200 ? JSON.parse(emptyRaw) : {};
+      check("an empty submission scores 0 and fails, and the reply carries no explanation or answer", emptyRes.status === 200 && empty.score === 0 && empty.passed === false && !/"explanation"|"reveal"|"answer"|"model"/.test(emptyRaw));
+      const { data: ltRows } = await admin.from("ps_level_test_exercises").select("id, kind, answer").eq("level", "beginner");
+      const good = Object.fromEntries(ltRows.map((r) => [r.id, correctSubmission(r)]));
+      const goodRes = await fetch(`${BASE}/api/prompt-school/level-tests/beginner`, { method: "POST", headers: { "content-type": "application/json", authorization: `Bearer ${userToken}` }, body: JSON.stringify({ answers: good }) });
+      const goodBody = goodRes.status === 200 ? await goodRes.json() : {};
+      check("the correct answers pass the beginner test with a full score, and both attempts are counted", goodRes.status === 200 && goodBody.score === 1 && goodBody.passed === true && goodBody.attempts === 2);
+      const wrongOnes = Object.fromEntries(ltRows.map((r) => [r.id, r.kind === "choice" ? { index: (r.answer.correct + 1) % 4 } : correctSubmission(r)]));
+      const wrongRes = await fetch(`${BASE}/api/prompt-school/level-tests/beginner`, { method: "POST", headers: { "content-type": "application/json", authorization: `Bearer ${userToken}` }, body: JSON.stringify({ answers: wrongOnes }) });
+      const wrongBody = wrongRes.status === 200 ? await wrongRes.json() : {};
+      check("missing the choice questions drops the score below the 80 percent bar", wrongRes.status === 200 && wrongBody.score < 0.8 && wrongBody.passed === false && wrongBody.bestScore === 1);
 
       // A temporary chapter after the last real one: locked until every real chapter is complete.
       const { data: temp, error: tempErr } = await admin.from("ps_chapters").insert({ level: "beginner", slug: "zz-probe-temp", title: "Probe temp", summary: "temporary", order_index: 999, published: true }).select("id").single();

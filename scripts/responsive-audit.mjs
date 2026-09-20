@@ -79,6 +79,8 @@ async function dynamicPaths() {
       if (process.env.AUDIT_ALL_LESSONS) for (const l of ls.slice(1, -1)) out.promptSchoolPaths.push(`/prompt-school/${c.slug}/${l.slug}`);
       if (ls.length > 1) out.promptSchoolPaths.push(`/prompt-school/${c.slug}/${ls[ls.length - 1].slug}`);
     }
+    // The three level tests (every chapter is completed for the audit account below, so they render their questions).
+    out.promptSchoolPaths.push("/prompt-school/level-test/beginner", "/prompt-school/level-test/intermediate", "/prompt-school/level-test/advanced");
   }
   return out;
 }

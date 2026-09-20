@@ -66,8 +66,9 @@ A hands-on course built from the Director's book, covering the WHOLE book (`spec
 authored text lives in `features/prompt-school/content/` and is loaded into the database with
 `npx tsx --env-file=.env.local scripts/seed-prompt-school.ts` (idempotent). `content/book-map.ts` lists every
 section of the book and each lesson declares the sections it covers; the content test fails when an authored
-chapter skips one. Chapters open one after another like the University's. All exercises are graded on the
-server without AI.
+chapter skips one. Chapters open one after another like the University's, and each level ends with a level test
+(`content/level-tests.ts`, migration 031) that opens when every chapter of the level is complete. All exercises and
+tests are graded on the server without AI.
 
 ## Repository map
 

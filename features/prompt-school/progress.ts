@@ -2,8 +2,8 @@
  * Per-learner state of every published chapter: lessons done, practice score, and whether the chapter is
  * open. One function so the overview and every guarded route decide "open or locked" the same way (M-7).
  */
-import { chapterScore, isChapterComplete, isChapterUnlocked, isPracticeAvailable } from "./domain";
-import { getBestScores, getCompletedLessonIds, getExerciseStubs, getLessonStubs, getPublishedChapters, type PsChapter } from "./repository";
+import { LEVEL_TEST_PASS_SCORE, chapterScore, isChapterComplete, isChapterUnlocked, isLevelTestUnlocked, isPracticeAvailable, type PromptSchoolLevel } from "./domain";
+import { getBestScores, getCompletedLessonIds, getExerciseStubs, getLessonStubs, getLevelTestCounts, getLevelTestHistory, getPublishedChapters, type PsChapter } from "./repository";
 
 export interface ChapterState {
   chapter: PsChapter;
@@ -56,4 +56,39 @@ export async function getChapterStates(userId: string): Promise<ChapterState[]> 
 
 export async function getChapterState(userId: string, slug: string): Promise<ChapterState | null> {
   return (await getChapterStates(userId)).find((s) => s.chapter.slug === slug) ?? null;
+}
+
+// ---------- level tests ----------
+
+export interface LevelTestState {
+  level: PromptSchoolLevel;
+  questionCount: number;
+  unlocked: boolean;
+  /** Titles of the chapters of this level that are not complete yet, when the test is locked. */
+  remainingChapters: string[];
+  attempts: number;
+  bestScore: number;
+  passed: boolean;
+  passScore: number;
+}
+
+export const PROMPT_SCHOOL_LEVEL_IDS: PromptSchoolLevel[] = ["beginner", "intermediate", "advanced"];
+
+/** One function for the overview and the level test routes, so both decide "open or locked" the same way (M-7). */
+export async function getLevelTestStates(userId: string): Promise<LevelTestState[]> {
+  const [states, counts, history] = await Promise.all([getChapterStates(userId), getLevelTestCounts(), getLevelTestHistory(userId)]);
+  return PROMPT_SCHOOL_LEVEL_IDS.map((level) => {
+    const chapters = states.filter((s) => s.chapter.level === level);
+    const h = history[level];
+    return {
+      level,
+      questionCount: counts[level] ?? 0,
+      unlocked: (counts[level] ?? 0) > 0 && isLevelTestUnlocked(chapters.map((c) => c.completed)),
+      remainingChapters: chapters.filter((c) => !c.completed).map((c) => c.chapter.title),
+      attempts: h?.attempts ?? 0,
+      bestScore: h?.bestScore ?? 0,
+      passed: h?.passed ?? false,
+      passScore: LEVEL_TEST_PASS_SCORE,
+    };
+  });
 }

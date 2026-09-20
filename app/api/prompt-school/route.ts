@@ -6,7 +6,7 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 import { requirePromptSchoolUser } from "@/features/prompt-school/access";
-import { getChapterStates } from "@/features/prompt-school/progress";
+import { getChapterStates, getLevelTestStates } from "@/features/prompt-school/progress";
 import { PROMPT_SCHOOL_LEVELS, PROMPT_SCHOOL_OUTLINE } from "@/features/prompt-school/content/outline";
 
 export async function GET(request: NextRequest) {
@@ -14,11 +14,12 @@ export async function GET(request: NextRequest) {
     const auth = await requirePromptSchoolUser(request);
     if ("denied" in auth) return auth.denied;
 
-    const states = await getChapterStates(auth.user.sub);
+    const [states, levelTests] = await Promise.all([getChapterStates(auth.user.sub), getLevelTestStates(auth.user.sub)]);
     const bySlug = new Map(states.map((s) => [s.chapter.slug, s]));
 
     const levels = PROMPT_SCHOOL_LEVELS.map((level) => ({
       ...level,
+      levelTest: levelTests.find((t) => t.level === level.id) ?? null,
       chapters: PROMPT_SCHOOL_OUTLINE.filter((o) => o.level === level.id).map((o) => {
         const s = bySlug.get(o.slug);
         if (!s) {

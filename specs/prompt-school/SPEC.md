@@ -49,7 +49,7 @@ not only read: they complete, repair, order and write prompts inside exercises.
 
 - The other chapters' lesson text (planned, written in batches after the slice is approved).
 - The live sandbox (learner runs their prompt on a real model), limited to 3 runs a day, built last (phase 4).
-- Coins, badges and certificates. Level tests and cumulative tests (they follow the University pattern later).
+- Coins, badges and certificates. Cumulative tests. (Level tests were added later, in phase B, see PDL-071.)
 - Any AI generation at runtime: all content is written from the book and stored, so the free AI quota is untouched.
 
 ## Open questions

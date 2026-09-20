@@ -9,7 +9,7 @@
  * article and removes that bookmark again; nothing else is written.
  */
 import { chromium } from "playwright-core";
-import { psChapters, completeChaptersBefore, finishLessons, clearPsProgress, psProgressCount } from "./ps-fixture.mjs";
+import { psChapters, completeChapter, completeChaptersBefore, finishLessons, clearPsProgress, psProgressCount } from "./ps-fixture.mjs";
 import { createClient } from "@supabase/supabase-js";
 
 const BASE = process.argv[2] ?? "http://localhost:3000";
@@ -188,6 +188,41 @@ try {
         const { data: restored } = await admin.from("user_profiles").select("coin_balance, level").eq("id", tu.id).single();
         ok("test account coins restored", restored.coin_balance === before.coin_balance && restored.level === before.level);
       }
+    }
+    // Level test (phase B): locked for another level, open for the beginner level once its chapters are complete,
+    // answered in the browser, submitted once and graded on the server.
+    {
+      const { data: lv } = await admin.from("ps_chapters").select("slug, level").eq("published", true);
+      for (const c of chs.filter((x) => lv.find((l) => l.slug === x.slug)?.level === "beginner")) await completeChapter(admin, tu.id, c);
+      await visit(userCtx, "/prompt-school/level-test/intermediate", "opens when you complete every chapter of the level", undefined, [403]);
+      await visit(userCtx, "/prompt-school", "Start the test", async (page) => {
+        ok("the overview shows the beginner level test as open", /start the test/i.test(await page.locator('[data-testid="level-test-beginner"]').innerText()));
+      });
+      await visit(userCtx, "/prompt-school/level-test/beginner", "answered", async (page) => {
+        ok("the level test page is titled with its level", /Beginner level test/i.test(await page.locator("h1").first().innerText()));
+        const submit = page.getByRole("button", { name: /Submit the test/ });
+        ok("submit is disabled while questions are unanswered", await submit.isDisabled());
+        const sections = page.locator("section");
+        const n = await sections.count();
+        for (let i = 0; i < n; i++) {
+          const sec = sections.nth(i);
+          if ((await sec.getByRole("radio").count()) > 0) await sec.getByRole("radio").first().click();
+          const selects = sec.locator("select");
+          for (let k = 0; k < (await selects.count()); k++) await selects.nth(k).selectOption({ index: 1 });
+        }
+        let enabled = false;
+        for (let t = 0; t < 20 && !enabled; t++) {
+          enabled = await submit.isEnabled();
+          if (!enabled) await page.waitForTimeout(250);
+        }
+        ok("submit opens once every question is answered", enabled, await page.locator("body").innerText().then((x) => (x.match(/\d+ of \d+ answered/) ?? [""])[0]));
+        await submit.click();
+        await page.getByText(/(Passed|Not yet): \d+%/).first().waitFor({ timeout: 15000 });
+        ok("the level test is graded on the server and shows a score", true);
+        ok("no explanation or answer is shown after the test", (await page.getByText("A strong rewrite").count()) === 0 && (await page.getByText(/^Why$/).count()) === 0);
+      });
+      const { count: attempts } = await admin.from("ps_level_test_attempts").select("*", { count: "exact", head: true }).eq("user_id", tu.id);
+      ok("the attempt is recorded", attempts === 1, String(attempts));
     }
     await clearPsProgress(admin, tu.id);
     ok("prompt school test progress removed again", (await psProgressCount(admin, tu.id)) === 0);

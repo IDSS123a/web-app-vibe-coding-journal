@@ -2365,6 +2365,25 @@ Verified: lint and typecheck clean, integrity pass, content seeded to production
 
 ---
 
+
+## PDL-071 Prompt School: level tests (phase B)
+
+**Date:** 2026-09-20. Director: continue by the plan after the last appendices. Phase B of `specs/prompt-school/TASKS.md` is the level tests, "like the University's".
+
+**What the University does, and what was kept.** The University's level test is a separate set of questions per level, unlocked when every chapter of the level is passed, graded on the server, recorded as an attempt, and passed at 80 percent. Prompt School keeps all of that.
+
+- **Questions.** `content/level-tests.ts`: 12 beginner, 11 intermediate and 14 advanced questions, written from the book, of the same five kinds as the practice (choice, fill, order, spot, repair). They are new, not repeated from the chapter practice (a test fails if a title repeats), every chapter of the level is checked at least once, and each question names its chapter. Every repair question has a tested rubric and samples, like the chapters'.
+- **Storage.** Migration 031 (applied to production, row level security on, no policies): `ps_level_test_exercises` keeps what the learner sees apart from the answer key, `ps_level_test_attempts` records each attempt with its score and per-question results (never the answers). The seed script loads the questions idempotently.
+- **Unlocking.** A level's test opens only when the level has questions and every published chapter of that level is complete (`isLevelTestUnlocked`, one function for the overview and the routes). Both GET and POST return 403 otherwise, with the chapters still to complete.
+- **Taking it.** `/prompt-school/level-test/[level]`: all questions on one page, answered in one sitting, submitted once, graded together. Passing mark 80 percent (stricter than a chapter's 75, as in the University); an unanswered question would count as 0. Unlimited retakes.
+- **Decision: no reveal after the test.** A chapter's practice shows the explanation and the model answer after each attempt, because it teaches. A level test does not: it returns the score, which questions were missed and the chapter to review, but no explanation, correct answer or model rewrite. Otherwise a retake of a fixed test could be passed by memorizing the reveal, and the test would measure nothing. The learner is sent back to the lessons instead.
+- **Overview.** Each level on the School page ends with its level test card: locked (and what is missing), open, or passed with the best score and the number of attempts.
+- **Verified.** 452 unit tests (29 new, covering every question's answer key and rubric and the rules), lint and typecheck clean, security probe 143 of 143 (anonymous refused, locked until the level is done, 400 on a bad level or body, the test payload carries no answer, an empty submission scores 0 without a reveal, the correct answers pass with a full score, missing the choice questions fails, the attempts are counted, all test data removed again), end to end in Chrome (the intermediate test is locked, the beginner test opens, all questions answered in the browser, graded on the server, no explanation shown, the attempt recorded), responsive audit on the three test pages.
+
+Not in this step: coins or a badge for passing (phase E), and a certificate.
+
+---
+
 ---
 
 *Vibe-Coding Journal — Project Decision Log — updated as decisions are made.*

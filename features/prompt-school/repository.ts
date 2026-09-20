@@ -129,3 +129,59 @@ export async function recordAttempt(userId: string, exerciseId: string, score: n
   if (error) throw new Error(`Failed to save exercise result: ${error.message}`);
   return { bestScore, attempts };
 }
+
+// ---------- level tests (migration 031) ----------
+
+export interface PsLevelTestExerciseRow extends StoredExercise {
+  level: PromptSchoolLevel;
+  slug: string;
+  order_index: number;
+  chapter_slug: string;
+}
+
+export async function getLevelTestExercises(level: PromptSchoolLevel): Promise<PsLevelTestExerciseRow[]> {
+  const { data, error } = await db().from("ps_level_test_exercises").select("*").eq("level", level).order("order_index");
+  if (error) throw new Error(`Failed to fetch level test: ${error.message}`);
+  return data as PsLevelTestExerciseRow[];
+}
+
+/** How many questions each level's test has (counts only, never the questions). */
+export async function getLevelTestCounts(): Promise<Record<string, number>> {
+  const { data, error } = await db().from("ps_level_test_exercises").select("level");
+  if (error) throw new Error(`Failed to count level test questions: ${error.message}`);
+  const out: Record<string, number> = {};
+  for (const r of data as Array<{ level: string }>) out[r.level] = (out[r.level] ?? 0) + 1;
+  return out;
+}
+
+export interface LevelTestHistory {
+  attempts: number;
+  bestScore: number;
+  passed: boolean;
+}
+
+/** Attempts, best score and whether a pass exists, per level, for one learner. */
+export async function getLevelTestHistory(userId: string): Promise<Record<string, LevelTestHistory>> {
+  const { data, error } = await db().from("ps_level_test_attempts").select("level, score, passed").eq("user_id", userId);
+  if (error) throw new Error(`Failed to fetch level test attempts: ${error.message}`);
+  const out: Record<string, LevelTestHistory> = {};
+  for (const r of data as Array<{ level: string; score: number; passed: boolean }>) {
+    const h = out[r.level] ?? { attempts: 0, bestScore: 0, passed: false };
+    h.attempts += 1;
+    h.bestScore = Math.max(h.bestScore, Number(r.score));
+    h.passed = h.passed || r.passed;
+    out[r.level] = h;
+  }
+  return out;
+}
+
+export async function recordLevelTestAttempt(
+  userId: string,
+  level: PromptSchoolLevel,
+  score: number,
+  passed: boolean,
+  results: Array<{ exerciseId: string; score: number }>,
+): Promise<void> {
+  const { error } = await db().from("ps_level_test_attempts").insert({ user_id: userId, level, score, passed, results });
+  if (error) throw new Error(`Failed to save level test attempt: ${error.message}`);
+}

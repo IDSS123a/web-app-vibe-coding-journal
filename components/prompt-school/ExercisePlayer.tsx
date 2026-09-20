@@ -8,7 +8,7 @@
  * Down buttons (no drag, so it works with touch, keyboard and screen readers alike).
  */
 
-import { useId, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { MAX_REPAIR_LENGTH, splitTemplate, type ChoicePublic, type ExerciseKind, type FillPublic, type OrderPublic, type RepairPublic, type SpotPublic } from "@/features/prompt-school/domain";
 
 export interface PublicExercise {
@@ -36,12 +36,17 @@ interface Props {
   index: number;
   total: number;
   onChecked: (exerciseId: string, bestScore: number) => void;
+  /**
+   * Test mode (level tests): nothing is checked per question. The player reports the current answer up
+   * (null while it is incomplete) and shows no result; `frozen` locks the inputs once the test is submitted.
+   */
+  test?: { onAnswer: (exerciseId: string, answer: unknown | null) => void; frozen: boolean };
 }
 
 const btn =
   "inline-flex min-h-11 items-center justify-center border-4 border-black px-4 py-2 text-xs font-bold uppercase tracking-widest transition-colors duration-150 ease-out focus-visible:outline-none";
 
-export function ExercisePlayer({ exercise, token, index, total, onChecked }: Props) {
+export function ExercisePlayer({ exercise, token, index, total, onChecked, test }: Props) {
   const [result, setResult] = useState<CheckResult | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -110,13 +115,19 @@ export function ExercisePlayer({ exercise, token, index, total, onChecked }: Pro
     setError(null);
   }
 
-  const locked = result !== null;
+  const locked = test ? test.frozen : result !== null;
+
+  useEffect(() => {
+    if (!test) return;
+    test.onAnswer(exercise.id, ready() ? currentAnswer() : null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [choice, fill, order, picked, text]);
 
   return (
     <section className="border-4 border-black p-4 sm:p-6" aria-labelledby={`ex-${exercise.id}`}>
       <p className="mb-1 text-xs font-bold uppercase tracking-widest text-[#FF3000]">
-        Exercise {index} of {total}: {kindLabel(exercise.kind)}
-        {exercise.bestScore !== null && (
+        {test ? "Question" : "Exercise"} {index} of {total}: {kindLabel(exercise.kind)}
+        {!test && exercise.bestScore !== null && (
           <span className="ml-2 text-black">Best {Math.round(exercise.bestScore * 100)}%</span>
         )}
       </p>
@@ -147,7 +158,7 @@ export function ExercisePlayer({ exercise, token, index, total, onChecked }: Pro
         </p>
       )}
 
-      {!locked && (
+      {!locked && !test && (
         <button
           type="button"
           onClick={submit}
@@ -158,7 +169,7 @@ export function ExercisePlayer({ exercise, token, index, total, onChecked }: Pro
         </button>
       )}
 
-      {result && (
+      {result && !test && (
         <div className="mt-5" role="status" aria-live="polite">
           <p className={`mb-3 border-l-8 py-1 pl-3 text-sm font-black uppercase tracking-tight ${result.passed ? "border-black text-black" : "border-[#FF3000] text-[#FF3000]"}`}>
             {result.passed ? "Passed" : "Not yet"}: {Math.round(result.score * 100)}%

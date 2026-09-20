@@ -11,6 +11,7 @@ import { createClient } from "@supabase/supabase-js";
 import { AUTHORED_CHAPTERS } from "../features/prompt-school/content";
 import { PROMPT_SCHOOL_OUTLINE } from "../features/prompt-school/content/outline";
 import { validateExerciseContent } from "../features/prompt-school/domain";
+import { LEVEL_TESTS } from "../features/prompt-school/content/level-tests";
 
 const dryRun = process.argv.includes("--dry-run");
 
@@ -65,6 +66,26 @@ async function main() {
     }));
     const { error: eErr } = await db.from("ps_exercises").upsert(exerciseRows, { onConflict: "chapter_id,slug" });
     if (eErr) throw new Error(`Exercise upsert failed: ${eErr.message}`);
+  }
+  for (const [level, exercises] of Object.entries(LEVEL_TESTS)) {
+    const problems = exercises.flatMap((e) => validateExerciseContent(e));
+    if (problems.length > 0) throw new Error(`Level test problems in ${level}:\n${problems.join("\n")}`);
+    console.log(`level test ${level}: ${exercises.length} questions`);
+    if (dryRun) continue;
+    const rows = exercises.map((e, i) => ({
+      level,
+      slug: e.slug,
+      order_index: i + 1,
+      chapter_slug: e.chapter,
+      kind: e.kind,
+      title: e.title,
+      prompt_text: e.promptText,
+      public: e.public,
+      answer: e.answer,
+      explanation: e.explanation,
+    }));
+    const { error } = await db.from("ps_level_test_exercises").upsert(rows, { onConflict: "level,slug" });
+    if (error) throw new Error(`Level test upsert failed: ${error.message}`);
   }
   console.log(dryRun ? "Dry run: nothing written." : "Seeded.");
 }

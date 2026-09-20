@@ -10,6 +10,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { RELEVANCE_THRESHOLD } from "../features/pipeline/quality-engine";
 import { AUTHORED_CHAPTERS } from "../features/prompt-school/content";
+import { LEVEL_TESTS } from "../features/prompt-school/content/level-tests";
 import { PROMPT_SCHOOL_OUTLINE } from "../features/prompt-school/content/outline";
 import { validateExerciseContent, type ExerciseContent } from "../features/prompt-school/domain";
 import { hasAiTells } from "../lib/text/no-ai-tells";
@@ -130,7 +131,21 @@ async function main() {
   check("no chapter is stored without authored content", chapters.every((c) => AUTHORED_CHAPTERS.some((a) => a.slug === c.slug)) && storedSlugs.size === chapters.length);
   check("no orphan lessons or exercises", psLessons.every((l) => chapters.some((c) => c.id === l.chapter_id)) && psExercises.every((e) => chapters.some((c) => c.id === e.chapter_id)));
 
-  console.log(failures ? `\n${failures} FAILED` : "\nall integrity checks passed");
+  // ---------- prompt school level tests ----------
+  const ltRows = await all<{ level: string; slug: string; order_index: number; chapter_slug: string; kind: string; title: string; prompt_text: string; public: unknown; answer: unknown; explanation: string }>("ps_level_test_exercises");
+  for (const [level, authored] of Object.entries(LEVEL_TESTS)) {
+    const rows = ltRows.filter((r) => r.level === level).sort((a, b) => a.order_index - b.order_index);
+    check(`level test ${level}: questions equal the content files, in order`, JSON.stringify(rows.map((r) => r.slug)) === JSON.stringify(authored.map((e) => e.slug)));
+    check(`level test ${level}: each question names its chapter`, rows.every((r, i) => r.chapter_slug === authored[i]?.chapter && chapters.some((c) => c.slug === r.chapter_slug && c.level === level)));
+    const ltProblems = rows.flatMap((e) =>
+      validateExerciseContent({ slug: e.slug, kind: e.kind, title: e.title, promptText: e.prompt_text, public: e.public, answer: e.answer, explanation: e.explanation } as ExerciseContent),
+    );
+    check(`level test ${level}: every stored question is well formed`, ltProblems.length === 0, ltProblems.slice(0, 2).join("; "));
+    check(`level test ${level}: stored text has no dash tells`, !rows.some((e) => hasAiTells(JSON.stringify(e))));
+  }
+  check("no level test question is stored for an unknown level", ltRows.every((r) => r.level in LEVEL_TESTS));
+
+  console.log(failures ?`\n${failures} FAILED` : "\nall integrity checks passed");
   process.exit(failures ? 1 : 0);
 }
 

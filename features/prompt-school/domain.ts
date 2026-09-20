@@ -307,3 +307,23 @@ export function isChapterComplete(practiceAvailable: boolean, exerciseCount: num
 export function isChapterUnlocked(index: number, previousComplete: boolean, started: boolean): boolean {
   return index <= 0 || previousComplete || started;
 }
+
+// ---------- level tests (the University's level tests, specs/prompt-school/) ----------
+
+/** The level tests use the University's bar: 80 percent, stricter than a chapter's 75. */
+export const LEVEL_TEST_PASS_SCORE = 0.8;
+
+/** A level test opens when the level has chapters and every one of them is complete. */
+export function isLevelTestUnlocked(chapterCompleted: readonly boolean[]): boolean {
+  return chapterCompleted.length > 0 && chapterCompleted.every(Boolean);
+}
+
+/** Average score over ALL questions of the test; an unanswered question counts as 0. */
+export function levelTestScore(scores: readonly number[], questionCount: number): number {
+  if (questionCount <= 0) return 0;
+  return round2(scores.reduce((s, n) => s + n, 0) / questionCount);
+}
+
+export function levelTestPassed(score: number): boolean {
+  return score >= LEVEL_TEST_PASS_SCORE;
+}

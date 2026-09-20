@@ -30,10 +30,21 @@ type ChapterCard =
       passed: boolean;
     };
 
+interface LevelTestCard {
+  questionCount: number;
+  unlocked: boolean;
+  remainingChapters: string[];
+  attempts: number;
+  bestScore: number;
+  passed: boolean;
+  passScore: number;
+}
+
 interface Level {
   id: string;
   label: string;
   blurb: string;
+  levelTest: LevelTestCard | null;
   chapters: ChapterCard[];
 }
 
@@ -85,7 +96,7 @@ function Overview() {
           </p>
           {levels.length > 0 && (
             <p className="mt-3 text-xs font-bold uppercase tracking-widest text-black">
-              {open} of {chapterTotal} chapters written, about {planned} lessons planned
+              {open === chapterTotal ? `${chapterTotal} chapters, ${planned} lessons` : `${open} of ${chapterTotal} chapters written, about ${planned} lessons planned`}
             </p>
           )}
         </div>
@@ -131,6 +142,31 @@ function Overview() {
                   </li>
                 ))}
               </ul>
+              {level.levelTest && level.levelTest.questionCount > 0 && (
+                <div className="mt-5 border-4 border-black p-4 sm:p-5" data-testid={`level-test-${level.id}`}>
+                  <p className="mb-1 text-xs font-bold uppercase tracking-widest text-[#FF3000]">Level test</p>
+                  <h3 className="mb-2 text-lg font-black uppercase leading-tight tracking-tight text-black">
+                    {level.label} level test{level.levelTest.passed ? " · Passed ✓" : ""}
+                  </h3>
+                  <p className="mb-4 text-sm leading-relaxed text-black">
+                    {level.levelTest.questionCount} new questions from every chapter of this level, answered in one sitting and
+                    graded together. Pass at {Math.round(level.levelTest.passScore * 100)}%.
+                    {level.levelTest.attempts > 0 && ` Best so far: ${Math.round(level.levelTest.bestScore * 100)}% in ${level.levelTest.attempts} ${level.levelTest.attempts === 1 ? "attempt" : "attempts"}.`}
+                  </p>
+                  {level.levelTest.unlocked ? (
+                    <Link
+                      href={`/prompt-school/level-test/${level.id}`}
+                      className="inline-flex min-h-11 items-center justify-center border-4 border-black bg-black px-4 py-2 text-xs font-bold uppercase tracking-widest text-white transition-colors duration-150 ease-out hover:border-[#FF3000] hover:bg-[#FF3000] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#FF3000]"
+                    >
+                      {level.levelTest.attempts > 0 ? "Take it again" : "Start the test"} →
+                    </Link>
+                  ) : (
+                    <p className="text-xs font-bold uppercase tracking-widest text-black">
+                      <span aria-hidden="true">🔒 </span>Locked: complete {level.levelTest.remainingChapters.length === 1 ? `"${level.levelTest.remainingChapters[0]}"` : `the ${level.levelTest.remainingChapters.length} remaining chapters of this level`} first
+                    </p>
+                  )}
+                </div>
+              )}
             </section>
           ))}
         </div>
