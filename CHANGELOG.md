@@ -6,6 +6,10 @@ reconstructed here retroactively — this file covers from its own start
 date forward). One entry per user-visible or operationally significant
 change, newest first.
 
+## 2026-09-21
+
+- **Prompt School pays coins and celebrates (PDL-072).** Finishing a lesson earns 5 Vibe Coins, passing an exercise for the first time 5, completing a chapter 50 and passing a level test 150, each once. After you check an answer the result now shows the coins you earned, your balance updates at once, and a completed chapter, a passed level test or a new level gets the confetti celebration. Before, answers were graded and saved but nothing visibly happened.
+
 ## 2026-09-20
 
 - **Prompt School level tests (PDL-071).** Each level of the School now ends with a test: 12 beginner, 11 intermediate and 14 advanced new questions, answered in one sitting and graded together. A test opens when you have completed every chapter of its level, and it is passed at 80 percent. After the test you see your score, which questions you missed and which chapters to review, but no answers, so a retake really tests what you learned. You can retake it as often as you like.

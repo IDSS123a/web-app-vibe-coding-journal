@@ -1,12 +1,13 @@
 /**
  * POST /api/prompt-school/lessons/[chapterSlug]/[lessonSlug]/complete: marks a lesson finished for the
- * caller. Idempotent. Premium-only.
+ * caller. Idempotent. Premium-only. Pays 5 coins the first time (PDL-072), never again.
  */
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { requirePromptSchoolUser } from "@/features/prompt-school/access";
 import { getChapterState } from "@/features/prompt-school/progress";
 import { getLessonsForChapter, markLessonDone } from "@/features/prompt-school/repository";
+import { awardPromptSchool } from "@/features/prompt-school/rewards";
 
 const slugSchema = z.string().regex(/^[a-z0-9-]{1,80}$/);
 
@@ -27,7 +28,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     if (!lesson) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
     await markLessonDone(auth.user.sub, lesson.id);
-    return NextResponse.json({ completed: true });
+    const reward = await awardPromptSchool(auth.user.sub, "ps_lesson_complete", lesson.id);
+    return NextResponse.json({ completed: true, reward });
   } catch (err) {
     console.error(`[PROMPT-SCHOOL] Error completing lesson: ${err instanceof Error ? err.message : String(err)}`);
     return NextResponse.json({ error: "Failed to save progress" }, { status: 500 });

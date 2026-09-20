@@ -11,7 +11,12 @@ export type RewardEventType =
   | "streak_milestone"
   | "level_up"
   | "onboarding_complete"
-  | "book_discovery";
+  | "book_discovery"
+  // Prompt School learning (2026-09-20, PDL-072). Paid by the server routes only, never by the client award endpoint.
+  | "ps_lesson_complete"
+  | "ps_exercise_pass"
+  | "ps_chapter_complete"
+  | "ps_level_test_pass";
 
 /**
  * Coin amounts per event, centralized here (P-5-style documented
@@ -28,7 +33,16 @@ export const COIN_AWARDS: Record<RewardEventType, number> = {
   onboarding_complete: 50,
   // Prompt School cross-sell (2026-09-20): finding the Director's book on the School page, once per reader.
   book_discovery: 25,
+  // Prompt School learning (PDL-072): a small payout per step, once each, so the whole course adds up to
+  // about 2,750 coins (level 8 of 10) and repeating something never pays again.
+  ps_lesson_complete: 5,
+  ps_exercise_pass: 5,
+  ps_chapter_complete: 50,
+  ps_level_test_pass: 150,
 };
+
+/** Events that only a trusted server route may pay (the public award endpoint refuses them). */
+export const SERVER_ONLY_REWARD_EVENTS: readonly RewardEventType[] = ["ps_lesson_complete", "ps_exercise_pass", "ps_chapter_complete", "ps_level_test_pass"];
 
 /**
  * Level thresholds: total coins ever earned (== coin_balance, since

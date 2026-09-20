@@ -55,7 +55,8 @@ async function visit(ctx, path, expectText, extra, allowStatus = []) {
 }
 
 try {
-  const userCtx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+  const [vw, vh0] = (process.env.SMOKE_VIEWPORT ?? "1280x900").split("x").map(Number);
+  const userCtx = await browser.newContext({ viewport: { width: vw, height: vh0 } });
   await userCtx.addInitScript(([k, v]) => localStorage.setItem(k, v), [`sb-${REF}-auth-token`, await sessionFor("user@test.local")]);
 
   await visit(userCtx, "/dashboard", "In this report");
@@ -104,6 +105,11 @@ try {
       await first.getByRole("button", { name: /Check answer/ }).click();
       await first.getByText(/Passed: 100%/).waitFor({ timeout: 10000 });
       ok("prompt school choice exercise is graded on the server", true);
+      await first.getByText(/\+5 Vibe Coins/).first().waitFor({ timeout: 5000 });
+      ok("passing an exercise shows the coins it paid, in the result", true);
+      const box = await first.locator('[role="status"]').first().boundingBox();
+      const vh = page.viewportSize()?.height ?? 0;
+      ok("the result is in view right after checking", Boolean(box) && box.y >= 0 && box.y < vh, box ? `y=${Math.round(box.y)} of ${vh}` : "no box");
       const repair = page.locator("section").filter({ hasText: "Repair the prompt with constraints" });
       await repair.locator("textarea").fill("Describe the top 3 benefits of our software for small business owners. Under 200 words. Avoid jargon and keep an encouraging tone.");
       await repair.getByRole("button", { name: /Check answer/ }).click();

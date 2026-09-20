@@ -2384,6 +2384,26 @@ Not in this step: coins or a badge for passing (phase E), and a certificate.
 
 ---
 
+
+## PDL-072 Prompt School: coins for learning (the gamification gap)
+
+**Date:** 2026-09-21. Director: she finished the chapter "The Prompt Engineer's Craft" and saw nothing happen after her answers, and asked for the gamification to be checked.
+
+**What was found.** The exercises worked: every one of her 10 answers reached the server, was graded and stored (all scores 1, `order-the-road-ahead` took 6 attempts). What was missing was any reaction. The rewards system (PDL-030) had only four triggers (bookmark, open the daily report, onboarding, the book), and the Prompt School plan had left coins and badges for the last phase (phase E). So finishing a lesson, passing an exercise, completing a chapter, a whole chapter's practice, produced no coins, no toast, no celebration. The University has the same gap (no learning event pays coins); it was not changed here.
+
+**What was built.**
+- Four new reward events, paid only by the server routes that record the progress (`features/prompt-school/rewards.ts`), never by the browser: 5 coins for finishing a lesson, 5 for passing an exercise (75 percent) for the first time, 50 for completing a chapter (the attempt that leaves it complete), 150 for passing a level test. Once each, through the reward dedupe key, so repeating a step pays nothing. The public award endpoint refuses these events (a test proves it), so they cannot be claimed from the console. Calibration: the whole course adds up to about 2,750 coins, level 8 of 10.
+- The browser shows it: the exercise result carries a "+N Vibe Coins" badge, the coin balance in the menu updates at once, a toast for a small payout, and the existing celebration overlay with confetti for a completed chapter, a passed level test and any new level (`applyReward` in the rewards provider). A failed award never breaks the learning action (logged, swallowed, like the browser-side rewards).
+- The result of a check is also scrolled into view, so on a small screen a long exercise cannot leave it out of sight (checked at 375 px: the result sits at 513 of 812 px right after checking).
+- `scripts/backfill-ps-rewards.ts` pays progress made before the payouts existed, with the same dedupe keys (idempotent, marked `backfill`). It is a dry run unless `--apply` is given. The dry run for the two real accounts: 125 coins for the account that reported this (5 lessons, 10 exercises, 1 chapter) and 10 coins for the other. NOT applied: it changes real balances, so it waits for the Director's decision.
+- The test tooling takes back what it earns: `clearPsProgress` returns any Prompt School coins and events of the test accounts, so probes and smoke tests leave the balances as they were.
+
+**Verified.** 456 unit tests (4 new: the payouts, server-only, the endpoint refusing them, the course total), security probe 149 of 149 (a failed attempt pays nothing, the first pass pays 5 and the second nothing, exactly one event is recorded, a level test pays 150 once), end to end in Chrome at 1280 and 375 px (the coins show in the result, the result is in view, the test accounts are restored).
+
+Still open in phase E: badges, and the same coins for the University.
+
+---
+
 ---
 
 *Vibe-Coding Journal — Project Decision Log — updated as decisions are made.*

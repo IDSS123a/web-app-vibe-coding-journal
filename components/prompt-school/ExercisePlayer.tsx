@@ -8,7 +8,8 @@
  * Down buttons (no drag, so it works with touch, keyboard and screen readers alike).
  */
 
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
+import { useRewards, type ServerReward } from "@/components/rewards/RewardsProvider";
 import { MAX_REPAIR_LENGTH, splitTemplate, type ChoicePublic, type ExerciseKind, type FillPublic, type OrderPublic, type RepairPublic, type SpotPublic } from "@/features/prompt-school/domain";
 
 export interface PublicExercise {
@@ -28,6 +29,9 @@ interface CheckResult {
   explanation: string;
   bestScore: number;
   attempts: number;
+  /** Coins paid by the server for this attempt (PDL-072); null when nothing was paid. */
+  reward?: ServerReward | null;
+  chapterReward?: ServerReward | null;
 }
 
 interface Props {
@@ -47,6 +51,8 @@ const btn =
   "inline-flex min-h-11 items-center justify-center border-4 border-black px-4 py-2 text-xs font-bold uppercase tracking-widest transition-colors duration-150 ease-out focus-visible:outline-none";
 
 export function ExercisePlayer({ exercise, token, index, total, onChecked, test }: Props) {
+  const { applyReward } = useRewards();
+  const resultRef = useRef<HTMLDivElement | null>(null);
   const [result, setResult] = useState<CheckResult | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -103,6 +109,7 @@ export function ExercisePlayer({ exercise, token, index, total, onChecked, test 
       const data = (await res.json()) as CheckResult;
       setResult(data);
       onChecked(exercise.id, data.bestScore);
+      applyReward([data.reward, data.chapterReward]);
     } catch {
       setError("Could not check your answer. Please try again.");
     } finally {
@@ -116,6 +123,11 @@ export function ExercisePlayer({ exercise, token, index, total, onChecked, test 
   }
 
   const locked = test ? test.frozen : result !== null;
+
+  // The result replaces the button, but on a small screen a long exercise can still leave it just out of view.
+  useEffect(() => {
+    if (result) resultRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }, [result]);
 
   useEffect(() => {
     if (!test) return;
@@ -170,10 +182,15 @@ export function ExercisePlayer({ exercise, token, index, total, onChecked, test 
       )}
 
       {result && !test && (
-        <div className="mt-5" role="status" aria-live="polite">
+        <div ref={resultRef} className="mt-5 scroll-mt-32" role="status" aria-live="polite">
           <p className={`mb-3 border-l-8 py-1 pl-3 text-sm font-black uppercase tracking-tight ${result.passed ? "border-black text-black" : "border-[#FF3000] text-[#FF3000]"}`}>
             {result.passed ? "Passed" : "Not yet"}: {Math.round(result.score * 100)}%
             <span className="ml-2 font-bold normal-case tracking-normal">(attempt {result.attempts}, best {Math.round(result.bestScore * 100)}%)</span>
+            {(result.reward?.coinsAwarded || result.chapterReward?.coinsAwarded) ? (
+              <span className="ml-2 inline-block border-2 border-black bg-[#D4A017] px-2 py-0.5 text-xs font-black normal-case tracking-normal text-black">
+                +{(result.reward?.coinsAwarded ?? 0) + (result.chapterReward?.coinsAwarded ?? 0)} Vibe Coins
+              </span>
+            ) : null}
           </p>
           <ul className="mb-4 space-y-2 text-sm text-black">
             {result.feedback.map((f, i) => (

@@ -40,7 +40,23 @@ export async function finishLessons(admin, userId, chapter) {
   await admin.from("ps_lesson_progress").upsert(chapter.lessonIds.map((id) => ({ user_id: userId, lesson_id: id })), { onConflict: "user_id,lesson_id", ignoreDuplicates: true });
 }
 
+const PS_REWARD_EVENTS = ["ps_lesson_complete", "ps_exercise_pass", "ps_chapter_complete", "ps_level_test_pass"];
+const LEVEL_THRESHOLDS = [0, 100, 300, 600, 1000, 1500, 2200, 3000, 4000, 5200];
+
+/** Takes back the coins the Prompt School routes paid to a test account (and the events that record them). */
+async function clearPsRewards(admin, userId) {
+  const { data: events } = await admin.from("reward_events").select("id, coins_awarded").eq("user_id", userId).in("event_type", PS_REWARD_EVENTS);
+  if (!events || events.length === 0) return;
+  const paid = events.reduce((n, e) => n + e.coins_awarded, 0);
+  const { data: profile } = await admin.from("user_profiles").select("coin_balance").eq("id", userId).single();
+  const balance = Math.max(0, profile.coin_balance - paid);
+  const level = LEVEL_THRESHOLDS.reduce((l, t, i) => (balance >= t ? i + 1 : l), 1);
+  await admin.from("user_profiles").update({ coin_balance: balance, level }).eq("id", userId);
+  await admin.from("reward_events").delete().eq("user_id", userId).in("event_type", PS_REWARD_EVENTS);
+}
+
 export async function clearPsProgress(admin, userId) {
+  await clearPsRewards(admin, userId);
   await admin.from("ps_level_test_attempts").delete().eq("user_id", userId);
   await admin.from("ps_exercise_results").delete().eq("user_id", userId);
   await admin.from("ps_lesson_progress").delete().eq("user_id", userId);
@@ -49,8 +65,9 @@ export async function clearPsProgress(admin, userId) {
 export async function psProgressCount(admin, userId) {
   const a = (await admin.from("ps_exercise_results").select("*", { count: "exact", head: true }).eq("user_id", userId)).count;
   const b = (await admin.from("ps_lesson_progress").select("*", { count: "exact", head: true }).eq("user_id", userId)).count;
+  const r = (await admin.from("reward_events").select("*", { count: "exact", head: true }).eq("user_id", userId).in("event_type", PS_REWARD_EVENTS)).count;
   const c = (await admin.from("ps_level_test_attempts").select("*", { count: "exact", head: true }).eq("user_id", userId)).count;
-  return (a ?? 0) + (b ?? 0) + (c ?? 0);
+  return (a ?? 0) + (b ?? 0) + (c ?? 0) + (r ?? 0);
 }
 
 /** The submission that answers a stored exercise correctly, built from its answer key (service role only). */

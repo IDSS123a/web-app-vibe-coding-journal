@@ -28,4 +28,5 @@ Vertical slice (2026-09-20): tasks 1 to 10 done and verified, 11 waits for the D
 - [x] B Level tests: 37 new questions in three tests, migration 031, one-sitting grading on the server, 80 percent to pass, no reveal after the test, overview cards, probe, smoke and audit extended (2026-09-20, PDL-071)
 - [ ] C Capstone workshops from the book's Appendix B blueprints
 - [ ] D Live sandbox: learner runs their own prompt on a real model, at most 3 runs a day per user, shares the free AI pool (PDL-058), built last
-- [ ] E Coins and badges through the existing rewards system
+- [x] E1 Coins through the existing rewards system: lessons, exercises, chapters, level tests, paid by the server, celebrated in the browser (2026-09-21, PDL-072)
+- [ ] E2 Badges, and coins for the University's learning steps too

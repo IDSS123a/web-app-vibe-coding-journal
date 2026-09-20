@@ -13,6 +13,7 @@ import { requirePromptSchoolUser } from "@/features/prompt-school/access";
 import { PASS_SCORE, gradeExercise, levelTestPassed, levelTestScore, toPublicExercise, type PromptSchoolLevel } from "@/features/prompt-school/domain";
 import { getLevelTestStates } from "@/features/prompt-school/progress";
 import { getLevelTestExercises, recordLevelTestAttempt } from "@/features/prompt-school/repository";
+import { awardPromptSchool } from "@/features/prompt-school/rewards";
 import { PROMPT_SCHOOL_OUTLINE } from "@/features/prompt-school/content/outline";
 
 const LEVELS: PromptSchoolLevel[] = ["beginner", "intermediate", "advanced"];
@@ -69,9 +70,12 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const score = levelTestScore(results.map((r) => r.score), exercises.length);
     const passed = levelTestPassed(score);
     await recordLevelTestAttempt(auth.user.sub, level, score, passed, results);
+    // 150 coins the first time the level test is passed (PDL-072); retakes never pay again.
+    const reward = passed ? await awardPromptSchool(auth.user.sub, "ps_level_test_pass", level) : null;
 
     const chapterTitle = (slug: string) => PROMPT_SCHOOL_OUTLINE.find((c) => c.slug === slug)?.title ?? slug;
     return NextResponse.json({
+      reward,
       score,
       passed,
       passScore: state.passScore,

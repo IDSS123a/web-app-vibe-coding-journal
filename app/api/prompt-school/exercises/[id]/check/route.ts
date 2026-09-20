@@ -2,6 +2,8 @@
  * POST /api/prompt-school/exercises/[id]/check  body { answer }: grades one attempt on the server.
  * Only now do the explanation and the correct answer (or model answer) leave the server. The best
  * score per exercise is stored. Deterministic grading, no AI request. Premium-only.
+ * Coins (PDL-072) are paid here, on the server: 5 the first time the exercise is passed, and 50 the first
+ * time this attempt leaves the whole chapter complete. Both are idempotent, so repeating pays nothing.
  */
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
@@ -9,6 +11,7 @@ import { requirePromptSchoolUser } from "@/features/prompt-school/access";
 import { gradeExercise } from "@/features/prompt-school/domain";
 import { getChapterState } from "@/features/prompt-school/progress";
 import { getExerciseForGrading, recordAttempt } from "@/features/prompt-school/repository";
+import { awardPromptSchool } from "@/features/prompt-school/rewards";
 
 const idSchema = z.string().uuid();
 const bodySchema = z.object({ answer: z.unknown() });
@@ -34,7 +37,15 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     if (!result) return NextResponse.json({ error: "Invalid answer" }, { status: 400 });
 
     const saved = await recordAttempt(auth.user.sub, found.exercise.id, result.score, body.data.answer);
+
+    const reward = result.passed ? await awardPromptSchool(auth.user.sub, "ps_exercise_pass", found.exercise.id) : null;
+    const after = await getChapterState(auth.user.sub, found.chapter.slug);
+    const chapterReward = after?.completed ? await awardPromptSchool(auth.user.sub, "ps_chapter_complete", found.chapter.slug) : null;
+
     return NextResponse.json({
+      reward,
+      chapterReward,
+      chapterComplete: Boolean(after?.completed),
       score: result.score,
       passed: result.passed,
       feedback: result.feedback,

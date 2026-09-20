@@ -153,6 +153,19 @@ async function main() {
       check("prompt-school check with a wrong-shaped answer is 400 (once the chapter is open)", (await call("POST", `/api/prompt-school/exercises/${ex1[0].id}/check`, { token: userToken, body: { answer: { text: "x" } } })) === 400);
       check("grading works once the lessons are done", (await call("POST", `/api/prompt-school/exercises/${ex1[0].id}/check`, { token: userToken, body: { answer: { index: 0 } } })) === 200);
 
+      // Coins (PDL-072): paid by the server, once per step, never claimable from the browser.
+      check("the public award endpoint refuses Prompt School events", (await call("POST", "/api/rewards/award", { token: userToken, body: { eventType: "ps_exercise_pass", dedupeKey: "x" } })) === 400 && (await call("POST", "/api/rewards/award", { token: userToken, body: { eventType: "ps_level_test_pass", dedupeKey: "beginner" } })) === 400);
+      const { data: ex1Key } = await admin.from("ps_exercises").select("answer").eq("id", ex1[0].id).single();
+      const passBody = { answer: { index: ex1Key.answer.correct } };
+      const failAnswer = { answer: { index: (ex1Key.answer.correct + 1) % 4 } };
+      const failedFirst = await (await fetch(`${BASE}/api/prompt-school/exercises/${ex1[0].id}/check`, { method: "POST", headers: { "content-type": "application/json", authorization: `Bearer ${userToken}` }, body: JSON.stringify(failAnswer) })).json();
+      check("a failed attempt pays nothing", failedFirst.reward === null);
+      const passedFirst = await (await fetch(`${BASE}/api/prompt-school/exercises/${ex1[0].id}/check`, { method: "POST", headers: { "content-type": "application/json", authorization: `Bearer ${userToken}` }, body: JSON.stringify(passBody) })).json();
+      const passedAgain = await (await fetch(`${BASE}/api/prompt-school/exercises/${ex1[0].id}/check`, { method: "POST", headers: { "content-type": "application/json", authorization: `Bearer ${userToken}` }, body: JSON.stringify(passBody) })).json();
+      check("passing an exercise pays 5 coins the first time only", passedFirst.reward?.coinsAwarded === 5 && passedAgain.reward === null);
+      const { count: exEvents } = await admin.from("reward_events").select("*", { count: "exact", head: true }).eq("user_id", tu.id).eq("event_type", "ps_exercise_pass");
+      check("exactly one exercise reward event is recorded", exEvents === 1, String(exEvents));
+
       // Level tests: locked until every chapter of the level is complete, graded whole on the server, answers never sent.
       check("a level test is locked for a learner who has not finished the level", (await call("GET", "/api/prompt-school/level-tests/beginner", { token: userToken })) === 403 && (await call("POST", "/api/prompt-school/level-tests/beginner", { token: userToken, body: { answers: {} } })) === 403);
       check("an unknown level is 400", (await call("GET", "/api/prompt-school/level-tests/expert", { token: userToken })) === 400);
@@ -173,10 +186,14 @@ async function main() {
       const goodRes = await fetch(`${BASE}/api/prompt-school/level-tests/beginner`, { method: "POST", headers: { "content-type": "application/json", authorization: `Bearer ${userToken}` }, body: JSON.stringify({ answers: good }) });
       const goodBody = goodRes.status === 200 ? await goodRes.json() : {};
       check("the correct answers pass the beginner test with a full score, and both attempts are counted", goodRes.status === 200 && goodBody.score === 1 && goodBody.passed === true && goodBody.attempts === 2);
+      check("passing a level test pays 150 coins", goodBody.reward?.coinsAwarded === 150);
       const wrongOnes = Object.fromEntries(ltRows.map((r) => [r.id, r.kind === "choice" ? { index: (r.answer.correct + 1) % 4 } : correctSubmission(r)]));
       const wrongRes = await fetch(`${BASE}/api/prompt-school/level-tests/beginner`, { method: "POST", headers: { "content-type": "application/json", authorization: `Bearer ${userToken}` }, body: JSON.stringify({ answers: wrongOnes }) });
       const wrongBody = wrongRes.status === 200 ? await wrongRes.json() : {};
       check("missing the choice questions drops the score below the 80 percent bar", wrongRes.status === 200 && wrongBody.score < 0.8 && wrongBody.passed === false && wrongBody.bestScore === 1);
+      const againRes = await fetch(`${BASE}/api/prompt-school/level-tests/beginner`, { method: "POST", headers: { "content-type": "application/json", authorization: `Bearer ${userToken}` }, body: JSON.stringify({ answers: good }) });
+      const againBody = againRes.status === 200 ? await againRes.json() : {};
+      check("passing the same level test again pays nothing", againBody.passed === true && againBody.reward === null && wrongBody.reward === null);
 
       // A temporary chapter after the last real one: locked until every real chapter is complete.
       const { data: temp, error: tempErr } = await admin.from("ps_chapters").insert({ level: "beginner", slug: "zz-probe-temp", title: "Probe temp", summary: "temporary", order_index: 999, published: true }).select("id").single();

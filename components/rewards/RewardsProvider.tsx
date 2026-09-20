@@ -45,8 +45,24 @@ interface CelebrationState {
   coins?: number;
 }
 
+/** What a trusted server route reports after it paid coins itself (Prompt School, PDL-072). */
+export interface ServerReward {
+  event: string;
+  coinsAwarded: number;
+  leveledUp: boolean;
+  level: number;
+  coinBalance: number;
+  currentStreak: number;
+  longestStreak: number;
+}
+
 interface RewardsContextValue {
   state: RewardState | null;
+  /**
+   * Shows the celebration for coins that a server route already paid: updates the balance, then a toast for a
+   * small payout, an overlay for a completed chapter, a passed level test or a new level. Null entries are ignored.
+   */
+  applyReward: (rewards: Array<ServerReward | null | undefined>) => void;
   award: (eventType: RewardEventType, dedupeKey: string | null) => Promise<void>;
   /** Confetti only, for a delight moment that pays no coins (a repeat click on the book). */
   sparkle: () => void;
@@ -134,8 +150,29 @@ export function RewardsProvider({ children }: { children: ReactNode }) {
 
   const sparkle = useCallback(() => setConfettiActive(true), []);
 
+  const applyReward = useCallback((rewards: Array<ServerReward | null | undefined>) => {
+    const paid = rewards.filter((r): r is ServerReward => Boolean(r) && (r as ServerReward).coinsAwarded > 0);
+    if (paid.length === 0) return;
+    const last = paid[paid.length - 1]!;
+    const coins = paid.reduce((n, r) => n + r.coinsAwarded, 0);
+    setState({ coinBalance: last.coinBalance, currentStreak: last.currentStreak, longestStreak: last.longestStreak, level: last.level });
+    const has = (event: string) => paid.some((r) => r.event === event);
+    if (paid.some((r) => r.leveledUp)) {
+      setConfettiActive(true);
+      setCelebration({ title: `Level ${last.level}`, subtitle: "Excellent progress. You've reached a new level.", coins });
+    } else if (has("ps_level_test_pass")) {
+      setConfettiActive(true);
+      setCelebration({ title: "Level test passed", subtitle: "You passed the whole level. Well done.", coins });
+    } else if (has("ps_chapter_complete")) {
+      setConfettiActive(true);
+      setCelebration({ title: "Chapter complete", subtitle: "You passed the practice of this chapter. The next chapter is open.", coins });
+    } else {
+      setToastCoins(coins);
+    }
+  }, []);
+
   return (
-    <RewardsContext.Provider value={{ state, award, sparkle }}>
+    <RewardsContext.Provider value={{ state, award, sparkle, applyReward }}>
       {children}
       {toastCoins != null && <CoinToast coins={toastCoins} onDone={() => setToastCoins(null)} />}
       <ConfettiSystem active={confettiActive} onDone={() => setConfettiActive(false)} />

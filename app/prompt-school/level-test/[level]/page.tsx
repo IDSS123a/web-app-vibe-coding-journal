@@ -11,6 +11,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { useSession } from "@/lib/auth/use-session";
+import { useRewards, type ServerReward } from "@/components/rewards/RewardsProvider";
 import { PremiumGuard } from "@/components/PremiumGuard";
 import { ExercisePlayer, type PublicExercise } from "@/components/prompt-school/ExercisePlayer";
 import { BookPopup } from "@/components/prompt-school/BookPopup";
@@ -25,6 +26,7 @@ interface TestData {
 }
 
 interface TestResult {
+  reward?: ServerReward | null;
   score: number;
   passed: boolean;
   passScore: number;
@@ -41,6 +43,7 @@ const btn =
 function LevelTest() {
   const { level } = useParams<{ level: string }>();
   const { token, loading: sessionLoading } = useSession();
+  const { applyReward } = useRewards();
   const [data, setData] = useState<TestData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [answered, setAnswered] = useState(0);
@@ -91,7 +94,9 @@ function LevelTest() {
         body: JSON.stringify({ answers: answers.current }),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      setResult((await res.json()) as TestResult);
+      const graded = (await res.json()) as TestResult;
+      setResult(graded);
+      applyReward([graded.reward]);
       window.scrollTo({ top: 0 });
     } catch {
       setError("Could not grade the test. Your answers are still here, please try again.");
@@ -131,6 +136,9 @@ function LevelTest() {
               <span className="ml-2 text-sm font-bold normal-case tracking-normal">
                 (pass at {Math.round(result.passScore * 100)}%, attempt {result.attempts}, best {Math.round(result.bestScore * 100)}%)
               </span>
+              {result.reward?.coinsAwarded ? (
+                <span className="ml-2 inline-block border-2 border-black bg-[#D4A017] px-2 py-0.5 text-xs font-black normal-case tracking-normal text-black">+{result.reward.coinsAwarded} Vibe Coins</span>
+              ) : null}
             </p>
             <p className="mb-4 text-sm leading-relaxed text-black">
               {result.passed
