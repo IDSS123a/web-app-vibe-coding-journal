@@ -2318,6 +2318,21 @@ Every repair exercise has a rubric tested against its model answer, good samples
 
 ---
 
+## PDL-068 Prompt School: chapters 8 to 11, the book's main text is complete
+
+**Date:** 2026-09-20. Director: continue with chapters 8 to 11. Each chapter was read in full from the book first, its section list in `book-map.ts` was made final, and the content test enforces that every section is covered.
+
+- **Chapter 8, "Ethics and Bias"** (5 lessons, 10 exercises, 14 sections): the lens grinder's view of bias and its sources, the test kit of practical detection methods for non-coders, mitigation through prompting, the ethical audit workshop (hiring prompt V1, the five audit steps, the revised V2) and the prompt engineer's ethical compass.
+- **Chapter 9, "Cutting-Edge Methods"** (5 lessons, 10 exercises, 16 sections): tool use and orchestration (the MRKL Swiss Army Knife: controller, toolkit, integrator, the France population flow), multimodal prompting as the theater director's craft with five example prompts and the museum case study, collaborative Markdown, and the note on the pace of change.
+- **Chapter 10, "Real-World Case Studies"** (5 lessons, 10 exercises, 18 sections): GadgetHelper built iteration by iteration (naive request, grounding in facts, persona and empathy, tools, edge cases) and the lab assistant for pre-review checks (the checklist prompt versus focused modular prompts, and the ethical boundaries).
+- **Chapter 11, "The Future of Prompting"** (4 lessons, 10 exercises, 13 sections): the apprenticeship loop (RLHF) and why it matters for prompting, the six trends on the horizon with the historical resonances (Turing, von Neumann, Lovelace, Morse), the enduring principles, and the book's introduction to the appendices, which is where the School announces the remaining chapters.
+
+**Finding for the Director (manuscript).** In the manuscript file and in the corrected .docx, the detailed text of chapter 9 sections 1 and 2 is replaced by an editorial placeholder, and chapter 10's second case study points at "the previous response" for three templates (the review assistant V1, the methodology extractor, the stated limitations finder). The approved text exists only in `Prirucnik_Prompt_Engineering_B.docx`, and the lessons teach from it for those passages. The manuscript should be repaired so that the book itself contains what the School teaches.
+
+Every repair exercise has a rubric tested against its model answer, good samples and bad samples. The School stands at 69 lessons in 11 chapters, 214 of 251 book sections (85 percent); what remains is the appendix material (blueprints, techniques reference, glossary, resources and platforms). Verified: 139 Prompt School tests (375 in the whole project), lint and typecheck clean, integrity pass (stored text equals the content files), content seeded to production. Not yet on the live site until pushed: the Director has approved pushes up to chapter 7 only.
+
+---
+
 ---
 
 *Vibe-Coding Journal — Project Decision Log — updated as decisions are made.*

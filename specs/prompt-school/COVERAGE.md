@@ -28,10 +28,10 @@ fine, as long as every section of the book is properly covered. The lesson count
 | Intermediate | structure-and-protection | Chapter 5 | 7 | written, 21 of 21 (2026-09-20) |
 | Intermediate | code-and-research | Chapter 6 | 7 | written, 23 of 23 (2026-09-20) |
 | Intermediate | optimize-and-debug | Chapter 7 | 7 | written, 25 of 25 (2026-09-20) |
-| Advanced | ethics-and-bias | Chapter 8 | 5 | to do |
-| Advanced | tools-and-multimodal | Chapter 9 | 4 | to do |
-| Advanced | case-studies | Chapter 10 | 5 | to do |
-| Advanced | the-future | Chapter 11 | 4 | to do |
+| Advanced | ethics-and-bias | Chapter 8 | 5 | written, 14 of 14 (2026-09-20) |
+| Advanced | tools-and-multimodal | Chapter 9 | 5 | written, 16 of 16 (2026-09-20) |
+| Advanced | case-studies | Chapter 10 | 5 | written, 18 of 18 (2026-09-20) |
+| Advanced | the-future | Chapter 11 | 4 | written, 13 of 13 (2026-09-20) |
 | Advanced | blueprints-1, 2, 3 | Appendix B, 15 blueprints | 6 + 5 + 5 | to do |
 | Advanced | techniques-reference | Appendix D | 4 | to do |
 | Advanced | glossary | Appendix A | 6 | to do |

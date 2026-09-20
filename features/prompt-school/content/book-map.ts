@@ -214,44 +214,67 @@ export const BOOK_MAP: BookSection[] = [
 
   // ---------- Chapter 8: Ethics and responsibility ----------
   ...group("ethics-and-bias", "ch8", [
-    ["intro", "Ethics and Responsibility"],
-    ["guiding-principles", "1. Guiding Principles (Constitutional AI concepts), The Hippocratic Oath for Systems"],
-    ["prompting-in-alignment", "Prompting in Alignment (conceptual example)"],
-    ["bias-lens-grinder", "2. Bias Detection and Mitigation, The Lens Grinder's Test"],
-    ["manifestations", "Manifestations of Bias"],
-    ["sources-of-distortion", "Sources of Distortion"],
-    ["test-kit", "The Lens Grinder's Test Kit"],
-    ["mitigation", "Mitigation Through Prompting"],
-    ["workshop", "Workshop: scenario, audit steps and the revised prompt V2"],
+    ["intro", "Ethics and Responsibility: prompting with care, and the two facets of the chapter"],
+    ["guiding-principles", "1. Guiding Principles (Constitutional AI concepts), The Hippocratic Oath for Systems: first, do no harm"],
+    ["cai-conceptual", "How Does a Constitution Shape Behavior? (a conceptual view, three stages)"],
+    ["why-matters", "Why This Matters to the Prompt Engineer (even if you do not write the constitution)"],
+    ["prompting-in-alignment", "Prompting in Alignment (conceptual example) and the closing on trustworthy technology"],
+    ["bias-lens-grinder", "2. Bias Detection and Mitigation, The Lens Grinder's Test: identifying and correcting distortions"],
+    ["manifestations", "Manifestations of Bias: what distortions look like"],
+    ["sources-of-distortion", "Sources of Distortion: where do flaws originate?"],
+    ["test-kit", "The Lens Grinder's Test Kit: practical detection methods for non-coders"],
+    ["mitigation", "Mitigation Through Prompting, and the closing on ongoing processes"],
+    ["workshop-scenario", "Workshop: Ethical Audit, the scenario and the hiring prompt V1"],
+    ["workshop-audit-steps", "Workshop: audit steps 1 to 5 (goal and stakes, subjectivity, input variation, biases, mitigation)"],
+    ["workshop-v2", "Workshop: the revised prompt V2 and the workshop conclusion"],
     ["ethical-compass", "The Prompt Engineer's Ethical Compass"],
-  ], true),
+  ]),
 
   // ---------- Chapter 9: Cutting-edge methods ----------
+  // The manuscript replaces the detailed text of sections 1 and 2 by an editorial placeholder; the approved text exists in
+  // Prirucnik_Prompt_Engineering_B.docx and is what the lessons teach for those sections.
   ...group("tools-and-multimodal", "ch9", [
-    ["intro", "Cutting-Edge Methods: expanding the interaction"],
-    ["tool-use", "1. Tool Use and Orchestration (MRKL concepts), The Swiss Army Knife Approach"],
-    ["multimodal", "2. Multimodal Prompting, The Theater Director's Craft"],
-    ["collaborative-markdown", "3. Collaborative Markdown, A Hybrid Syntax for Human-AI Co-Creation"],
-    ["core-ideas", "Core Ideas"],
-    ["implications", "Prompt Engineering Implications"],
-    ["challenges", "Challenges"],
-    ["note", "Note"],
+    ["intro", "Cutting-Edge Methods: expanding the interaction, the three areas"],
+    ["tool-use-swiss-army", "1. Tool Use and Orchestration (MRKL concepts), The Swiss Army Knife Approach: the camping analogy and MRKL"],
+    ["tool-why-needed", "Why the Need for Specialized Tools? (five limitations)"],
+    ["tool-architecture", "The MRKL Architecture: controller, toolkit, integrator"],
+    ["tool-interaction-flow", "Example Interaction Flow: the France population example"],
+    ["tool-prompting", "Prompting in a World with Tool Use (four points and the travel example)"],
+    ["tool-benefits-challenges", "Benefits and Challenges of the Swiss Army Knife Approach, and the closing on modular systems"],
+    ["multimodal-theater", "2. Multimodal Prompting, The Theater Director's Craft: coordinating text, images and sound"],
+    ["multimodal-how-understand", "How Do Systems Understand Multiple Modalities? (encoders, cross-modal training, fusion, generation)"],
+    ["multimodal-examples", "The Theater Director's Prompt: five examples with multimodal inputs"],
+    ["multimodal-power", "The Power of Orchestrating Modalities, Directorial Challenges and the closing"],
+    ["museum-case-study", "Case Study: how a museum used multimodal prompts to generate exhibit descriptions"],
+    ["collaborative-markdown", "3. Collaborative Markdown, A Hybrid Syntax for Human-AI Co-Creation: the idea, seven core ideas, cognitive and practical benefits"],
+    ["cmd-implications", "Prompt Engineering Implications and Challenges of Collaborative Markdown"],
+    ["note", "Note: Acknowledging the Pace of Change, principles versus implementations"],
     ["expanding-horizon", "Expanding the Prompt Engineer's Horizon"],
-  ], true),
+  ]),
 
   // ---------- Chapter 10: Real-world case studies ----------
+  // The manuscript refers to "the previous response" for the review assistant V1, the methodology extractor and the stated
+  // limitations finder; those templates exist in Prirucnik_Prompt_Engineering_B.docx and are what the lessons teach.
   ...group("case-studies", "ch10", [
-    ["intro", "Real-World Case Studies"],
-    ["cs1-goal", "Case Study 1: Customer Service Chatbots, The Switchboard Operator's Revival: the goal"],
-    ["cs1-iterations", "Case Study 1: the prompt engineering process, iterations 0 to 3"],
+    ["intro", "Real-World Case Studies: prompt engineering in action, the two case studies"],
+    ["cs1-scenario", "Case Study 1: Customer Service Chatbots, The Switchboard Operator's Revival, the scenario revisited"],
+    ["cs1-goal", "Case Study 1: the goal, building GadgetHelper for Global Gadgets Inc."],
+    ["cs1-iter0", "Case Study 1, Iteration 0: the naive request (baseline failure)"],
+    ["cs1-iter1", "Case Study 1, Iteration 1: grounding in facts (applying RAG principles)"],
+    ["cs1-iter2", "Case Study 1, Iteration 2: injecting persona and empathy (context, instructions, few-shot examples)"],
+    ["cs1-iter3", "Case Study 1, Iteration 3: enabling action with tools (MRKL principles)"],
+    ["cs1-iter4", "Case Study 1, Iteration 4+: refining conversation, edge cases and consistency"],
     ["cs1-challenges", "Case Study 1: key challenges and learnings in building GadgetHelper"],
     ["cs1-conclusion", "Case Study 1: conclusion"],
-    ["cs2-goal", "Case Study 2: Scientific Research, The Lab Assistant Upgrade: the goal"],
-    ["cs2-approaches", "Case Study 2: approach 1 and approach 2"],
-    ["cs2-iterative-key", "Regardless of approach, Iterative Refinement is Key"],
+    ["cs2-scenario", "Case Study 2: Scientific Research, The Lab Assistant Upgrade, the scenario revisited: augmenting expertise"],
+    ["cs2-goal", "Case Study 2: the goal, an AI assistant for pre-review checks"],
+    ["cs2-approach1", "Case Study 2, Approach 1: the comprehensive checklist prompt (techniques, prompt V1, challenges and refinements)"],
+    ["cs2-approach2", "Case Study 2, Approach 2: focused, modular prompts (three example prompts, benefits and drawbacks)"],
+    ["cs2-iterative-key", "Regardless of approach, iterative refinement is key"],
+    ["cs2-ethics", "Ethical Considerations and Limitations: the lab assistant's boundaries"],
     ["cs2-conclusion", "Case Study 2: conclusion"],
     ["craft-in-context", "The Craft in Context"],
-  ], true),
+  ]),
 
   // ---------- Chapter 11: The future ----------
   ...group("the-future", "ch11", [
@@ -266,8 +289,9 @@ export const BOOK_MAP: BookSection[] = [
     ["trend-interaction", "Trend 4: more fluid interaction modalities"],
     ["trend-grounding", "Trend 5: improved grounding, factuality and uncertainty"],
     ["trend-safety", "Trend 6: co-evolution of capabilities and safety and ethics"],
-    ["enduring-principles", "3. The Enduring Principles, Timeless Craft in a Changing World"],
-  ], true),
+    ["enduring-principles", "3. The Enduring Principles, Timeless Craft in a Changing World, and the closing"],
+    ["appendices-intro", "Appendices: your reference toolkit and continuing guide (the six companion volumes)"],
+  ]),
 
   // ---------- Appendix B: Template library (15 blueprints, three workshops of five) ----------
   ...group("blueprints-1", "appB", [

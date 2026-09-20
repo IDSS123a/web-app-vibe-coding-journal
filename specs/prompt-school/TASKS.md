@@ -22,7 +22,8 @@ Vertical slice (2026-09-20): tasks 1 to 10 done and verified, 11 waits for the D
 - [x] A1c Book cross-sell: cover, click reward (25 coins once), PayPal window (2026-09-20); changed the same day from a fixed block to a pop-up every 5 minutes that closes by itself after 20 seconds (PDL-066)
 - [x] A2a Appendix C, the Markdown manual (5 lessons, 9 exercises, 11 of 11 sections), which completes the beginner level (2026-09-20)
 - [x] A2b Chapters 4 to 7, the whole intermediate level (27 lessons, 40 exercises, 91 of 91 sections), each read in full from the source first (2026-09-20)
-- [ ] A2c Chapters 8 to 11, Appendix B (three workshops), Appendices D, A, E and F, in that order, each read in full from the source first
+- [x] A2c Chapters 8 to 11, the advanced level's main text (19 lessons, 40 exercises, 61 of 61 sections), each read in full from the source first (2026-09-20, PDL-068)
+- [ ] A2d Appendix B (three blueprint workshops), Appendices D, A, E and F, in that order, each read in full from the source first
 - [ ] B Level tests (like the University's; chapter gating is done)
 - [ ] C Capstone workshops from the book's Appendix B blueprints
 - [ ] D Live sandbox: learner runs their own prompt on a real model, at most 3 runs a day per user, shares the free AI pool (PDL-058), built last
