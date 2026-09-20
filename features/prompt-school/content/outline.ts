@@ -18,9 +18,9 @@ export interface ChapterOutline {
 
 export const PROMPT_SCHOOL_OUTLINE: ChapterOutline[] = [
   // Beginner
-  { slug: "craft-of-prompting", level: "beginner", title: "The Prompt Engineer's Craft", summary: "Why prompting is a craft: thinking on paper first, thinking like an engineer, and learning by experiment.", bookRef: "Chapter 1", plannedLessons: 4, available: false },
+  { slug: "craft-of-prompting", level: "beginner", title: "The Prompt Engineer's Craft", summary: "Why prompting is a craft: thinking on paper first, thinking like an engineer, and learning by experiment.", bookRef: "Chapter 1", plannedLessons: 4, available: true },
   { slug: "five-pillars", level: "beginner", title: "The Five Pillars", summary: "The anatomy of an effective prompt: context, instructions, examples, constraints and delimiters.", bookRef: "Chapter 2", plannedLessons: 6, available: true },
-  { slug: "foundational-techniques", level: "beginner", title: "Foundational Techniques", summary: "Zero-shot prompting, few-shot learning and quality sampling, and when to use each.", bookRef: "Chapter 3", plannedLessons: 4, available: false },
+  { slug: "foundational-techniques", level: "beginner", title: "Foundational Techniques", summary: "Zero-shot prompting, few-shot learning and quality sampling, and when to use each.", bookRef: "Chapter 3", plannedLessons: 4, available: true },
   { slug: "markdown-for-prompts", level: "beginner", title: "Formatting Prompts Clearly", summary: "Markdown and tags that make a prompt easy to read for people and for models.", bookRef: "Appendix C", plannedLessons: 4, available: false },
   // Intermediate
   { slug: "reasoning-techniques", level: "intermediate", title: "Making the Model Think", summary: "Chain of thought, tree of thoughts and knowledge distillation for harder problems.", bookRef: "Chapter 4", plannedLessons: 4, available: false },

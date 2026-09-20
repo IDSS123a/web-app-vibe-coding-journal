@@ -2243,6 +2243,20 @@ fully matched. `/plan-feature` is next.
 
 ---
 
+## PDL-062 Prompt School: chapters 1 and 3 (the beginner level is complete)
+
+**Date:** 2026-09-20. Director: "start with chapter 1 and 3". Written from the book, condensed and in plain language, no em dashes.
+
+**Chapter 1, "The Prompt Engineer's Craft"** (book chapter 1, mindset and workflow): 4 lessons (casual user to deliberate designer; the draft, test, analyze, refine loop; define success first and plan on paper; think like an engineer and work like a scientist) and 8 exercises: 3 choice, put the loop in order, spot the vague goals, complete the goal checklist, and a repair exercise that turns "Write something about marketing." into a precise prompt (task, quantity, audience, key message, tone). **Chapter 3, "Foundational Techniques"** (book chapter 3): 4 lessons (zero-shot as the telegraph method; few-shot as the recipe card; gold star selection; the workshop from telegraph to recipe card with the choice of tool) and 8 exercises: 3 choice, 2 spot (which tasks need examples; which examples break the gold star rules, one wrong month and one inconsistent date format), label the recipe card, assemble the few-shot prompt, and a repair exercise that turns "Tell me about the Siege of Sarajevo." into a recipe card with at least two consistent worked examples. Every repair rubric is tested against its model answer, good samples and bad samples, and the content test now runs for EVERY authored chapter (structure, dashes, full marks for the right answers, the correct choice not always in one position), so a chapter cannot be added half finished.
+
+**Course order.** Book chapter 1 is now the first published chapter, chapter 2 (The Five Pillars) second, chapter 3 third, so the sequence is the book's. Unlocking works as decided in PDL-061: a learner who has already started the Five Pillars keeps it open; everyone else meets chapter 1 first. Appendix C (formatting prompts with Markdown) is the remaining beginner chapter, so the beginner level is not complete until it is written.
+
+**Small change.** The "spot" exercise can now be phrased for either "find the flaws" or "select the items that qualify" (optional labels in the exercise; its feedback wording is neutral). Verified: responsive audit 128 checks (280, 375, 768 and 1440 px, 13 Prompt School pages), 0 issues; 291 unit tests; security probe 133 checks (the unlocking walk now runs on the real chapter sequence plus a temporary last chapter); end to end smoke green (locked and open states on the real sequence). Test fixtures live in `scripts/ps-fixture.mjs` and always remove the test account's progress again.
+
+**Totals now:** 14 of about 47 lessons and 24 exercises authored, in 3 of 12 chapters. Next: Appendix C, then the intermediate level (chapters 4 to 7).
+
+---
+
 ---
 
 *Vibe-Coding Journal — Project Decision Log — updated as decisions are made.*

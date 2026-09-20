@@ -8,6 +8,8 @@ change, newest first.
 
 ## 2026-09-20
 
+- **Prompt School: two more chapters (PDL-062).** "The Prompt Engineer's Craft" (why prompting is a craft, the draft, test, analyze, refine loop, defining success, thinking like an engineer) and "Foundational Techniques" (zero-shot, few-shot, choosing good examples) are open, each with 4 lessons and 8 exercises, including rewriting a vague goal into a precise prompt and turning a plain request into a recipe card with worked examples. The course now follows the book's order: chapter 1, then The Five Pillars, then chapter 3, each opening when the previous one is complete.
+
 - **Prompt School (PDL-061).** A new card next to the University, built from the book Mastering Prompt Engineering, for the same Premium subscription. The first chapter, "The Five Pillars", is open with 6 lessons and 8 interactive exercises: choose, fill in the blanks of a real prompt, put the parts in order, spot the flaw, and rewrite a weak prompt yourself. Every attempt is checked at once with feedback on what to fix, and your best score and finished lessons are remembered. The rest of the course (12 chapters, about 47 lessons, beginner to advanced) is listed as coming soon. Like the University, it opens step by step: finish a chapter's lessons to open its practice, pass the practice (75 percent) to open the next chapter. Basic and trial readers see what the School offers and can buy Premium on the same screen. The menu switches to the compact button below 1280 px wide because it now has one more link.
 
 ## 2026-09-19

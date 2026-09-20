@@ -9,6 +9,7 @@
  * article and removes that bookmark again; nothing else is written.
  */
 import { chromium } from "playwright-core";
+import { psChapters, completeChaptersBefore, finishLessons, clearPsProgress, psProgressCount } from "./ps-fixture.mjs";
 import { createClient } from "@supabase/supabase-js";
 
 const BASE = process.argv[2] ?? "http://localhost:3000";
@@ -31,7 +32,7 @@ async function sessionFor(email) {
 
 const browser = await chromium.launch({ channel: "chrome", headless: true });
 
-async function visit(ctx, path, expectText, extra) {
+async function visit(ctx, path, expectText, extra, allowStatus = []) {
   const page = await ctx.newPage();
   const problems = [];
   page.on("pageerror", (e) => problems.push(`pageerror ${String(e.message).slice(0, 100)}`));
@@ -39,7 +40,7 @@ async function visit(ctx, path, expectText, extra) {
     if (m.type() === "error" && !/Failed to load resource/.test(m.text())) problems.push(`console ${m.text().slice(0, 100)}`);
   });
   page.on("response", (r) => {
-    if (r.status() >= 400 && new URL(r.url()).origin === new URL(BASE).origin && !r.url().includes("/_next/")) problems.push(`${r.status()} ${new URL(r.url()).pathname}`);
+    if (r.status() >= 400 && !allowStatus.includes(r.status()) && new URL(r.url()).origin === new URL(BASE).origin && !r.url().includes("/_next/")) problems.push(`${r.status()} ${new URL(r.url()).pathname}`);
   });
   await page.goto(BASE + path, { waitUntil: "networkidle", timeout: 45000 });
   let found = true;
@@ -73,9 +74,17 @@ try {
 
   // Prompt School: pages, then a real graded attempt, then the test account's progress is removed again.
   {
-    const startedAt = new Date().toISOString();
     const { data: tu } = await admin.from("user_profiles").select("id").eq("email", "user@test.local").single();
-    await visit(userCtx, "/prompt-school", "The Five Pillars");
+    await clearPsProgress(admin, tu.id);
+    const chs = await psChapters(admin);
+    const fpCh = chs.find((c) => c.slug === "five-pillars");
+    await visit(userCtx, "/prompt-school", "The Five Pillars", async (page) => {
+      const text = await page.locator("body").innerText();
+      ok("a later chapter shows as locked while the first is incomplete", /Locked: complete/i.test(text));
+    });
+    await visit(userCtx, "/prompt-school/five-pillars", "opens when you complete the previous chapter", undefined, [403]);
+    await visit(userCtx, "/prompt-school/craft-of-prompting", "Finish all 4 lessons to open the practice");
+    await completeChaptersBefore(admin, tu.id, "five-pillars");
     await visit(userCtx, "/prompt-school/five-pillars", "Finish all 6 lessons to open the practice");
     await visit(userCtx, "/prompt-school/five-pillars/practice", "The practice opens when you have finished every lesson");
     await visit(userCtx, "/prompt-school/five-pillars/pillar-1-context", "Mark lesson as done", async (page) => {
@@ -84,10 +93,7 @@ try {
       ok("prompt school lesson can be marked done", true);
     });
     // Mark the remaining lessons through the database, as if they had been read, so the practice opens.
-    {
-      const { data: lessons } = await admin.from("ps_lessons").select("id, chapter_id");
-      await admin.from("ps_lesson_progress").upsert(lessons.map((l) => ({ user_id: tu.id, lesson_id: l.id })), { onConflict: "user_id,lesson_id", ignoreDuplicates: true });
-    }
+    await finishLessons(admin, tu.id, fpCh);
     await visit(userCtx, "/prompt-school/five-pillars", "Start practice");
     await visit(userCtx, "/prompt-school/five-pillars/practice", "Name the pillar", async (page) => {
       const first = page.locator("section").first();
@@ -101,11 +107,8 @@ try {
       await repair.getByText(/Passed: 100%/).waitFor({ timeout: 10000 });
       ok("prompt school repair exercise is rubric graded", true);
     });
-    await admin.from("ps_exercise_results").delete().eq("user_id", tu.id).gte("updated_at", startedAt);
-    await admin.from("ps_lesson_progress").delete().eq("user_id", tu.id);
-    const { count: left } = await admin.from("ps_exercise_results").select("*", { count: "exact", head: true }).eq("user_id", tu.id);
-    const { count: leftLessons } = await admin.from("ps_lesson_progress").select("*", { count: "exact", head: true }).eq("user_id", tu.id);
-    ok("prompt school test progress removed again", left === 0 && leftLessons === 0);
+    await clearPsProgress(admin, tu.id);
+    ok("prompt school test progress removed again", (await psProgressCount(admin, tu.id)) === 0);
   }
   await visit(userCtx, "/welcome", "Dashboard");
 

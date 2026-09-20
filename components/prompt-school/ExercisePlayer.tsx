@@ -314,7 +314,7 @@ function SpotInput({ pub, picked, onChange, locked, reveal }: { pub: SpotPublic;
   const flawed = Array.isArray(reveal?.flawed) ? new Set(reveal.flawed as string[]) : null;
   return (
     <div className="space-y-2">
-      <p className="text-xs font-bold uppercase tracking-widest text-black">Select every weak line</p>
+      <p className="text-xs font-bold uppercase tracking-widest text-black">{pub.pickPrompt ?? "Select every weak line"}</p>
       {pub.segments.map((s) => {
         const on = picked.includes(s.id);
         const wasFlawed = flawed ? flawed.has(s.id) : null;
@@ -333,7 +333,7 @@ function SpotInput({ pub, picked, onChange, locked, reveal }: { pub: SpotPublic;
             <span className="min-w-0 flex-1 break-words">{s.text}</span>
             {wasFlawed !== null && (
               <span className={`shrink-0 text-xs font-bold uppercase tracking-widest ${on ? "" : wasFlawed ? "text-[#FF3000]" : ""}`}>
-                {wasFlawed ? "Flawed" : "Fine"}
+                {wasFlawed ? (pub.hitLabel ?? "Flawed") : (pub.missLabel ?? "Fine")}
               </span>
             )}
           </button>

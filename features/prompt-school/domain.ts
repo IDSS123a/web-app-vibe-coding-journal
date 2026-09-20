@@ -22,7 +22,13 @@ export interface ChoicePublic { options: string[] }
 /** template holds markers {{id}}; each blank offers a list of choices. */
 export interface FillPublic { template: string; blanks: Array<{ id: string; choices: string[] }> }
 export interface OrderPublic { blocks: Array<{ id: string; text: string }> }
-export interface SpotPublic { segments: Array<{ id: string; text: string }> }
+/** pickPrompt, hitLabel and missLabel let one exercise kind serve "find the flaws" and "select the items that qualify". */
+export interface SpotPublic {
+  segments: Array<{ id: string; text: string }>;
+  pickPrompt?: string;
+  hitLabel?: string;
+  missLabel?: string;
+}
 export interface RepairPublic { starter: string; hint?: string }
 
 // ---------- what grades an attempt (server only) ----------
@@ -141,9 +147,9 @@ export function gradeSpot(pub: SpotPublic, answer: SpotAnswer, sub: Submission["
   const wrong = [...picked].filter((id) => !flawed.has(id));
   const exact = missed.length === 0 && wrong.length === 0;
   const feedback: FeedbackLine[] = [];
-  if (exact) feedback.push({ label: "You found every flaw and nothing else", ok: true });
-  if (missed.length > 0) feedback.push({ label: `${missed.length} flaw${missed.length > 1 ? "s" : ""} not found`, ok: false, hint: "Read each part again and ask what it lets the model guess." });
-  if (wrong.length > 0) feedback.push({ label: `${wrong.length} part${wrong.length > 1 ? "s" : ""} marked that ${wrong.length > 1 ? "are" : "is"} fine`, ok: false });
+  if (exact) feedback.push({ label: "You selected every right item and nothing else", ok: true });
+  if (missed.length > 0) feedback.push({ label: `${missed.length} right item${missed.length > 1 ? "s" : ""} not selected`, ok: false, hint: "Read each part again and ask what it lets the model guess or get wrong." });
+  if (wrong.length > 0) feedback.push({ label: `${wrong.length} item${wrong.length > 1 ? "s" : ""} selected that ${wrong.length > 1 ? "do" : "does"} not belong`, ok: false });
   return { score: exact ? 1 : 0, passed: exact, feedback, reveal: { flawed: answer.flawed } };
 }
 

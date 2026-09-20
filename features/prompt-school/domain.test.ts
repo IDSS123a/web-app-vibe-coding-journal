@@ -94,12 +94,12 @@ describe("gradeSpot", () => {
   it("fails when a flaw is missed", () => {
     const r = gradeSpot(pub, answer, { picked: ["s1"] });
     expect(r.passed).toBe(false);
-    expect(r.feedback[0]?.label).toContain("1 flaw not found");
+    expect(r.feedback[0]?.label).toContain("1 right item not selected");
   });
   it("fails when a fine part is marked", () => {
     const r = gradeSpot(pub, answer, { picked: ["s1", "s2", "s3"] });
     expect(r.passed).toBe(false);
-    expect(r.feedback[0]?.label).toContain("1 part marked");
+    expect(r.feedback[0]?.label).toContain("1 item selected that does not belong");
   });
   it("ignores unknown ids", () => {
     expect(gradeSpot(pub, answer, { picked: ["s1", "s3", "nope"] }).passed).toBe(true);

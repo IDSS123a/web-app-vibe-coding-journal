@@ -17,7 +17,8 @@ Vertical slice (2026-09-20): tasks 1 to 10 done and verified, 11 waits for the D
 
 ## Next phases (after the Director approves the slice)
 
-- [ ] A Chapters 1, 3 and Appendix C (beginner), then intermediate, then advanced, in batches of one or two chapters
+- [x] A1 Chapters 1 and 3 (2026-09-20, PDL-062)
+- [ ] A2 Appendix C (formatting prompts), then intermediate (chapters 4 to 7), then advanced, in batches of one or two chapters
 - [ ] B Level tests (like the University's; chapter gating is done)
 - [ ] C Capstone workshops from the book's Appendix B blueprints
 - [ ] D Live sandbox: learner runs their own prompt on a real model, at most 3 runs a day per user, shares the free AI pool (PDL-058), built last

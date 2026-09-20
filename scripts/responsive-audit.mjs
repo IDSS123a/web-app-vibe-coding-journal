@@ -21,6 +21,7 @@
  */
 
 import { chromium } from "playwright-core";
+import { psChapters, completeChapter, clearPsProgress } from "./ps-fixture.mjs";
 import { createClient } from "@supabase/supabase-js";
 import fs from "node:fs";
 import path from "node:path";
@@ -68,6 +69,16 @@ async function dynamicPaths() {
   out.lessonPath = lesson?.[0] && course?.[0] ? `/university/${course[0].slug}/${lesson[0].slug}` : null;
   out.chapterId = lesson?.[0]?.chapter_id;
   out.promptSchool = Boolean((await admin.from("ps_chapters").select("id").eq("slug", "five-pillars").eq("published", true).maybeSingle()).data);
+  // Every published chapter: its page, its practice, and its first and last lesson (the last one often holds the longest prompt samples).
+  out.promptSchoolPaths = [];
+  if (out.promptSchool) {
+    const { data: chs } = await admin.from("ps_chapters").select("id, slug").eq("published", true).order("order_index");
+    for (const c of chs) {
+      const { data: ls } = await admin.from("ps_lessons").select("slug").eq("chapter_id", c.id).order("order_index");
+      out.promptSchoolPaths.push(`/prompt-school/${c.slug}`, `/prompt-school/${c.slug}/practice`, `/prompt-school/${c.slug}/${ls[0].slug}`);
+      if (ls.length > 1) out.promptSchoolPaths.push(`/prompt-school/${c.slug}/${ls[ls.length - 1].slug}`);
+    }
+  }
   return out;
 }
 
@@ -164,9 +175,7 @@ async function main() {
     { path: "/dictionary", who: "user" },
     { path: "/assistant", who: "user" },
     dyn.promptSchool && { path: "/prompt-school", who: "user" },
-    dyn.promptSchool && { path: "/prompt-school/five-pillars", who: "user" },
-    dyn.promptSchool && { path: "/prompt-school/five-pillars/pillar-5-delimiters-and-synergy", who: "user" },
-    dyn.promptSchool && { path: "/prompt-school/five-pillars/practice", who: "user" },
+    ...(dyn.promptSchoolPaths ?? []).map((path) => ({ path, who: "user" })),
     { path: "/admin/users", who: "admin" },
     { path: "/admin/review-queue", who: "admin" },
     { path: "/admin/payments", who: "admin" },
@@ -183,8 +192,9 @@ async function main() {
   if (dyn.promptSchool) {
     const { data: tu } = await admin.from("user_profiles").select("id").eq("email", "user@test.local").single();
     psUserId = tu.id;
-    const { data: lessons } = await admin.from("ps_lessons").select("id");
-    await admin.from("ps_lesson_progress").upsert(lessons.map((l) => ({ user_id: psUserId, lesson_id: l.id })), { onConflict: "user_id,lesson_id", ignoreDuplicates: true });
+    // Every chapter complete, so every page is open and every practice page shows its exercises.
+    await clearPsProgress(admin, psUserId);
+    for (const c of await psChapters(admin)) await completeChapter(admin, psUserId, c);
   }
 
   try {
@@ -226,7 +236,7 @@ async function main() {
     }
   } finally {
     await browser.close();
-    if (psUserId) await admin.from("ps_lesson_progress").delete().eq("user_id", psUserId);
+    if (psUserId) await clearPsProgress(admin, psUserId);
   }
 
   fs.writeFileSync(path.join(OUT, "report.json"), JSON.stringify(rows, null, 2));
