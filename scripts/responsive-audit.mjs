@@ -175,6 +175,7 @@ async function main() {
     { path: "/dictionary", who: "user" },
     { path: "/assistant", who: "user" },
     dyn.promptSchool && { path: "/prompt-school", who: "user" },
+    dyn.promptSchool && { path: "/prompt-school#book-popup", who: "user", popup: true },
     ...(dyn.promptSchoolPaths ?? []).map((path) => ({ path, who: "user" })),
     { path: "/admin/users", who: "admin" },
     { path: "/admin/review-queue", who: "admin" },
@@ -220,8 +221,9 @@ async function main() {
           page.on("response", (r) => { if (r.status() >= 400) errors.push(`${r.status()} ${r.request().method()} ${new URL(r.url()).pathname}`); });
           page.on("pageerror", (e) => errors.push(`pageerror: ${String(e.message).slice(0, 120)}`));
           try {
+            if (pg.popup) await page.addInitScript(() => { try { sessionStorage.setItem("ps-book-popup", JSON.stringify({ seconds: 298 })); } catch {} });
             await page.goto(BASE + pg.path, { waitUntil: "networkidle", timeout: 45000 });
-            await page.waitForTimeout(600);
+            await page.waitForTimeout(pg.popup ? 3200 : 600);
             const m = await page.evaluate(measure, { touch: vp.touch && vp.width <= 1024 });
             const shot = `${vp.name}__${pg.path.replace(/[^a-z0-9]+/gi, "_") || "home"}.png`;
             await page.screenshot({ path: path.join(OUT, shot), fullPage: false });

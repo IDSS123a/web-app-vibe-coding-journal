@@ -10,6 +10,7 @@ import { useParams } from "next/navigation";
 import { useSession } from "@/lib/auth/use-session";
 import { PremiumGuard } from "@/components/PremiumGuard";
 import { MarkdownContent } from "@/components/MarkdownContent";
+import { BookPopup } from "@/components/prompt-school/BookPopup";
 
 interface LessonData {
   chapter: { slug: string; title: string };
@@ -130,6 +131,7 @@ export default function PromptSchoolLessonPage() {
   return (
     <PremiumGuard accessKey="hasPromptSchoolAccess">
       <Lesson />
+      <BookPopup />
     </PremiumGuard>
   );
 }

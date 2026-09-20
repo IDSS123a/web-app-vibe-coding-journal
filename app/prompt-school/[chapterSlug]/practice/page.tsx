@@ -12,6 +12,7 @@ import { useParams } from "next/navigation";
 import { useSession } from "@/lib/auth/use-session";
 import { PremiumGuard } from "@/components/PremiumGuard";
 import { ExercisePlayer, type PublicExercise } from "@/components/prompt-school/ExercisePlayer";
+import { BookPopup } from "@/components/prompt-school/BookPopup";
 import { PASS_SCORE, chapterPassed, chapterScore } from "@/features/prompt-school/domain";
 
 interface ChapterData {
@@ -112,6 +113,7 @@ export default function PromptSchoolPracticePage() {
   return (
     <PremiumGuard accessKey="hasPromptSchoolAccess">
       <Practice />
+      <BookPopup />
     </PremiumGuard>
   );
 }

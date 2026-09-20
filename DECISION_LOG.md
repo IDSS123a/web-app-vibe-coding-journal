@@ -2295,6 +2295,16 @@ Chapter "Formatting Prompts Clearly" (`markdown-for-prompts`, book Appendix C, r
 
 ---
 
+## PDL-066 The book becomes a pop-up every five minutes
+
+**Date:** 2026-09-20. Director: the book message must not sit fixed on the Prompt School page; it should pop up every 5 minutes as a modal window (a neuromarketing nudge) that the reader can close or answer with "Get the book", and the window closes by itself after 20 seconds if nothing is clicked.
+
+**Behaviour.** `components/prompt-school/BookPopup.tsx` replaces the fixed blocks (the overview block and the compact chapter block are gone, and `BookCrossSell` was removed). It is mounted on the four School pages inside their Premium guard, so only readers with access see it. The clock counts seconds in which the page is visible and no pop-up is open, and lives in `sessionStorage` (`lib/book.ts`, unit tested), so moving between School pages does not restart it; a reader who switches tab does not accumulate time. After five minutes the modal opens with the cover, the title, a short pitch built from the book's table of contents, "Get the book" and "Not now", a cross, and a bar with a live countdown ("This window closes by itself in N s"), which is true, not invented scarcity. Escape, the cross, "Not now" and a click on the backdrop close it; with no click it closes at 20 seconds. "Get the book" (or a tap on the cover) works as before: the PayPal window is opened inside the click so pop-up blockers allow it, the cover jumps and confetti falls, the one-time 25 coins are paid (deduplicated), and the payment page loads in the new window after the celebration; the modal then closes, or, if the browser blocked the window, a plain link stays. Keyboard: focus moves into the dialog, Tab stays inside it and focus returns to where it was. Accessibility trade-off, recorded: an automatic 20 second close is shorter than a reader who needs more time might want, which is why the modal appears only every five minutes, and is always closable. It can appear while a reader is typing, but nothing is lost: the page underneath keeps its state, and an exercise answer is only sent when the reader presses Check answer.
+
+**Verification.** Smoke test (real Chrome, the clock preset to 297 seconds): no fixed book on the page, the modal opens, its cover loads, it closes by itself after 20 seconds, "Not now" and Escape close it and it does not return at once, "Get the book" celebrates, opens the PayPal window, closes the modal and pays the bonus once; the test account's coins are restored. Responsive audit with the modal open at 280, 375, 812 (landscape), 768 and 1440 px: no overflow. 311 unit tests.
+
+---
+
 ---
 
 *Vibe-Coding Journal — Project Decision Log — updated as decisions are made.*

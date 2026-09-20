@@ -38,8 +38,9 @@ not only read: they complete, repair, order and write prompts inside exercises.
 - [ ] The School covers the COMPLETE book, no segment skipped (Director, 2026-09-20): every section of the book is
       in `content/book-map.ts`, every lesson declares what it covers, and the content test fails for an authored
       chapter that skips a section. See COVERAGE.md.
-- [ ] The School page cross-sells the book: its cover is shown, a click plays a small reward and opens the book's
-      payment page in a new window (Director, 2026-09-20).
+- [ ] The School cross-sells the book with a pop-up (Director, 2026-09-20): every 5 minutes of reading a modal window shows
+      the cover; the reader can close it or press "Get the book" (small reward, then the book's payment page in a new
+      window); with no click it closes by itself after 20 seconds. It is not a fixed block on the page.
 - [ ] First slice: the chapter "The Five Pillars" (book chapter 2) complete with 6 lessons and 8 exercises.
 - [ ] Responsive audit and end to end smoke test cover the new pages with 0 issues.
 - [ ] No em dash anywhere in content or UI.

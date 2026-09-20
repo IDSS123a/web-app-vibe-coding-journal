@@ -111,29 +111,78 @@ try {
       ok("prompt school repair exercise is rubric graded", true);
     });
 
-    // Book cross-sell: the cover loads, a click celebrates, pays the one-time bonus and opens PayPal in a new window.
+    // Book pop-up (Director, 2026-09-20): no fixed block, a modal every 5 minutes of reading, closes by itself after 20 seconds.
     {
       const { data: before } = await admin.from("user_profiles").select("coin_balance, level").eq("id", tu.id).single();
       await admin.from("reward_events").delete().eq("user_id", tu.id).eq("event_type", "book_discovery");
-      const page = await userCtx.newPage();
+      const nearlyDue = async () => {
+        const page = await userCtx.newPage();
+        // The clock lives in sessionStorage; start it three seconds before the five minutes are up.
+        await page.addInitScript(() => { try { sessionStorage.setItem("ps-book-popup", JSON.stringify({ seconds: 297 })); } catch {} });
+        return page;
+      };
       try {
-        await page.goto(BASE + "/prompt-school", { waitUntil: "networkidle" });
-        const cover = page.getByRole("img", { name: /Cover of the book Mastering Prompt Engineering/ });
-        await cover.waitFor({ timeout: 15000 });
-        ok("book cover image loads", await cover.evaluate((el) => el.complete && el.naturalWidth > 0));
-        const [popup] = await Promise.all([
-          page.waitForEvent("popup", { timeout: 8000 }),
-          page.getByRole("button", { name: /Get the book Mastering/ }).first().click(),
-        ]);
-        await page.getByText(/You found the book/).first().waitFor({ timeout: 8000 });
-        ok("clicking the book celebrates", true);
-        await popup.waitForURL(/^https:\/\/www\.paypal\.com\//, { timeout: 15000 });
-        ok("the book opens the PayPal page in a new window", popup.url().startsWith("https://www.paypal.com/"), popup.url().slice(0, 60));
-        await popup.close();
-        const { data: after } = await admin.from("user_profiles").select("coin_balance").eq("id", tu.id).single();
-        ok("the first click pays the one-time bonus", after.coin_balance === before.coin_balance + 25, `${before.coin_balance} to ${after.coin_balance}`);
+        {
+          const page = await userCtx.newPage();
+          await page.goto(BASE + "/prompt-school", { waitUntil: "networkidle" });
+          await page.getByText("The Five Pillars").first().waitFor({ timeout: 15000 });
+          ok("the book is not a fixed block on the page", (await page.getByRole("img", { name: /Cover of the book/ }).count()) === 0);
+          await page.close();
+        }
+        {
+          const page = await nearlyDue();
+          await page.goto(BASE + "/prompt-school", { waitUntil: "networkidle" });
+          const dialog = page.getByRole("dialog");
+          await dialog.waitFor({ timeout: 12000 });
+          ok("the book pop-up opens as a modal after five minutes of reading", await dialog.getByRole("img", { name: /Cover of the book Mastering Prompt Engineering/ }).isVisible());
+          ok("its cover image loads", await dialog.getByRole("img").first().evaluate((el) => el.complete && el.naturalWidth > 0));
+          await dialog.waitFor({ state: "detached", timeout: 30000 });
+          ok("the pop-up closes by itself after 20 seconds", true);
+          await page.close();
+        }
+        {
+          const page = await nearlyDue();
+          await page.goto(BASE + "/prompt-school", { waitUntil: "networkidle" });
+          const dialog = page.getByRole("dialog");
+          await dialog.waitFor({ timeout: 12000 });
+          await dialog.getByRole("button", { name: "Not now" }).click();
+          await dialog.waitFor({ state: "detached", timeout: 3000 });
+          ok("Not now closes the pop-up", true);
+          await page.waitForTimeout(4500);
+          ok("after closing, it does not come straight back (the clock restarted)", (await page.getByRole("dialog").count()) === 0);
+          await page.close();
+        }
+        {
+          const page = await nearlyDue();
+          await page.goto(BASE + "/prompt-school", { waitUntil: "networkidle" });
+          const dialog = page.getByRole("dialog");
+          await dialog.waitFor({ timeout: 12000 });
+          await page.keyboard.press("Escape");
+          await dialog.waitFor({ state: "detached", timeout: 3000 });
+          ok("Escape closes the pop-up", true);
+          await page.close();
+        }
+        {
+          const page = await nearlyDue();
+          await page.goto(BASE + "/prompt-school", { waitUntil: "networkidle" });
+          const dialog = page.getByRole("dialog");
+          await dialog.waitFor({ timeout: 12000 });
+          const [popup] = await Promise.all([
+            page.waitForEvent("popup", { timeout: 8000 }),
+            dialog.getByRole("button", { name: /Get the book →/ }).click(),
+          ]);
+          await page.getByText(/You found the book/).first().waitFor({ timeout: 8000 });
+          ok("Get the book celebrates", true);
+          await popup.waitForURL(/^https:\/\/www\.paypal\.com\//, { timeout: 15000 });
+          ok("Get the book opens the PayPal page in a new window", popup.url().startsWith("https://www.paypal.com/"), popup.url().slice(0, 60));
+          await popup.close();
+          await dialog.waitFor({ state: "detached", timeout: 5000 });
+          ok("the pop-up closes once the payment page has opened", true);
+          const { data: after } = await admin.from("user_profiles").select("coin_balance").eq("id", tu.id).single();
+          ok("the first click pays the one-time bonus", after.coin_balance === before.coin_balance + 25, `${before.coin_balance} to ${after.coin_balance}`);
+          await page.close();
+        }
       } finally {
-        await page.close();
         await admin.from("reward_events").delete().eq("user_id", tu.id).eq("event_type", "book_discovery");
         await admin.from("user_profiles").update({ coin_balance: before.coin_balance, level: before.level }).eq("id", tu.id);
         const { data: restored } = await admin.from("user_profiles").select("coin_balance, level").eq("id", tu.id).single();
