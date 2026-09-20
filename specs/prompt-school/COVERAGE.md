@@ -23,7 +23,7 @@ fine, as long as every section of the book is properly covered. The lesson count
 | Beginner | craft-of-prompting | Foreword, chapter 1 | 5 | written, 8 of 8 sections |
 | Beginner | five-pillars | Chapter 2 | 8 | written, 25 of 25 |
 | Beginner | foundational-techniques | Chapter 3 | 5 | written, 18 of 18 |
-| Beginner | markdown-for-prompts | Appendix C | 5 | to do |
+| Beginner | markdown-for-prompts | Appendix C | 5 | written, 11 of 11 (2026-09-20) |
 | Intermediate | reasoning-techniques | Chapter 4 | 6 | to do |
 | Intermediate | structure-and-protection | Chapter 5 | 7 | to do |
 | Intermediate | code-and-research | Chapter 6 | 7 | to do |

@@ -6,6 +6,7 @@
 import { FIVE_PILLARS_EXERCISES, FIVE_PILLARS_LESSONS, type ExerciseWithSamples, type LessonContent } from "./five-pillars";
 import { CRAFT_EXERCISES, CRAFT_LESSONS } from "./craft-of-prompting";
 import { FOUNDATIONAL_EXERCISES, FOUNDATIONAL_LESSONS } from "./foundational-techniques";
+import { MARKDOWN_EXERCISES, MARKDOWN_LESSONS } from "./markdown-for-prompts";
 
 export interface AuthoredChapter {
   slug: string;
@@ -17,4 +18,5 @@ export const AUTHORED_CHAPTERS: AuthoredChapter[] = [
   { slug: "craft-of-prompting", lessons: CRAFT_LESSONS, exercises: CRAFT_EXERCISES },
   { slug: "five-pillars", lessons: FIVE_PILLARS_LESSONS, exercises: FIVE_PILLARS_EXERCISES },
   { slug: "foundational-techniques", lessons: FOUNDATIONAL_LESSONS, exercises: FOUNDATIONAL_EXERCISES },
+  { slug: "markdown-for-prompts", lessons: MARKDOWN_LESSONS, exercises: MARKDOWN_EXERCISES },
 ];

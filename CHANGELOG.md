@@ -8,6 +8,7 @@ change, newest first.
 
 ## 2026-09-20
 
+- **Prompt School: the Markdown manual (PDL-065).** "Formatting Prompts Clearly" is written from the book's Appendix C, with 5 lessons and 9 exercises covering headings, emphasis, lists, code blocks, inline code, blockquotes, horizontal rules, tables and escaping, including a repair exercise that turns a run-on prompt into a structured one. The beginner level now has four chapters.
 - **Greek names and a third stress test (PDL-064).** The Prompt School page is titled "Prompt School - Ἀγορά" and the University page "Vibe-Coding University - Στοά". The stress test found and fixed: the same article stored twice when two feeds titled it differently (now one row per link, and 15 stored repeats were marked as duplicates), two layouts that overflowed the narrowest phone screen, and Premium features missing or unmarked on the welcome page, the upgrade banner, the dashboard links and the README.
 - **Prompt School covers the whole book, and sells it (PDL-063).** The plan now includes every part of the book (18 chapters, about 98 lessons) and each lesson records which sections of the book it teaches, so nothing can be skipped unnoticed. The first three chapters were completed against the book: a welcome lesson from the foreword, the full delimiter and workshop sections in The Five Pillars (now 8 lessons), and seven worked examples in Foundational Techniques. The School page also shows the book's cover: tap it for a small celebration (25 bonus coins the first time) and the book's payment page opens in a new window.
 

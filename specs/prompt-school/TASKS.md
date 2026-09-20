@@ -20,7 +20,8 @@ Vertical slice (2026-09-20): tasks 1 to 10 done and verified, 11 waits for the D
 - [x] A1 Chapters 1 and 3 (2026-09-20, PDL-062)
 - [x] A1b Coverage rule: book map, `covers` on every lesson, coverage test, `npm run book:coverage`; chapters 1 to 3 audited and completed (2026-09-20)
 - [x] A1c Book cross-sell on the overview and chapter pages: cover, click reward (25 coins once), PayPal window (2026-09-20)
-- [ ] A2 Write the rest of the book in the order of COVERAGE.md, one or two chapters at a time, each read in full from the source first: Appendix C, chapters 4 to 7, chapters 8 to 11, Appendix B (three workshops), Appendices D, A, E and F
+- [x] A2a Appendix C, the Markdown manual (5 lessons, 9 exercises, 11 of 11 sections), which completes the beginner level (2026-09-20)
+- [ ] A2b Write the rest of the book in the order of COVERAGE.md, one or two chapters at a time, each read in full from the source first: chapters 4 to 7, chapters 8 to 11, Appendix B (three workshops), Appendices D, A, E and F
 - [ ] B Level tests (like the University's; chapter gating is done)
 - [ ] C Capstone workshops from the book's Appendix B blueprints
 - [ ] D Live sandbox: learner runs their own prompt on a real model, at most 3 runs a day per user, shares the free AI pool (PDL-058), built last

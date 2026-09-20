@@ -103,7 +103,7 @@ export const BOOK_MAP: BookSection[] = [
     ["tables", "8. Tables: requesting or demonstrating tabular data"],
     ["escaping", "9. Escaping Markdown Characters: referring to literals"],
     ["carpenter-tools", "The Carpenter's Marking Tools"],
-  ], true),
+  ]),
 
   // ---------- Chapter 4: Advanced techniques ----------
   ...group("reasoning-techniques", "ch4", [

@@ -2287,6 +2287,14 @@ fully matched. `/plan-feature` is next.
 
 ---
 
+## PDL-065 Prompt School: Appendix C, the Markdown manual (the beginner level is complete)
+
+**Date:** 2026-09-20. First step of the strict plan after the third stress test: the next part of the book in the order of `specs/prompt-school/COVERAGE.md`.
+
+Chapter "Formatting Prompts Clearly" (`markdown-for-prompts`, book Appendix C, read in full first): 5 lessons and 9 exercises covering all 11 sections of the appendix, each element with its purpose, its syntax, the book's prompt engineering example and its workshop note. Lessons: the workshop analogy and the five reasons Markdown matters; headings and emphasis; lists and fenced code blocks (with the debugging prompt that isolates code and the error report in fences); inline code, blockquotes and horizontal rules; tables, escaping and the carpenter's marking tools. Syntax examples are shown inside fenced blocks so they display as typed. Exercises: the most versatile fence, recall the syntax, order the headings of the analysis prompt, spot overused emphasis, the right list for sequential steps, escaping a literal asterisk, match a need to its element, why fences matter, and a repair exercise that turns a run-on prompt into a structured one (headings, numbered steps, one bolded constraint, the customer email isolated in a fence), its rubric tested with good and bad samples. The beginner level now has four chapters: the craft, the five pillars, foundational techniques and formatting, 23 lessons in all. Verified: 75 Prompt School content and domain tests, integrity pass (stored text equals the content files), responsive audit at 280, 375 and 1440 px (108 checks, 0 issues). Coverage: 62 of 204 book sections, 23 lessons authored. Next: chapter 4, "Advanced Techniques" (chain of thought, tree of thoughts, knowledge distillation and the Anya case study).
+
+---
+
 ---
 
 *Vibe-Coding Journal — Project Decision Log — updated as decisions are made.*
