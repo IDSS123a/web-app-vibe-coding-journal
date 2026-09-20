@@ -279,3 +279,25 @@ export function validateExerciseContent(ex: ExerciseContent): string[] {
   }
   return problems;
 }
+
+// ---------- unlocking (same logic as the University's chapters, specs/prompt-school/) ----------
+
+/** Practice opens once every lesson of the chapter is marked done (the University's "quiz available" rule). */
+export function isPracticeAvailable(lessonIds: readonly string[], doneLessonIds: ReadonlySet<string>): boolean {
+  if (lessonIds.length === 0) return false;
+  return lessonIds.every((id) => doneLessonIds.has(id));
+}
+
+/** A chapter is complete when all its lessons are done and its practice is passed (average best score at least 75 percent). */
+export function isChapterComplete(practiceAvailable: boolean, exerciseCount: number, score: number): boolean {
+  return practiceAvailable && exerciseCount > 0 && chapterPassed(score);
+}
+
+/**
+ * Chapters open one after another: the first published chapter is open, every later one opens when the
+ * chapter before it (in course order, among the published ones) is complete. A chapter the learner has
+ * already started stays open, so publishing an earlier chapter later never locks anyone out of work in progress.
+ */
+export function isChapterUnlocked(index: number, previousComplete: boolean, started: boolean): boolean {
+  return index <= 0 || previousComplete || started;
+}

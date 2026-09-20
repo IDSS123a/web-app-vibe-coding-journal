@@ -35,6 +35,7 @@ function Lesson() {
     fetch(`/api/prompt-school/lessons/${chapterSlug}/${lessonSlug}`, { headers: { authorization: `Bearer ${token}` } })
       .then((r) => {
         if (r.status === 404) throw new Error("missing");
+        if (r.status === 403) throw new Error("locked");
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         return r.json();
       })
@@ -44,7 +45,7 @@ function Lesson() {
         setCompleted(d.lesson.completed);
       })
       .catch((e: Error) => {
-        if (active) setError(e.message === "missing" ? "This lesson was not found." : "Failed to load the lesson.");
+        if (active) setError(e.message === "missing" ? "This lesson was not found." : e.message === "locked" ? "This chapter opens when you complete the previous chapter." : "Failed to load the lesson.");
       });
     return () => {
       active = false;

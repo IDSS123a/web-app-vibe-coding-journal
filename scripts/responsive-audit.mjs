@@ -177,6 +177,16 @@ async function main() {
   const browser = await chromium.launch({ channel: "chrome", headless: true });
   const rows = [];
 
+  // The Prompt School practice page only shows its exercises once every lesson is done, so the test
+  // account gets that progress for the run and loses it again afterwards.
+  let psUserId = null;
+  if (dyn.promptSchool) {
+    const { data: tu } = await admin.from("user_profiles").select("id").eq("email", "user@test.local").single();
+    psUserId = tu.id;
+    const { data: lessons } = await admin.from("ps_lessons").select("id");
+    await admin.from("ps_lesson_progress").upsert(lessons.map((l) => ({ user_id: psUserId, lesson_id: l.id })), { onConflict: "user_id,lesson_id", ignoreDuplicates: true });
+  }
+
   try {
     for (const vp of VIEWPORTS.filter((v) => !process.env.AUDIT_VIEWPORTS || process.env.AUDIT_VIEWPORTS.split(",").includes(v.name))) {
       // Fresh sessions per viewport: one long run with a single session started
@@ -216,6 +226,7 @@ async function main() {
     }
   } finally {
     await browser.close();
+    if (psUserId) await admin.from("ps_lesson_progress").delete().eq("user_id", psUserId);
   }
 
   fs.writeFileSync(path.join(OUT, "report.json"), JSON.stringify(rows, null, 2));

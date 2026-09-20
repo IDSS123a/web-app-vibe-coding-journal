@@ -20,6 +20,8 @@ type ChapterCard =
       bookRef: string;
       plannedLessons: number;
       open: true;
+      unlocked: boolean;
+      waitingFor: string | null;
       lessonCount: number;
       lessonsDone: number;
       exerciseCount: number;
@@ -75,7 +77,8 @@ function Overview() {
           <p className="mt-3 max-w-2xl text-sm leading-relaxed text-black">
             Learn to write prompts that work, from a first clear request to advanced techniques. The course follows the
             book Mastering Prompt Engineering. Every chapter has short lessons and hands-on practice: you complete,
-            order, repair and write prompts, and each attempt is checked at once.
+            order, repair and write prompts, and each attempt is checked at once. Finish a chapter&apos;s lessons to open its
+            practice, and pass the practice to open the next chapter.
           </p>
           {levels.length > 0 && (
             <p className="mt-3 text-xs font-bold uppercase tracking-widest text-black">
@@ -96,15 +99,19 @@ function Overview() {
               </div>
               <ul className="grid gap-4 md:grid-cols-2">
                 {level.chapters.map((c) => (
-                  <li key={c.slug} className={`flex flex-col border-4 border-black p-4 sm:p-5 ${c.open ? "" : "opacity-60"}`}>
+                  <li key={c.slug} className={`flex flex-col border-4 border-black p-4 sm:p-5 ${c.open && c.unlocked ? "" : "opacity-60"}`}>
                     <p className="mb-1 text-xs font-bold uppercase tracking-widest text-[#FF3000]">{c.bookRef}</p>
                     <h3 className="mb-2 text-lg font-black uppercase leading-tight tracking-tight text-black">{c.title}</h3>
                     <p className="mb-4 flex-1 text-sm leading-relaxed text-black">{c.summary}</p>
-                    {c.open ? (
+                    {c.open && !c.unlocked ? (
+                      <p className="text-xs font-bold uppercase tracking-widest text-black">
+                        <span aria-hidden="true">🔒 </span>Locked: complete {c.waitingFor ? `"${c.waitingFor}"` : "the previous chapter"} first
+                      </p>
+                    ) : c.open ? (
                       <>
                         <p className="mb-3 text-xs font-bold uppercase tracking-widest text-black">
                           {c.lessonsDone} of {c.lessonCount} lessons, {c.exerciseCount} exercises
-                          {c.passed ? " · Passed" : c.score > 0 ? ` · ${Math.round(c.score * 100)}%` : ""}
+                          {c.passed ? " · Chapter complete ✓" : c.score > 0 ? ` · ${Math.round(c.score * 100)}%` : ""}
                         </p>
                         <Link
                           href={`/prompt-school/${c.slug}`}

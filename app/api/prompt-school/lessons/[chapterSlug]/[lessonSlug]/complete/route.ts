@@ -5,7 +5,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { requirePromptSchoolUser } from "@/features/prompt-school/access";
-import { getChapterBySlug, getLessonsForChapter, markLessonDone } from "@/features/prompt-school/repository";
+import { getChapterState } from "@/features/prompt-school/progress";
+import { getLessonsForChapter, markLessonDone } from "@/features/prompt-school/repository";
 
 const slugSchema = z.string().regex(/^[a-z0-9-]{1,80}$/);
 
@@ -19,9 +20,10 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const lessonSlug = slugSchema.safeParse(raw.lessonSlug);
     if (!chapterSlug.success || !lessonSlug.success) return NextResponse.json({ error: "Invalid request" }, { status: 400 });
 
-    const chapter = await getChapterBySlug(chapterSlug.data);
-    if (!chapter) return NextResponse.json({ error: "Not found" }, { status: 404 });
-    const lesson = (await getLessonsForChapter(chapter.id)).find((l) => l.slug === lessonSlug.data);
+    const state = await getChapterState(auth.user.sub, chapterSlug.data);
+    if (!state) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    if (!state.unlocked) return NextResponse.json({ error: "Chapter locked", waitingFor: state.waitingFor }, { status: 403 });
+    const lesson = (await getLessonsForChapter(state.chapter.id)).find((l) => l.slug === lessonSlug.data);
     if (!lesson) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
     await markLessonDone(auth.user.sub, lesson.id);

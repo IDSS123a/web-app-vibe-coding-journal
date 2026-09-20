@@ -5,7 +5,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { requirePromptSchoolUser } from "@/features/prompt-school/access";
-import { getChapterBySlug, getCompletedLessonIds, getLessonsForChapter } from "@/features/prompt-school/repository";
+import { getChapterState } from "@/features/prompt-school/progress";
+import { getCompletedLessonIds, getLessonsForChapter } from "@/features/prompt-school/repository";
 
 const slugSchema = z.string().regex(/^[a-z0-9-]{1,80}$/);
 
@@ -19,8 +20,10 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const lessonSlug = slugSchema.safeParse(raw.lessonSlug);
     if (!chapterSlug.success || !lessonSlug.success) return NextResponse.json({ error: "Invalid request" }, { status: 400 });
 
-    const chapter = await getChapterBySlug(chapterSlug.data);
-    if (!chapter) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    const state = await getChapterState(auth.user.sub, chapterSlug.data);
+    if (!state) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    if (!state.unlocked) return NextResponse.json({ error: "Chapter locked", waitingFor: state.waitingFor }, { status: 403 });
+    const chapter = state.chapter;
 
     const lessons = await getLessonsForChapter(chapter.id);
     const index = lessons.findIndex((l) => l.slug === lessonSlug.data);

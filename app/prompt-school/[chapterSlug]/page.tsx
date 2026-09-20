@@ -13,6 +13,8 @@ import { PremiumGuard } from "@/components/PremiumGuard";
 interface ChapterData {
   chapter: { slug: string; level: string; title: string; summary: string; bookRef: string | null };
   lessons: Array<{ slug: string; title: string; minutes: number; completed: boolean }>;
+  practiceAvailable: boolean;
+  exerciseCount: number;
   exercises: Array<{ id: string; bestScore: number | null }>;
   score: number;
   passed: boolean;
@@ -30,6 +32,7 @@ function Chapter() {
     fetch(`/api/prompt-school/chapters/${chapterSlug}`, { headers: { authorization: `Bearer ${token}` } })
       .then((r) => {
         if (r.status === 404) throw new Error("missing");
+        if (r.status === 403) throw new Error("locked");
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         return r.json();
       })
@@ -37,7 +40,7 @@ function Chapter() {
         if (active) setData(d);
       })
       .catch((e: Error) => {
-        if (active) setError(e.message === "missing" ? "This chapter is not available yet." : "Failed to load the chapter.");
+        if (active) setError(e.message === "missing" ? "This chapter is not available yet." : e.message === "locked" ? "This chapter opens when you complete the previous chapter." : "Failed to load the chapter.");
       });
     return () => {
       active = false;
@@ -89,19 +92,25 @@ function Chapter() {
             <div className="border-4 border-black p-4 sm:p-6">
               <p className="mb-1 text-xs font-bold uppercase tracking-widest text-[#FF3000]">Practice</p>
               <h2 className="mb-2 text-xl font-black uppercase tracking-tight text-black">
-                {data.exercises.length} exercises
+                {data.exerciseCount} exercises
               </h2>
               <p className="mb-4 text-sm leading-relaxed text-black">
-                Complete, order, spot and repair prompts. Each attempt is checked at once. The chapter is passed at an
-                average of 75 percent.
-                {attempted > 0 && ` You have tried ${attempted} of ${data.exercises.length} and stand at ${Math.round(data.score * 100)} percent${data.passed ? ", so this chapter is passed." : "."}`}
+                Complete, order, spot and repair prompts. Each attempt is checked at once. Pass the practice with an
+                average of 75 percent to complete the chapter and open the next one.
+                {attempted > 0 && ` You have tried ${attempted} of ${data.exerciseCount} and stand at ${Math.round(data.score * 100)} percent${data.passed ? ", so this chapter is complete." : "."}`}
               </p>
-              <Link
-                href={`/prompt-school/${data.chapter.slug}/practice`}
-                className="inline-flex min-h-11 w-full items-center justify-center border-4 border-black bg-black px-4 py-2 text-xs font-bold uppercase tracking-widest text-white transition-colors duration-150 ease-out hover:border-[#FF3000] hover:bg-[#FF3000] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#FF3000] sm:w-auto"
-              >
-                {attempted > 0 ? "Continue practice" : "Start practice"} →
-              </Link>
+              {data.practiceAvailable ? (
+                <Link
+                  href={`/prompt-school/${data.chapter.slug}/practice`}
+                  className="inline-flex min-h-11 w-full items-center justify-center border-4 border-black bg-black px-4 py-2 text-xs font-bold uppercase tracking-widest text-white transition-colors duration-150 ease-out hover:border-[#FF3000] hover:bg-[#FF3000] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#FF3000] sm:w-auto"
+                >
+                  {attempted > 0 ? "Continue practice" : "Start practice"} →
+                </Link>
+              ) : (
+                <p className="border-l-8 border-[#FF3000] py-1 pl-3 text-xs font-bold uppercase tracking-widest text-black">
+                  <span aria-hidden="true">🔒 </span>Finish all {data.lessons.length} lessons to open the practice ({doneCount} done)
+                </p>
+              )}
             </div>
           </>
         )}

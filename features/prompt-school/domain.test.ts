@@ -9,6 +9,9 @@ import {
   gradeOrder,
   gradeRepair,
   gradeSpot,
+  isChapterComplete,
+  isChapterUnlocked,
+  isPracticeAvailable,
   splitTemplate,
   toPublicExercise,
   validateExerciseContent,
@@ -240,5 +243,28 @@ describe("validateExerciseContent", () => {
       },
     };
     expect(validateExerciseContent(bad).join()).toContain("invalid pattern");
+  });
+});
+
+describe("chapter unlocking (University logic)", () => {
+  it("opens practice only when every lesson is done, and never for a chapter without lessons", () => {
+    expect(isPracticeAvailable(["a", "b"], new Set(["a", "b", "z"]))).toBe(true);
+    expect(isPracticeAvailable(["a", "b"], new Set(["a"]))).toBe(false);
+    expect(isPracticeAvailable([], new Set(["a"]))).toBe(false);
+  });
+  it("completes a chapter only with practice open, at least one exercise and the pass score", () => {
+    expect(isChapterComplete(true, 8, 0.75)).toBe(true);
+    expect(isChapterComplete(true, 8, 0.74)).toBe(false);
+    expect(isChapterComplete(false, 8, 1)).toBe(false);
+    expect(isChapterComplete(true, 0, 1)).toBe(false);
+  });
+  it("keeps the first chapter open and opens a later one only after the previous is complete", () => {
+    expect(isChapterUnlocked(0, false, false)).toBe(true);
+    expect(isChapterUnlocked(1, false, false)).toBe(false);
+    expect(isChapterUnlocked(1, true, false)).toBe(true);
+    expect(isChapterUnlocked(3, false, false)).toBe(false);
+  });
+  it("keeps a chapter the learner already started open, so a newly published earlier chapter locks nobody out", () => {
+    expect(isChapterUnlocked(1, false, true)).toBe(true);
   });
 });

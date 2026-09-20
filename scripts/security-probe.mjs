@@ -115,12 +115,62 @@ async function main() {
     check("prompt-school exercise check with a non-uuid id is 400", (await call("POST", "/api/prompt-school/exercises/nope/check", { token: userToken, body: { answer: {} } })) === 400);
     const { data: ex } = await admin.from("ps_exercises").select("id, kind").eq("kind", "choice").limit(1);
     if (ex?.[0]) {
-      check("prompt-school check with a wrong-shaped answer is 400", (await call("POST", `/api/prompt-school/exercises/${ex[0].id}/check`, { token: userToken, body: { answer: { text: "x" } } })) === 400);
       check("prompt-school check with a missing body is 400", (await call("POST", `/api/prompt-school/exercises/${ex[0].id}/check`, { token: userToken })) === 400);
     }
     const res = await fetch(`${BASE}/api/prompt-school/chapters/five-pillars`, { headers: { authorization: `Bearer ${userToken}` } });
     const raw = await res.text();
     check("prompt-school chapter payload carries no answers, rubrics or explanations", res.status === 200 && !/"answer"|"criteria"|"explanation"|"correct"|"flawed"|"anyOf"|"model"/.test(raw));
+  }
+
+  // Prompt School unlocking, walked end to end with a temporary second chapter (removed again in finally).
+  {
+    const { data: tu } = await admin.from("user_profiles").select("id").eq("email", "user@test.local").single();
+    const { data: ch1 } = await admin.from("ps_chapters").select("id").eq("slug", "five-pillars").single();
+    const { data: ex1 } = await admin.from("ps_exercises").select("id, kind").eq("chapter_id", ch1.id).eq("kind", "choice").limit(1);
+    const { data: allEx1 } = await admin.from("ps_exercises").select("id").eq("chapter_id", ch1.id);
+    const { data: allLess1 } = await admin.from("ps_lessons").select("id").eq("chapter_id", ch1.id);
+    let tempId = null;
+    const cleanProgress = async () => {
+      await admin.from("ps_exercise_results").delete().eq("user_id", tu.id);
+      await admin.from("ps_lesson_progress").delete().eq("user_id", tu.id);
+    };
+    try {
+      await cleanProgress();
+      // Practice needs every lesson done first.
+      check("grading is refused while lessons are not done", (await call("POST", `/api/prompt-school/exercises/${ex1[0].id}/check`, { token: userToken, body: { answer: { index: 0 } } })) === 403);
+      const beforeChapter = await (await fetch(`${BASE}/api/prompt-school/chapters/five-pillars`, { headers: { authorization: `Bearer ${userToken}` } })).json();
+      check("exercises are not listed while lessons are not done", beforeChapter.practiceAvailable === false && beforeChapter.exercises.length === 0);
+
+      const { data: temp, error: tempErr } = await admin.from("ps_chapters").insert({ level: "beginner", slug: "zz-probe-temp", title: "Probe temp", summary: "temporary", order_index: 999, published: true }).select("id").single();
+      if (tempErr) throw tempErr;
+      tempId = temp.id;
+      await admin.from("ps_lessons").insert({ chapter_id: tempId, slug: "l1", title: "L1", order_index: 1, body: "x", published: true });
+      check("second chapter is locked while the first is not complete", (await call("GET", "/api/prompt-school/chapters/zz-probe-temp", { token: userToken })) === 403);
+      check("its lessons are locked too", (await call("GET", "/api/prompt-school/lessons/zz-probe-temp/l1", { token: userToken })) === 403);
+      check("its lesson cannot be marked done", (await call("POST", "/api/prompt-school/lessons/zz-probe-temp/l1/complete", { token: userToken })) === 403);
+
+      // Finish chapter one: all lessons done, every exercise passed.
+      await admin.from("ps_lesson_progress").insert(allLess1.map((l) => ({ user_id: tu.id, lesson_id: l.id })));
+      const openChapter = await fetch(`${BASE}/api/prompt-school/chapters/five-pillars`, { headers: { authorization: `Bearer ${userToken}` } });
+      const openRaw = await openChapter.text();
+      check("once practice is open the exercises are listed without any answer, rubric or explanation", openChapter.status === 200 && JSON.parse(openRaw).exercises.length === allEx1.length && !/"answer"|"criteria"|"explanation"|"correct"|"flawed"|"anyOf"|"model"/.test(openRaw));
+      check("prompt-school check with a wrong-shaped answer is 400 (once the chapter is open)", (await call("POST", `/api/prompt-school/exercises/${ex1[0].id}/check`, { token: userToken, body: { answer: { text: "x" } } })) === 400);
+      check("grading works once lessons are done", (await call("POST", `/api/prompt-school/exercises/${ex1[0].id}/check`, { token: userToken, body: { answer: { index: 0 } } })) === 200);
+      await admin.from("ps_exercise_results").upsert(allEx1.map((e) => ({ user_id: tu.id, exercise_id: e.id, best_score: 1, attempts: 1 })), { onConflict: "user_id,exercise_id" });
+      check("second chapter opens once the first is complete", (await call("GET", "/api/prompt-school/chapters/zz-probe-temp", { token: userToken })) === 200);
+      check("its lesson can now be marked done", (await call("POST", "/api/prompt-school/lessons/zz-probe-temp/l1/complete", { token: userToken })) === 200);
+
+      // Falling below the pass mark locks a chapter the learner has not started: drop chapter one to 0.5 and unstart the second.
+      await admin.from("ps_lesson_progress").delete().eq("user_id", tu.id).eq("lesson_id", (await admin.from("ps_lessons").select("id").eq("chapter_id", tempId)).data[0].id);
+      await admin.from("ps_exercise_results").upsert(allEx1.map((e) => ({ user_id: tu.id, exercise_id: e.id, best_score: 0.5, attempts: 1 })), { onConflict: "user_id,exercise_id" });
+      check("second chapter locks again when the first falls below 75 percent (nothing started in it)", (await call("GET", "/api/prompt-school/chapters/zz-probe-temp", { token: userToken })) === 403);
+    } finally {
+      if (tempId) await admin.from("ps_chapters").delete().eq("id", tempId);
+      await cleanProgress();
+      const { count: rest } = await admin.from("ps_chapters").select("*", { count: "exact", head: true }).eq("slug", "zz-probe-temp");
+      const { count: left } = await admin.from("ps_lesson_progress").select("*", { count: "exact", head: true }).eq("user_id", tu.id);
+      check("prompt school probe data removed again", rest === 0 && left === 0);
+    }
   }
   check("bookmark with a non-uuid id is rejected", [400, 404, 422].includes(await call("POST", "/api/bookmarks", { token: userToken, body: { article_id: "nope" } })));
 

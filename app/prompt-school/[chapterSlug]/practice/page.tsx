@@ -16,6 +16,7 @@ import { PASS_SCORE, chapterPassed, chapterScore } from "@/features/prompt-schoo
 
 interface ChapterData {
   chapter: { slug: string; title: string };
+  practiceAvailable: boolean;
   exercises: PublicExercise[];
 }
 
@@ -32,6 +33,7 @@ function Practice() {
     fetch(`/api/prompt-school/chapters/${chapterSlug}`, { headers: { authorization: `Bearer ${token}` } })
       .then((r) => {
         if (r.status === 404) throw new Error("missing");
+        if (r.status === 403) throw new Error("locked");
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         return r.json();
       })
@@ -43,7 +45,7 @@ function Practice() {
         setBest(initial);
       })
       .catch((e: Error) => {
-        if (active) setError(e.message === "missing" ? "This chapter is not available yet." : "Failed to load the practice.");
+        if (active) setError(e.message === "missing" ? "This chapter is not available yet." : e.message === "locked" ? "This chapter opens when you complete the previous chapter." : "Failed to load the practice.");
       });
     return () => {
       active = false;
@@ -66,12 +68,19 @@ function Practice() {
         {error && <p role="alert" className="border-2 border-[#FF3000] p-3 text-sm text-[#FF3000]">{error}</p>}
         {!data && !error && <p className="text-sm text-black opacity-60">Loading…</p>}
 
-        {data && token && (
+        {data && !data.practiceAvailable && (
+          <p role="alert" className="border-4 border-black p-4 text-sm text-black">
+            The practice opens when you have finished every lesson of this chapter.{" "}
+            <Link href={`/prompt-school/${chapterSlug}`} className="font-bold underline decoration-2 underline-offset-4 hover:text-[#FF3000]">Back to the lessons</Link>
+          </p>
+        )}
+
+        {data && data.practiceAvailable && token && (
           <>
             <div className="sticky top-16 z-30 mb-8 border-4 border-black bg-white p-3 sm:top-[4.25rem]" role="status" aria-live="polite">
               <p className="text-xs font-bold uppercase tracking-widest text-black">
                 Chapter score {Math.round(score * 100)}% · pass at {Math.round(PASS_SCORE * 100)}%
-                {passed && <span className="ml-2 text-[#FF3000]">Passed ✓</span>}
+                {passed && <span className="ml-2 text-[#FF3000]">Chapter complete ✓</span>}
               </p>
               <div className="mt-2 h-2 border-2 border-black" aria-hidden="true">
                 <div className="h-full bg-black" style={{ width: `${Math.round(score * 100)}%` }} />

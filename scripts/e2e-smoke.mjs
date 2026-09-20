@@ -76,12 +76,19 @@ try {
     const startedAt = new Date().toISOString();
     const { data: tu } = await admin.from("user_profiles").select("id").eq("email", "user@test.local").single();
     await visit(userCtx, "/prompt-school", "The Five Pillars");
-    await visit(userCtx, "/prompt-school/five-pillars", "Start practice");
+    await visit(userCtx, "/prompt-school/five-pillars", "Finish all 6 lessons to open the practice");
+    await visit(userCtx, "/prompt-school/five-pillars/practice", "The practice opens when you have finished every lesson");
     await visit(userCtx, "/prompt-school/five-pillars/pillar-1-context", "Mark lesson as done", async (page) => {
       await page.getByRole("button", { name: /Mark lesson as done/ }).click();
       await page.getByText("Lesson done").first().waitFor({ timeout: 8000 });
       ok("prompt school lesson can be marked done", true);
     });
+    // Mark the remaining lessons through the database, as if they had been read, so the practice opens.
+    {
+      const { data: lessons } = await admin.from("ps_lessons").select("id, chapter_id");
+      await admin.from("ps_lesson_progress").upsert(lessons.map((l) => ({ user_id: tu.id, lesson_id: l.id })), { onConflict: "user_id,lesson_id", ignoreDuplicates: true });
+    }
+    await visit(userCtx, "/prompt-school/five-pillars", "Start practice");
     await visit(userCtx, "/prompt-school/five-pillars/practice", "Name the pillar", async (page) => {
       const first = page.locator("section").first();
       await first.getByRole("radio", { name: /Context$/ }).click();
@@ -95,9 +102,10 @@ try {
       ok("prompt school repair exercise is rubric graded", true);
     });
     await admin.from("ps_exercise_results").delete().eq("user_id", tu.id).gte("updated_at", startedAt);
-    await admin.from("ps_lesson_progress").delete().eq("user_id", tu.id).gte("completed_at", startedAt);
+    await admin.from("ps_lesson_progress").delete().eq("user_id", tu.id);
     const { count: left } = await admin.from("ps_exercise_results").select("*", { count: "exact", head: true }).eq("user_id", tu.id);
-    ok("prompt school test progress removed again", left === 0);
+    const { count: leftLessons } = await admin.from("ps_lesson_progress").select("*", { count: "exact", head: true }).eq("user_id", tu.id);
+    ok("prompt school test progress removed again", left === 0 && leftLessons === 0);
   }
   await visit(userCtx, "/welcome", "Dashboard");
 

@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { requirePromptSchoolUser } from "@/features/prompt-school/access";
 import { gradeExercise } from "@/features/prompt-school/domain";
+import { getChapterState } from "@/features/prompt-school/progress";
 import { getExerciseForGrading, recordAttempt } from "@/features/prompt-school/repository";
 
 const idSchema = z.string().uuid();
@@ -23,6 +24,11 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
     const found = await getExerciseForGrading(id.data);
     if (!found) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+    // Same rule as the University quiz: the chapter must be open and every lesson of it done.
+    const state = await getChapterState(auth.user.sub, found.chapter.slug);
+    if (!state || !state.unlocked) return NextResponse.json({ error: "Chapter locked", waitingFor: state?.waitingFor ?? null }, { status: 403 });
+    if (!state.practiceAvailable) return NextResponse.json({ error: "Finish all lessons of this chapter first" }, { status: 403 });
 
     const result = gradeExercise(found.exercise, body.data.answer);
     if (!result) return NextResponse.json({ error: "Invalid answer" }, { status: 400 });

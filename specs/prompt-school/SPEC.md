@@ -33,6 +33,8 @@ not only read: they complete, repair, order and write prompts inside exercises.
 - [ ] Access equals the University's: Premium, admin exempt, blocked and expired refused. Anonymous 401,
       Basic and trial 403 with the upsell screen. The probe checks it.
 - [ ] Progress (lessons done, best score per exercise, chapter passed at 75 percent) is stored per user.
+- [ ] Chapters open one after another like the University's: practice after all lessons are done, the next chapter
+      only when the previous one is complete (Director, 2026-09-20).
 - [ ] First slice: the chapter "The Five Pillars" (book chapter 2) complete with 6 lessons and 8 exercises.
 - [ ] Responsive audit and end to end smoke test cover the new pages with 0 issues.
 - [ ] No em dash anywhere in content or UI.
