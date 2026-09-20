@@ -26,7 +26,7 @@ Vertical slice (2026-09-20): tasks 1 to 10 done and verified, 11 waits for the D
 - [x] A2d Appendix B, the three blueprint workshops (17 lessons, 30 exercises, 62 of 62 sections, four parts per blueprint tracked separately), read in full first (2026-09-20, PDL-069)
 - [x] A2e Appendices D, A, E and F (15 lessons, 30 exercises, 157 sections), each read in full from the canon text first; the whole book is covered, 433 of 433 sections (2026-09-20, PDL-070)
 - [x] B Level tests: 37 new questions in three tests, migration 031, one-sitting grading on the server, 80 percent to pass, no reveal after the test, overview cards, probe, smoke and audit extended (2026-09-20, PDL-071)
-- [ ] C Capstone workshops from the book's Appendix B blueprints
+- [x] C Capstone workshops: one repair workshop per blueprint, 12 new, graded by rubrics that reward what makes each blueprint work (2026-09-21, PDL-073)
 - [ ] D Live sandbox: learner runs their own prompt on a real model, at most 3 runs a day per user, shares the free AI pool (PDL-058), built last
 - [x] E1 Coins through the existing rewards system: lessons, exercises, chapters, level tests, paid by the server, celebrated in the browser (2026-09-21, PDL-072)
 - [ ] E2 Badges, and coins for the University's learning steps too

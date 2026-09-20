@@ -2404,6 +2404,21 @@ Still open in phase E: badges, and the same coins for the University.
 
 ---
 
+
+## PDL-073 Prompt School: capstone workshops, one for every blueprint (phase C)
+
+**Date:** 2026-09-21. Director: execute the next logical step of the plan. Phase C was "capstone workshops from the book's Appendix B blueprints" (the open question in SPEC, "proposed yes").
+
+**What "capstone" means here.** The three blueprint chapters (PDL-069) already teach each blueprint, and only three of the fifteen had a hands-on exercise (the warehouse dispatch, the call center review and the scientific writing prompts). The book's own closing says a blueprint is a foundation and that the craft is customizing it for your own site conditions. So every blueprint now has a workshop: a repair exercise in which the learner writes a version of that blueprint for a case of their own. `content/blueprint-workshops.ts` adds the twelve missing ones (market analysis, material flow, ethical customer segments, lesson plan; replenishment, preliminary assessment, logged-in guide, list assistant; records assistant, status lookup, safe suggestions, evidence triage). Each blueprint chapter now has 14 exercises, five of them repair workshops.
+
+**How they are graded.** Like every repair exercise: a weighted rubric, deterministic, on the server, no AI. Each rubric rewards what makes that blueprint work, which is not length: for example the material flow rubric gives most weight to following the projected stock from shift to shift, the ethical customer analysis to forbidding protected characteristics, the evidence triage to asking only for what the documents state. Every rubric is tested against its model answer, a good sample and two bad samples, and three shared tests check that a long but empty rewrite never passes and that a workshop's own starter never passes.
+
+**Why not a new chapter.** A separate capstone chapter would have had no section of the book to cover (the coverage rule ties every lesson to book sections), would have shifted the advanced level's order and unlocking, and would have separated each exercise from the blueprint it practices. Placing the workshop with its blueprint keeps the book map, the level test and the chapter gating unchanged. Nobody's progress is affected: the new exercises are appended, and no learner had started these chapters.
+
+**Verified.** 459 unit tests (7 new), lint and typecheck clean, integrity pass (stored equals content), content seeded to production, responsive audit at 280 and 375 px on every chapter, practice and lesson page (192 checks, 0 problems).
+
+---
+
 ---
 
 *Vibe-Coding Journal — Project Decision Log — updated as decisions are made.*

@@ -21,6 +21,7 @@ import { BLUEPRINTS_3_EXERCISES, BLUEPRINTS_3_LESSONS } from "./blueprints-3";
 import { TECHNIQUES_EXERCISES, TECHNIQUES_LESSONS } from "./techniques-reference";
 import { GLOSSARY_EXERCISES, GLOSSARY_LESSONS } from "./glossary";
 import { RESOURCES_EXERCISES, RESOURCES_LESSONS } from "./resources-and-platforms";
+import { WORKSHOP_1_EXERCISES, WORKSHOP_2_EXERCISES, WORKSHOP_3_EXERCISES } from "./blueprint-workshops";
 
 export interface AuthoredChapter {
   slug: string;
@@ -41,9 +42,9 @@ export const AUTHORED_CHAPTERS: AuthoredChapter[] = [
   { slug: "tools-and-multimodal", lessons: TOOLS_LESSONS, exercises: TOOLS_EXERCISES },
   { slug: "case-studies", lessons: CASE_STUDY_LESSONS, exercises: CASE_STUDY_EXERCISES },
   { slug: "the-future", lessons: FUTURE_LESSONS, exercises: FUTURE_EXERCISES },
-  { slug: "blueprints-1", lessons: BLUEPRINTS_1_LESSONS, exercises: BLUEPRINTS_1_EXERCISES },
-  { slug: "blueprints-2", lessons: BLUEPRINTS_2_LESSONS, exercises: BLUEPRINTS_2_EXERCISES },
-  { slug: "blueprints-3", lessons: BLUEPRINTS_3_LESSONS, exercises: BLUEPRINTS_3_EXERCISES },
+  { slug: "blueprints-1", lessons: BLUEPRINTS_1_LESSONS, exercises: [...BLUEPRINTS_1_EXERCISES, ...WORKSHOP_1_EXERCISES] },
+  { slug: "blueprints-2", lessons: BLUEPRINTS_2_LESSONS, exercises: [...BLUEPRINTS_2_EXERCISES, ...WORKSHOP_2_EXERCISES] },
+  { slug: "blueprints-3", lessons: BLUEPRINTS_3_LESSONS, exercises: [...BLUEPRINTS_3_EXERCISES, ...WORKSHOP_3_EXERCISES] },
   { slug: "techniques-reference", lessons: TECHNIQUES_LESSONS, exercises: TECHNIQUES_EXERCISES },
   { slug: "glossary", lessons: GLOSSARY_LESSONS, exercises: GLOSSARY_EXERCISES },
   { slug: "resources-and-platforms", lessons: RESOURCES_LESSONS, exercises: RESOURCES_EXERCISES },
