@@ -35,9 +35,9 @@ fine, as long as every section of the book is properly covered. The lesson count
 | Advanced | blueprints-1 | Appendix B, blueprints 1 to 5 | 6 | written, 21 of 21 (2026-09-20) |
 | Advanced | blueprints-2 | Appendix B, blueprints 6 to 10 | 5 | written, 20 of 20 (2026-09-20) |
 | Advanced | blueprints-3 | Appendix B, blueprints 11 to 15 and the closing | 6 | written, 21 of 21 (2026-09-20) |
-| Advanced | techniques-reference | Appendix D | 4 | to do |
-| Advanced | glossary | Appendix A | 6 | to do |
-| Advanced | resources-and-platforms | Appendices E and F | 4 | to do |
+| Advanced | techniques-reference | Appendix D | 4 | written, 50 of 50, one section per table row (2026-09-20) |
+| Advanced | glossary | Appendix A | 7 | written, 92 of 92, one section per term (2026-09-20) |
+| Advanced | resources-and-platforms | Appendices E and F | 4 | written, 15 of 15 (2026-09-20) |
 
 ## Audit of the first three chapters (2026-09-20)
 

@@ -18,6 +18,9 @@ import { FUTURE_EXERCISES, FUTURE_LESSONS } from "./the-future";
 import { BLUEPRINTS_1_EXERCISES, BLUEPRINTS_1_LESSONS } from "./blueprints-1";
 import { BLUEPRINTS_2_EXERCISES, BLUEPRINTS_2_LESSONS } from "./blueprints-2";
 import { BLUEPRINTS_3_EXERCISES, BLUEPRINTS_3_LESSONS } from "./blueprints-3";
+import { TECHNIQUES_EXERCISES, TECHNIQUES_LESSONS } from "./techniques-reference";
+import { GLOSSARY_EXERCISES, GLOSSARY_LESSONS } from "./glossary";
+import { RESOURCES_EXERCISES, RESOURCES_LESSONS } from "./resources-and-platforms";
 
 export interface AuthoredChapter {
   slug: string;
@@ -41,4 +44,7 @@ export const AUTHORED_CHAPTERS: AuthoredChapter[] = [
   { slug: "blueprints-1", lessons: BLUEPRINTS_1_LESSONS, exercises: BLUEPRINTS_1_EXERCISES },
   { slug: "blueprints-2", lessons: BLUEPRINTS_2_LESSONS, exercises: BLUEPRINTS_2_EXERCISES },
   { slug: "blueprints-3", lessons: BLUEPRINTS_3_LESSONS, exercises: BLUEPRINTS_3_EXERCISES },
+  { slug: "techniques-reference", lessons: TECHNIQUES_LESSONS, exercises: TECHNIQUES_EXERCISES },
+  { slug: "glossary", lessons: GLOSSARY_LESSONS, exercises: GLOSSARY_EXERCISES },
+  { slug: "resources-and-platforms", lessons: RESOURCES_LESSONS, exercises: RESOURCES_EXERCISES },
 ];

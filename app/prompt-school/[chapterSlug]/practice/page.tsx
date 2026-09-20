@@ -14,6 +14,7 @@ import { PremiumGuard } from "@/components/PremiumGuard";
 import { ExercisePlayer, type PublicExercise } from "@/components/prompt-school/ExercisePlayer";
 import { BookPopup } from "@/components/prompt-school/BookPopup";
 import { PASS_SCORE, chapterPassed, chapterScore } from "@/features/prompt-school/domain";
+import { PROMPT_SCHOOL_OUTLINE } from "@/features/prompt-school/content/outline";
 
 interface ChapterData {
   chapter: { slug: string; title: string };
@@ -58,6 +59,8 @@ function Practice() {
   const ids = data?.exercises.map((e) => e.id) ?? [];
   const score = chapterScore(best, ids);
   const passed = ids.length > 0 && chapterPassed(score);
+  const outlineIndex = PROMPT_SCHOOL_OUTLINE.findIndex((c) => c.slug === chapterSlug);
+  const nextChapter = outlineIndex >= 0 ? PROMPT_SCHOOL_OUTLINE[outlineIndex + 1] : undefined;
 
   return (
     <div className="min-h-dvh bg-white px-4 py-10 md:px-12 md:py-12">
@@ -92,7 +95,9 @@ function Practice() {
 
             {passed && (
               <p role="status" className="mb-6 border-l-8 border-black py-1 pl-3 text-sm text-black">
-                You have passed this chapter. The next chapter opens in the School once it is written.{" "}
+                {nextChapter
+                  ? `You have passed this chapter. The next one, "${nextChapter.title}", is now open in the School.`
+                  : "You have passed the last chapter. You have completed Prompt School."}{" "}
                 <Link href="/prompt-school" className="font-bold underline decoration-2 underline-offset-4 hover:text-[#FF3000]">Back to the School</Link>
               </p>
             )}

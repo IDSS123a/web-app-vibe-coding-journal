@@ -2349,6 +2349,22 @@ The School stands at 86 lessons in 14 chapters, 276 of 297 book sections (93 per
 
 ---
 
+
+## PDL-070 Prompt School: Appendices D, A, E and F, the whole book is now covered
+
+**Date:** 2026-09-20. Director: continue by the plan after Appendix B. Each appendix was read in full from the canon text (the corrections docx, PDL-068) before it was written, and its section list in `book-map.ts` was made final.
+
+- **Appendix D, the techniques quick reference** (`techniques-reference`, 4 lessons, 10 exercises, 50 sections). The book's table has 48 rows (scenario area, technique, description, example of usage). Each row is its own section in the map, so none can be skipped, and the rows are regrouped into four lessons by what they are for: foundations and reasoning, shaping input and output, improving and checking, and safety, ethics and how the systems work. The four entries the book marks as not being direct prompt techniques (Constitutional AI, RLHF, MRKL, prompt tuning) are explained as such. The table's chapter pointers ("Ch 4") use the old numbering and were not copied.
+- **Appendix A, the glossary** (`glossary`, 7 lessons, 10 exercises, 92 sections). All 91 terms, one section each, taught in the book's alphabetical order (A to C, D to F, G to K, L to O, P to R, S, T to Z; the outline planned 6 lessons and grew to 7 because S is long). Unlike the rest of the book, the glossary's chapter pointers use the current numbering, so they are kept as "In the book: chapter N". Markup inside definitions (Markdown symbols, tags) is shown as code so it does not render.
+- **Appendices E and F, further reading and platforms** (`resources-and-platforms`, 4 lessons, 10 exercises, 15 sections). The book names kinds of sources, not titles, and product families only as examples, so the lessons add no titles or links of their own. Appendix F's four workbenches, the seven factors for choosing one, free versus paid and the data privacy rules are all covered, with a table that summarizes the four environments.
+- **Result.** All 18 chapters of the outline are open: 101 lessons, 433 of 433 book sections (100 percent), enforced by the coverage test. 187 Prompt School tests (423 in the whole project).
+- **A small product fix.** The practice page told every reader who passed a chapter that "the next chapter opens once it is written", which had long been untrue for most chapters. It now names the next chapter, and for the last one says the course is complete.
+- **Manuscript finding.** The book ends with a bare "Note:" and no text, in the canon docx and in the .md. Nothing was lost (the School has no section for it), but the manuscript should either fill or delete it. Appendix D also spells "Explainability Prompts" as "Explanability".
+
+Verified: lint and typecheck clean, integrity pass, content seeded to production, responsive audit on the lesson pages. Not yet pushed: the Director approved pushes up to Appendix B.
+
+---
+
 ---
 
 *Vibe-Coding Journal — Project Decision Log — updated as decisions are made.*
