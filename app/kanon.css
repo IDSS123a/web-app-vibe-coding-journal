@@ -1,0 +1,531 @@
+/*
+ * KANON building blocks (PDL-074, specs/kanon-redesign/, source: TYPOGRAPHY_SPEC.md). The tokens (fonts,
+ * colours, sizes, lines) live in app/globals.css; this file turns them into a small set of reusable classes.
+ * Utilities written on an element still win over these (they are in the components layer), so a page can
+ * adjust spacing or colour, but the typography, lines and radii come from here.
+ *
+ * Layers (spec section 15.5): the Swiss spine is the default and stays rectangular, flat and 1px. Edition
+ * reads. Console is dark and mono. Campus is the ONLY layer with rounded cards and hard shadows; put
+ * `layer-campus` (or `layer-console`, `layer-edition`) on the page wrapper and the k-* blocks adapt through
+ * variables.
+ */
+@layer components {
+  /* ----- page frame ----- */
+  .k-page {
+    min-height: 100vh;
+    min-height: 100dvh;
+    padding-inline: var(--gutter);
+    padding-block: var(--page-y);
+  }
+  .k-container {
+    width: 100%;
+    max-width: var(--content-max);
+    margin-inline: auto;
+  }
+
+  /* ----- display type (Unbounded) ----- */
+  .k-display {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: var(--text-display-xl);
+    line-height: 0.98;
+    letter-spacing: -0.03em;
+    max-width: 16ch;
+    overflow-wrap: break-word;
+  }
+  .k-h2 {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: var(--text-display-lg);
+    line-height: 1.02;
+    letter-spacing: -0.02em;
+    max-width: 22ch;
+    overflow-wrap: break-word;
+  }
+  /* card and section title */
+  .k-h3 {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 1.3125rem;
+    line-height: 1.1;
+    letter-spacing: -0.01em;
+    overflow-wrap: break-word;
+  }
+  /* the smaller display title used inside cards and lists (spec: learn card title 18/1.15) */
+  .k-h4 {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 1.125rem;
+    line-height: 1.15;
+    letter-spacing: -0.01em;
+    overflow-wrap: break-word;
+  }
+  .k-date-report {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: var(--text-report-date);
+    line-height: 0.86;
+    letter-spacing: -0.05em;
+  }
+  .k-date-read {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: var(--text-read-date);
+    line-height: 0.9;
+    letter-spacing: -0.04em;
+  }
+  .k-value {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 1.375rem;
+  }
+
+  /* ----- labels, eyebrows, metadata ----- */
+  .k-eyebrow {
+    font-family: var(--font-sans);
+    font-weight: 600;
+    font-size: 0.6875rem;
+    line-height: 1;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: var(--ink-soft);
+  }
+  .k-label {
+    font-family: var(--font-sans);
+    font-weight: 700;
+    font-size: 0.6875rem;
+    line-height: 1.2;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+  }
+  .k-meta {
+    font-family: var(--font-mono);
+    font-weight: 500;
+    font-size: 0.6875rem;
+    letter-spacing: 0.05em;
+    color: var(--ink-soft);
+  }
+  .k-signal {
+    color: var(--signal);
+  }
+  .k-soft {
+    color: var(--ink-soft);
+  }
+
+  /* ----- body copy ----- */
+  .k-ui {
+    font-family: var(--font-sans);
+    font-size: 0.875rem;
+    line-height: 1.55;
+  }
+  .k-ui-lg {
+    font-family: var(--font-sans);
+    font-size: 0.9375rem;
+    line-height: 1.6;
+  }
+  .k-editorial {
+    font-family: var(--font-serif);
+    font-weight: 400;
+    font-size: 0.9375rem;
+    line-height: 1.62;
+    color: var(--editorial);
+    max-width: 74ch;
+  }
+  .k-editorial-title {
+    font-family: var(--font-serif);
+    font-weight: 700;
+    font-size: 1.25rem;
+    line-height: 1.22;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+    max-width: 74ch;
+    overflow-wrap: break-word;
+  }
+  .k-lede {
+    font-family: var(--font-serif);
+    font-weight: 400;
+    font-size: var(--text-lede);
+    line-height: 1.5;
+    color: var(--lede);
+    max-width: 60ch;
+  }
+
+  /* ----- Swiss box, dividers ----- */
+  .k-box {
+    background: var(--paper);
+    border: var(--line) solid var(--rule-strong);
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .k-box-muted {
+    background: var(--paper-2);
+    border: var(--line) solid var(--rule-strong);
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .k-rule {
+    border-top: var(--line) solid var(--rule);
+  }
+  .k-rule-strong {
+    border-top: var(--line) solid var(--rule-strong);
+  }
+
+  /* ----- buttons (Swiss): rectangular, 1px, 44px touch height ----- */
+  .k-btn {
+    display: inline-flex;
+    min-height: 44px;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 13px 22px;
+    border: var(--line) solid var(--rule-strong);
+    border-radius: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    font-weight: 700;
+    font-size: 0.875rem;
+    line-height: 1.2;
+    text-align: center;
+    transition: background-color 150ms ease-out, color 150ms ease-out, border-color 150ms ease-out;
+  }
+  .k-btn:hover {
+    border-color: var(--signal);
+    color: var(--signal);
+  }
+  .k-btn-primary {
+    background: var(--ink);
+    color: var(--signal-ink);
+  }
+  .k-btn-primary:hover {
+    background: var(--signal);
+    border-color: var(--signal);
+    color: var(--signal-ink);
+  }
+  .k-btn:disabled,
+  .k-btn[aria-disabled="true"] {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+  /* compact controls: navigation, filters */
+  .k-nav-link {
+    font-family: var(--font-sans);
+    font-weight: 600;
+    font-size: 0.78125rem;
+    line-height: 1.2;
+  }
+  @media (max-width: 1200px) {
+    .k-nav-link {
+      font-size: 0.75rem;
+    }
+  }
+
+  /* ----- Edition (Read): the Daily Report ----- */
+  .layer-edition {
+    --prose-font: var(--font-serif);
+    --prose-size: 0.9375rem;
+    --prose-leading: 1.62;
+    --prose-color: var(--editorial);
+    --prose-heading-font: var(--font-serif);
+    --prose-heading-weight: 700;
+    --prose-heading-tracking: -0.01em;
+  }
+  [data-day="mon"] { --day: var(--day-mon); }
+  [data-day="tue"] { --day: var(--day-tue); }
+  [data-day="wed"] { --day: var(--day-wed); }
+  [data-day="thu"] { --day: var(--day-thu); }
+  [data-day="fri"] { --day: var(--day-fri); }
+  [data-day="sat"] { --day: var(--day-sat); }
+  [data-day="sun"] { --day: var(--day-sun); }
+  .k-daybar {
+    border-left: 7px solid var(--day);
+  }
+  .k-badge {
+    display: inline-block;
+    border: var(--line) solid var(--rule-strong);
+    padding: 2px 6px;
+    font-family: var(--font-sans);
+    font-weight: 600;
+    font-size: 0.65625rem;
+    letter-spacing: 0.04em;
+  }
+  .k-badge-day {
+    border-color: var(--day);
+    font-family: var(--font-mono);
+    font-weight: 700;
+    font-size: 0.6875rem;
+  }
+
+  /* ----- Console: technical admin surfaces ----- */
+  .layer-console {
+    background: var(--console-bg);
+    color: var(--console-text);
+    --prose-color: var(--console-text);
+  }
+  .layer-console .k-panel {
+    background: var(--console-panel);
+    border: var(--line) solid var(--console-line);
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .layer-console .k-panel-2 {
+    background: var(--console-panel-2);
+    border: var(--line) solid var(--console-line);
+  }
+  .layer-console .k-tag {
+    display: inline-block;
+    border: var(--line) solid var(--console-line);
+    padding: 1px 6px;
+    font-family: var(--font-mono);
+    font-weight: 500;
+    font-size: 0.625rem;
+  }
+  .layer-console .k-tag-hot {
+    border-color: var(--console-amber);
+    color: var(--console-amber);
+  }
+  .layer-console .k-meta,
+  .layer-console .k-soft,
+  .layer-console .k-eyebrow {
+    color: var(--console-dim);
+  }
+
+  /* ----- Campus (Learn): the only rounded, shadowed layer ----- */
+  .layer-campus {
+    background: var(--studio-canvas);
+    color: var(--studio-ink);
+    font-family: var(--font-ui);
+    --prose-font: var(--font-ui);
+    --prose-size: 0.9375rem;
+    --prose-leading: 1.6;
+    --prose-color: var(--studio-ink);
+    --prose-heading-font: var(--font-display);
+    --prose-heading-weight: 800;
+    --prose-heading-tracking: -0.01em;
+  }
+  .layer-campus .k-card {
+    background: var(--studio-paper);
+    border: 2px solid var(--studio-ink);
+    border-radius: 14px;
+    box-shadow: 0 5px 0 var(--studio-ink);
+  }
+  .layer-campus .k-card-sm {
+    background: var(--studio-paper);
+    border: 2px solid var(--studio-ink);
+    border-radius: 12px;
+    box-shadow: 0 3px 0 var(--studio-ink);
+  }
+  .layer-campus .k-pill {
+    display: inline-flex;
+    align-items: center;
+    border: 2px solid var(--studio-ink);
+    border-radius: 999px;
+    background: var(--studio-paper);
+    padding: 3px 12px;
+    font-family: var(--font-ui);
+    font-weight: 700;
+    font-size: 0.78125rem;
+  }
+  .layer-campus .k-cbtn {
+    display: inline-flex;
+    min-height: 44px;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 10px 18px;
+    border: 2px solid var(--studio-ink);
+    border-radius: 12px;
+    background: var(--studio-paper);
+    color: var(--studio-ink);
+    box-shadow: 0 3px 0 var(--studio-ink);
+    font-family: var(--font-ui);
+    font-weight: 700;
+    font-size: 0.8125rem;
+    line-height: 1.2;
+    text-align: center;
+    transition: transform 150ms ease-out, box-shadow 150ms ease-out, background-color 150ms ease-out;
+  }
+  .layer-campus .k-cbtn:hover {
+    background: var(--studio-lemon);
+    transform: translateY(1px);
+    box-shadow: 0 2px 0 var(--studio-ink);
+  }
+  .layer-campus .k-cbtn-primary {
+    background: var(--studio-blueberry);
+    color: #ffffff;
+  }
+  .layer-campus .k-cbtn-primary:hover {
+    background: var(--studio-ink);
+    color: #ffffff;
+  }
+  .layer-campus .k-cbtn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    transform: none;
+  }
+  .layer-campus .k-clabel {
+    font-family: var(--font-ui);
+    font-weight: 700;
+    font-size: 0.6875rem;
+    line-height: 1.2;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+  }
+  .layer-campus .k-cheading {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: var(--text-campus-heading);
+    line-height: 1;
+    letter-spacing: -0.02em;
+    overflow-wrap: break-word;
+  }
+  .layer-campus .k-cbody {
+    font-family: var(--font-ui);
+    font-weight: 500;
+    font-size: 0.84375rem;
+    line-height: 1.55;
+  }
+  .layer-campus .k-cintro {
+    font-family: var(--font-ui);
+    font-weight: 500;
+    font-size: 0.9375rem;
+    line-height: 1.55;
+  }
+  .layer-campus .k-meta,
+  .layer-campus .k-soft {
+    color: var(--studio-ink);
+    opacity: 0.7;
+  }
+
+  /* ----- rendered markdown: follows the layer it is placed in ----- */
+  .k-prose {
+    font-family: var(--prose-font, var(--font-sans));
+    font-size: var(--prose-size, 0.90625rem);
+    line-height: var(--prose-leading, 1.6);
+    color: var(--prose-color, inherit);
+  }
+  .k-prose > * + * {
+    margin-top: 1rem;
+  }
+  .k-prose h1,
+  .k-prose h2 {
+    font-family: var(--prose-heading-font, var(--font-display));
+    font-weight: var(--prose-heading-weight, 800);
+    letter-spacing: var(--prose-heading-tracking, -0.01em);
+    line-height: 1.15;
+    margin-top: 2rem;
+    color: inherit;
+  }
+  .k-prose h1 {
+    font-size: 1.375rem;
+  }
+  .k-prose h2 {
+    font-size: 1.125rem;
+  }
+  .k-prose h3 {
+    font-family: var(--font-sans);
+    font-weight: 700;
+    font-size: 0.75rem;
+    line-height: 1.3;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    margin-top: 1.5rem;
+  }
+  .k-prose > :first-child {
+    margin-top: 0;
+  }
+  .k-prose p {
+    max-width: 74ch;
+  }
+  .k-prose ul,
+  .k-prose ol {
+    margin-left: 1.25rem;
+    max-width: 74ch;
+  }
+  .k-prose ul {
+    list-style: disc;
+  }
+  .k-prose ol {
+    list-style: decimal;
+  }
+  .k-prose li + li {
+    margin-top: 0.25rem;
+  }
+  .k-prose strong {
+    font-weight: 700;
+  }
+  .k-prose a {
+    font-weight: 600;
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 4px;
+    transition: color 150ms ease-out;
+  }
+  .k-prose a:hover {
+    color: var(--signal);
+  }
+  .k-prose code {
+    font-family: var(--font-mono);
+    font-size: 0.8125em;
+    background: var(--paper-2);
+    color: var(--ink);
+    padding: 1px 4px;
+  }
+  .k-prose pre {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+    overflow-x: auto;
+    background: var(--paper-2);
+    color: var(--ink);
+    border: var(--line) solid var(--rule-strong);
+    padding: 0.75rem;
+  }
+  .k-prose pre code {
+    background: none;
+    padding: 0;
+    font-size: inherit;
+  }
+  .k-prose hr {
+    border: 0;
+    border-top: var(--line) solid var(--rule);
+    margin-block: 1.5rem;
+  }
+  .k-prose blockquote {
+    border-left: 3px solid var(--signal);
+    padding-left: 1rem;
+    font-style: italic;
+  }
+  .k-prose table {
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 0.8125rem;
+  }
+  .k-prose th,
+  .k-prose td {
+    border: var(--line) solid var(--rule);
+    padding: 0.4rem 0.6rem;
+    text-align: left;
+  }
+  .k-prose th {
+    background: var(--paper-2);
+    font-weight: 700;
+  }
+  .layer-campus .k-prose pre,
+  .layer-campus .k-prose code {
+    background: var(--studio-paper);
+    color: var(--studio-ink);
+  }
+  .layer-campus .k-prose pre {
+    border: 2px solid var(--studio-ink);
+    border-radius: 12px;
+  }
+  .layer-console .k-prose code,
+  .layer-console .k-prose pre {
+    background: var(--console-panel-2);
+    color: var(--console-text);
+    border-color: var(--console-line);
+  }
+}

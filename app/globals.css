@@ -11,6 +11,7 @@
  * every page inherits the base look without re-declaring it.
  */
 @import "tailwindcss";
+@import "./kanon.css";
 
 /*
  * The app is light-only (P-20 Swiss palette; see the `html` rule below). Three
@@ -45,25 +46,21 @@
   }
 
   html {
-    font-family: var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-      "Helvetica Neue", Arial, sans-serif;
+    font-family: var(--font-sans);
     /*
-     * Fluid root size (2026-09-19, "every view must fill the whole screen"). Every rem based
-     * size in the UI (type, spacing, and the max-w-* content widths) scales with this, so the
-     * layout uses a 1920 px or 2560 px monitor instead of sitting as a narrow column in the
-     * middle. 16 px up to about 1400 px wide, about 18.7 px at 1920, capped at 22 px from
-     * about 2500 px. Media queries are unaffected (they use the browser's own 16 px).
+     * KANON (PDL-074, supersedes the fluid root of PDL-060): the type scale is the spec's px scale, written
+     * in rem so browser zoom and the system text size still work. 100% keeps 1rem = 16px at default settings.
      */
-    font-size: clamp(16px, calc(8px + 0.56vw), 22px);
+    font-size: 100%;
     /* Phones in landscape must not silently enlarge text and break the layout. */
     -webkit-text-size-adjust: 100%;
     text-size-adjust: 100%;
-    line-height: 1.6;
-    /* Swiss palette: pure white background, pure black foreground --
-       no dark-mode variant (DESIGN_NOTES.md's spec doesn't define one;
-       the old prefers-color-scheme block is deliberately removed here). */
-    color: #000000;
-    background: #ffffff;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    color: var(--ink);
+    background: var(--paper);
     /* Keep native controls, scrollbars and form autofill light on OS dark mode. */
     color-scheme: light;
   }
@@ -71,6 +68,10 @@
   body {
     padding: 0;
     margin: 0;
+    /* Notched phones in landscape: keep content out of the sensor housing and the home indicator. */
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+    padding-bottom: env(safe-area-inset-bottom);
   }
 
   a {
@@ -97,7 +98,7 @@
 
   /* Keyboard users always see where they are; utilities that set outline-none still win. */
   :focus-visible {
-    outline: 3px solid #ff3000;
+    outline: 3px solid var(--signal);
     outline-offset: 2px;
   }
 
@@ -107,6 +108,130 @@
     font-family: inherit;
     font-size: inherit;
   }
+}
+
+
+/*
+ * KANON design tokens (PDL-074, specs/kanon-redesign/, source: TYPOGRAPHY_SPEC.md). One place for every font,
+ * colour, line, radius and type size. Components use these (directly, through the Tailwind names below, or
+ * through the k-* classes further down), never their own hex codes or font stacks.
+ */
+:root {
+  /* colour: Swiss spine */
+  --paper: #ffffff;
+  --paper-2: #f2f2f2;
+  --ink: #000000;
+  --ink-soft: #5a5a5a;
+  --rule: #e4e4e4;
+  --rule-strong: #000000;
+  --signal: #ff3000;
+  --signal-ink: #ffffff;
+  /* colour: Console (technical, dense) */
+  --console-bg: #0f1626;
+  --console-panel: #172038;
+  --console-panel-2: #1f2b4b;
+  --console-line: #2a3658;
+  --console-text: #e6eaf5;
+  --console-dim: #8d98b8;
+  --console-amber: #ffb020;
+  --console-ice: #8cb4ff;
+  /* colour: Campus / studio (learning) */
+  --studio-canvas: #e9e4ff;
+  --studio-ink: #1f1a45;
+  --studio-blueberry: #5a48ff;
+  --studio-lemon: #ffe14d;
+  --studio-mint: #7fe3b5;
+  --studio-pink: #ff86b4;
+  --studio-paper: #ffffff;
+  /* colour: day ink, the Daily Report's own signal (never the global brand accent) */
+  --day-mon: #ff7a1a;
+  --day-tue: #0e7a5f;
+  --day-wed: #d62e7e;
+  --day-thu: #f0b400;
+  --day-fri: #7440e0;
+  --day-sat: #1e9be8;
+  --day-sun: #2436e8;
+  --day: var(--signal);
+  /* editorial text colours */
+  --editorial: #2a2a2a;
+  --lede: #1a1a1a;
+  /* type scale, px in the spec, rem here (16px = 1rem) */
+  --text-display-xl: clamp(2.375rem, 6.4vw, 5.25rem);
+  --text-display-lg: clamp(1.625rem, 3.6vw, 2.75rem);
+  --text-report-date: clamp(2.875rem, 8vw, 5.25rem);
+  --text-read-date: clamp(2.5rem, 7vw, 4.5rem);
+  --text-campus-heading: clamp(1.625rem, 3.6vw, 2.5rem);
+  --text-lede: clamp(1.0625rem, 2vw, 1.3125rem);
+  /* lines and layout */
+  --line: 1px;
+  --content-max: 1760px;
+  --gutter: clamp(1rem, 4vw, 3rem);
+  --page-y: clamp(2rem, 5vw, 3rem);
+}
+
+/* ultrawide: cap the content, allow the larger display sizes the spec gives for 1920px and above */
+@media (min-width: 1920px) {
+  :root {
+    --content-max: 1840px;
+    --text-display-xl: clamp(4.5rem, 5vw, 6.5rem);
+    --text-display-lg: clamp(2.5rem, 3vw, 3.25rem);
+  }
+}
+/* small phones */
+@media (max-width: 420px) {
+  :root {
+    --text-display-xl: clamp(1.875rem, 9vw, 2.5rem);
+    --text-display-lg: clamp(1.375rem, 7vw, 1.875rem);
+    --gutter: 1rem;
+  }
+}
+/* short landscape (phones on their side): no tall hero spacing, the page scrolls inside */
+@media (orientation: landscape) and (max-height: 520px) {
+  :root {
+    --page-y: 1rem;
+  }
+}
+
+/* Tailwind names for the tokens: text-signal, bg-paper-2, border-rule, font-serif, font-display ... */
+@theme inline {
+  --font-sans: var(--font-inter), system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-serif: var(--font-source-serif), Georgia, "Times New Roman", serif;
+  --font-display: var(--font-unbounded), var(--font-inter), system-ui, sans-serif;
+  --font-ui: var(--font-figtree), var(--font-inter), system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, "SF Mono", Menlo, monospace;
+
+  --color-paper: var(--paper);
+  --color-paper-2: var(--paper-2);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-rule: var(--rule);
+  --color-signal: var(--signal);
+  --color-signal-ink: var(--signal-ink);
+  --color-console-bg: var(--console-bg);
+  --color-console-panel: var(--console-panel);
+  --color-console-panel-2: var(--console-panel-2);
+  --color-console-line: var(--console-line);
+  --color-console-text: var(--console-text);
+  --color-console-dim: var(--console-dim);
+  --color-console-amber: var(--console-amber);
+  --color-console-ice: var(--console-ice);
+  --color-studio-canvas: var(--studio-canvas);
+  --color-studio-ink: var(--studio-ink);
+  --color-studio-blueberry: var(--studio-blueberry);
+  --color-studio-lemon: var(--studio-lemon);
+  --color-studio-mint: var(--studio-mint);
+  --color-studio-pink: var(--studio-pink);
+  --color-day: var(--day);
+}
+
+/* The spec's breakpoints as named variants (sm 640 and xl 1280 are Tailwind's own): xs:, nav:, split:, laptop:, wide:, ultra: */
+@theme {
+  --breakpoint-xs: 420px;
+  --breakpoint-nav: 820px;
+  --breakpoint-split: 1000px;
+  --breakpoint-laptop: 1200px;
+  --breakpoint-wide: 1600px;
+  --breakpoint-ultra: 1920px;
 }
 
 /* Swiss texture patterns (DESIGN_NOTES.md "Textures & Patterns")
