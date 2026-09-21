@@ -111,3 +111,47 @@ export function computeSubscriptionExpiry(confirmedAt: Date): Date {
   expiry.setUTCFullYear(expiry.getUTCFullYear() + 1);
   return expiry;
 }
+
+// ---------- who may start a payment, and when the new year starts (PDL-079, before real money) ----------
+
+/** A plan can be renewed in its last 14 days (the reminder e-mails come at 7 and 2 days), or at any time after it has ended. */
+export const RENEWAL_WINDOW_DAYS = 14;
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+export interface PurchaseContext {
+  status: "trial" | "active" | "expired";
+  tier: TierName;
+  expiresAt: Date | null;
+  now: Date;
+}
+
+export type OrderEligibility = { ok: true } | { ok: false; reason: string };
+
+/**
+ * Stops a customer from paying for something they already have. Real money is involved, so the server refuses, not just the
+ * screen: an active plan cannot be bought again before its last 14 days, a lower plan cannot be bought over a higher one, and
+ * Premium cannot be bought at $50 over an active Basic (that is the $40 upgrade). Trial and ended plans can buy anything.
+ */
+export function checkFreshOrderEligibility(requested: TierName, ctx: PurchaseContext): OrderEligibility {
+  const stillActive = ctx.status === "active" && (ctx.expiresAt === null || ctx.expiresAt.getTime() > ctx.now.getTime());
+  if (!stillActive) return { ok: true };
+  if (requested === "basic" && ctx.tier === "premium") return { ok: false, reason: "You already have Premium, which includes Basic." };
+  if (requested === "premium" && ctx.tier === "basic") return { ok: false, reason: "Use the upgrade to Premium instead of buying it again." };
+  if (ctx.expiresAt === null) return { ok: false, reason: "Your plan is already active." };
+  const daysLeft = (ctx.expiresAt.getTime() - ctx.now.getTime()) / DAY_MS;
+  if (daysLeft > RENEWAL_WINDOW_DAYS) return { ok: false, reason: `Your plan is active until ${ctx.expiresAt.toISOString().slice(0, 10)}. You can renew in its last ${RENEWAL_WINDOW_DAYS} days.` };
+  return { ok: true };
+}
+
+/**
+ * The end date after a confirmed payment.
+ * - The $40 upgrade starts a NEW 12 months on the day it is paid (Director, 2026-09-21).
+ * - A renewal made in the last 14 days starts when the current year ends, so nothing already paid for is lost.
+ * - Any other payment (first purchase, after the trial, after the plan ended) starts on the day it is paid.
+ */
+export function computePurchaseExpiry(kind: "upgrade" | "purchase", ctx: { status: PurchaseContext["status"]; expiresAt: Date | null; now: Date }): Date {
+  if (kind === "purchase" && ctx.status === "active" && ctx.expiresAt !== null && ctx.expiresAt.getTime() > ctx.now.getTime()) {
+    return computeSubscriptionExpiry(ctx.expiresAt);
+  }
+  return computeSubscriptionExpiry(ctx.now);
+}

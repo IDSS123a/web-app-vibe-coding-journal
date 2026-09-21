@@ -1,5 +1,7 @@
 # TASKS — Admin Console & Subscription Lifecycle
 
+> **Status 2026-09-22: shipped and live** (PDL-048; the users list, block and unblock, tier and plan end date, the $40 upgrade, the expiry reminders). The checkboxes below were not ticked as the work landed and are kept only as the original build order.
+
 Mirrors `PLAN.md`. Build in this order.
 
 - [ ] 1. Database migration — `supabase/migrations/020_admin_users_and_lifecycle.sql` (`is_blocked`, `created_by_admin_id`, `subscription_expiry_notifications`)

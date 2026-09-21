@@ -16,6 +16,7 @@
  * language for the same currency.
  */
 
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useRewards } from "./RewardsProvider";
 
@@ -112,6 +113,12 @@ export function CoinBalance({ variant = "full" }: { variant?: "full" | "compact"
           </div>
           <a href="/badges" className="mt-2 block border-t border-rule pt-2 underline decoration-1 underline-offset-4 hover:text-signal">
             My badges →
+          </a>
+          <Link href="/certificates" className="mt-2 block underline decoration-1 underline-offset-4 hover:text-signal">
+            My certificates →
+          </Link>
+          <a href="/account" className="mt-2 block underline decoration-1 underline-offset-4 hover:text-signal">
+            My account and data →
           </a>
         </div>
       )}

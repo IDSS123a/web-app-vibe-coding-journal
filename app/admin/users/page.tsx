@@ -51,6 +51,7 @@ export default function AdminUsersPage() {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [createEmail, setCreateEmail] = useState("");
   const [createTier, setCreateTier] = useState<"basic" | "premium">("basic");
+  const [planDate, setPlanDate] = useState("");
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
 
@@ -67,10 +68,11 @@ export default function AdminUsersPage() {
 
   useEffect(loadUsers, [token]);
 
-  function openUser(id: string) {
+  function openUser(id: string, keepMessage = false) {
     if (!token) return;
     setDetailLoading(true);
-    setActionMessage(null);
+    // After an action (tier, plan, block) the confirmation must stay on screen; opening a different user clears it.
+    if (!keepMessage) setActionMessage(null);
     fetch(`/api/admin/users/${id}`, { headers: { authorization: `Bearer ${token}` } })
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
       .then((d: { data: UserDetail }) => setSelected(d.data))
@@ -88,15 +90,34 @@ export default function AdminUsersPage() {
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
       .then((d: { warning?: string }) => {
         setActionMessage(d.warning ?? `User ${action}ed.`);
-        openUser(user.id);
+        openUser(user.id, true);
         loadUsers();
       })
       .catch(() => setActionMessage(`Failed to ${action} user.`));
   }
 
+  function changePlan(user: UserDetail, body: { action: "end_now" } | { action: "set_end_date"; date: string }) {
+    if (!token) return;
+    const what = body.action === "end_now" ? "End the paid access of" : "Set the plan end date of";
+    // A refund, or a correction: the payment records are never touched, only the status and the end date.
+    if (!window.confirm(`${what} ${user.email}${body.action === "set_end_date" ? ` to ${body.date}` : " now"}?`)) return;
+    fetch(`/api/admin/users/${user.id}/plan`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", authorization: `Bearer ${token}` },
+      body: JSON.stringify(body),
+    })
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
+      .then(() => {
+        setActionMessage(body.action === "end_now" ? "Paid access ended." : `Plan end date set to ${body.date}.`);
+        openUser(user.id, true);
+        loadUsers();
+      })
+      .catch(() => setActionMessage("Failed to change the plan."));
+  }
+
   function changeTier(user: UserDetail, tier: "basic" | "premium") {
     if (!token || tier === user.subscriptionTier) return;
-    const label = tier === "premium" ? "$50 Premium" : "$10 Basic";
+    const label = tier === "premium" ? "Premium ($50)" : "Basic ($10)";
     // Changing a tier is an admin override that does not touch payment
     // records, status or expiry -- confirm before doing it.
     if (!window.confirm(`Change ${user.email} to ${label}? Status and expiry date stay as they are.`)) return;
@@ -108,7 +129,7 @@ export default function AdminUsersPage() {
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
       .then(() => {
         setActionMessage(`Tier changed to ${label}.`);
-        openUser(user.id);
+        openUser(user.id, true);
         loadUsers();
       })
       .catch(() => setActionMessage("Failed to change tier."));
@@ -173,8 +194,8 @@ export default function AdminUsersPage() {
                 onChange={(e) => setCreateTier(e.target.value as "basic" | "premium")}
                 className="h-11 border border-console-line px-3 text-sm text-console-text"
               >
-                <option value="basic">$10 Basic</option>
-                <option value="premium">$50 Premium</option>
+                <option value="basic">Basic, $10 (Daily Report, Archive, Bookmarks)</option>
+                <option value="premium">Premium, $50 (everything)</option>
               </select>
             </label>
             <button
@@ -212,7 +233,7 @@ export default function AdminUsersPage() {
                 <tr
                   key={u.id}
                   onClick={() => openUser(u.id)}
-                  className={`cursor-pointer border-b border-console-line transition-colors duration-150 ease-out hover:bg-paper-2 ${
+                  className={`cursor-pointer border-b border-console-line transition-colors duration-150 ease-out hover:bg-console-panel-2 ${
                     u.isBlocked ? "opacity-50" : ""
                   }`}
                 >
@@ -265,10 +286,43 @@ export default function AdminUsersPage() {
                   onChange={(e) => changeTier(selected, e.target.value as "basic" | "premium")}
                   className="h-11 w-full border border-console-line px-3 text-sm text-console-text"
                 >
-                  <option value="basic">$10 Basic</option>
-                  <option value="premium">$50 Premium</option>
+                  <option value="basic">Basic, $10 (Daily Report, Archive, Bookmarks)</option>
+                  <option value="premium">Premium, $50 (everything)</option>
                 </select>
               </label>
+
+              <div className="mb-6 border border-console-line p-4">
+                <p className="mb-1 text-console-text k-label">Plan</p>
+                <p className="mb-3 text-sm text-console-text">
+                  {selected.subscriptionStatus}
+                  {selected.subscriptionExpiresAt ? `, ends ${new Date(selected.subscriptionExpiresAt).toLocaleDateString("en-GB")}` : selected.trialEndsAt ? `, trial ends ${new Date(selected.trialEndsAt).toLocaleDateString("en-GB")}` : ""}
+                </p>
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  <input
+                    type="date"
+                    value={planDate}
+                    onChange={(e) => setPlanDate(e.target.value)}
+                    aria-label="Plan end date"
+                    className="h-11 border border-console-line px-3 text-sm text-console-text"
+                  />
+                  <button
+                    type="button"
+                    disabled={!planDate}
+                    onClick={() => changePlan(selected, { action: "set_end_date", date: planDate })}
+                    className="h-11 border border-console-line px-4 text-console-text disabled:opacity-40 k-btn"
+                  >
+                    Set end date
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => changePlan(selected, { action: "end_now" })}
+                    className="h-11 border-signal px-4 text-signal hover:bg-signal hover:text-white k-btn"
+                  >
+                    End paid access now
+                  </button>
+                </div>
+                <p className="mt-2 text-xs text-console-text opacity-60">For a refund: end the access, or, for a refunded upgrade, set Basic and the original end date.</p>
+              </div>
 
               <h3 className="mb-2 text-console-text k-label">Usage</h3>
               <ul className="mb-6 text-sm text-console-text">

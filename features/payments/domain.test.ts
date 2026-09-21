@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { classifyPaymentWebhookEvent, classifyUpgradeEvent } from "./domain";
+import { checkFreshOrderEligibility, classifyPaymentWebhookEvent, classifyUpgradeEvent, computePurchaseExpiry } from "./domain";
 
 const CAPTURE = "PAYMENT.CAPTURE.COMPLETED";
 
@@ -41,5 +41,54 @@ describe("classifyPaymentWebhookEvent (unchanged exact-price behaviour)", () => 
   it("still treats a bare $40 as ambiguous -- an upgrade is only recognised with the payer's tier", () => {
     const result = classifyPaymentWebhookEvent(CAPTURE, 40);
     expect(result.kind).toBe("ambiguous");
+  });
+});
+
+describe("who may start a payment (PDL-079)", () => {
+  const now = new Date("2026-10-01T12:00:00Z");
+  const days = (n: number) => new Date(now.getTime() + n * 86_400_000);
+
+  it("a trial or an ended plan can buy anything", () => {
+    expect(checkFreshOrderEligibility("basic", { status: "trial", tier: "premium", expiresAt: null, now }).ok).toBe(true);
+    expect(checkFreshOrderEligibility("premium", { status: "expired", tier: "basic", expiresAt: days(-3), now }).ok).toBe(true);
+  });
+
+  it("an active plan cannot be bought again before its last 14 days, but can be in them", () => {
+    expect(checkFreshOrderEligibility("basic", { status: "active", tier: "basic", expiresAt: days(200), now }).ok).toBe(false);
+    expect(checkFreshOrderEligibility("basic", { status: "active", tier: "basic", expiresAt: days(15), now }).ok).toBe(false);
+    expect(checkFreshOrderEligibility("basic", { status: "active", tier: "basic", expiresAt: days(14), now }).ok).toBe(true);
+    expect(checkFreshOrderEligibility("premium", { status: "active", tier: "premium", expiresAt: days(2), now }).ok).toBe(true);
+  });
+
+  it("Premium cannot be bought at full price over an active Basic, and Basic not over an active Premium", () => {
+    expect(checkFreshOrderEligibility("premium", { status: "active", tier: "basic", expiresAt: days(3), now }).ok).toBe(false);
+    expect(checkFreshOrderEligibility("basic", { status: "active", tier: "premium", expiresAt: days(3), now }).ok).toBe(false);
+  });
+
+  it("an active plan with no end date (granted by the admin) cannot be paid for again", () => {
+    expect(checkFreshOrderEligibility("basic", { status: "active", tier: "basic", expiresAt: null, now }).ok).toBe(false);
+  });
+
+  it("an active status whose end date has passed counts as ended", () => {
+    expect(checkFreshOrderEligibility("basic", { status: "active", tier: "basic", expiresAt: days(-1), now }).ok).toBe(true);
+  });
+});
+
+describe("the end date after a payment (PDL-079)", () => {
+  const now = new Date("2026-10-01T12:00:00Z");
+
+  it("the $40 upgrade starts a NEW 12 months on the day it is paid, whatever was left of the Basic year", () => {
+    const basicEnd = new Date("2027-08-15T00:00:00Z");
+    expect(computePurchaseExpiry("upgrade", { status: "active", expiresAt: basicEnd, now }).toISOString()).toBe("2027-10-01T12:00:00.000Z");
+  });
+
+  it("a first purchase or one after the plan ended starts on the day it is paid", () => {
+    expect(computePurchaseExpiry("purchase", { status: "trial", expiresAt: null, now }).toISOString()).toBe("2027-10-01T12:00:00.000Z");
+    expect(computePurchaseExpiry("purchase", { status: "expired", expiresAt: new Date("2026-09-01T00:00:00Z"), now }).toISOString()).toBe("2027-10-01T12:00:00.000Z");
+  });
+
+  it("an early renewal starts when the current year ends, so nothing paid for is lost", () => {
+    const end = new Date("2026-10-05T00:00:00Z");
+    expect(computePurchaseExpiry("purchase", { status: "active", expiresAt: end, now }).toISOString()).toBe("2027-10-05T00:00:00.000Z");
   });
 });

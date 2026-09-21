@@ -1,9 +1,10 @@
 /**
- * POST /api/payments/create-order — creates a PayPal sandbox order for
+ * POST /api/payments/create-order — creates a PayPal order (sandbox or live, see lib/payments/paypal-mode.ts) for
  * the requesting user's chosen tier. The client uses the returned order
  * ID with PayPal's JS SDK to render the approval flow. This route does
  * NOT activate any subscription — per Decision 2, only a verified
  * webhook capture event does that.
+ * 409 when the user already has an active plan they cannot buy again (PDL-079).
  * E-6 five-step: authenticate → authorize → validate → execute → return.
  */
 
@@ -11,6 +12,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getVerifiedUser } from "@/lib/auth/verify-token";
 import { createPayPalOrder } from "@/lib/payments/paypal-client";
+import { supabaseAdmin } from "@/lib/db/client";
+import { checkFreshOrderEligibility } from "@/features/payments/domain";
 
 const createOrderSchema = z.object({
   tier: z.enum(["basic", "premium"]),
@@ -34,6 +37,23 @@ export async function POST(request: NextRequest) {
     }
 
     // 4. EXECUTE
+    // Real money (PDL-079): never let someone pay for a plan they already have.
+    if (supabaseAdmin) {
+      const { data: profile } = await supabaseAdmin
+        .from("user_profiles")
+        .select("subscription_status, subscription_tier, subscription_expires_at")
+        .eq("id", user.sub)
+        .maybeSingle();
+      if (profile) {
+        const eligibility = checkFreshOrderEligibility(parsed.data.tier, {
+          status: profile.subscription_status as "trial" | "active" | "expired",
+          tier: profile.subscription_tier as "basic" | "premium",
+          expiresAt: profile.subscription_expires_at ? new Date(profile.subscription_expires_at as string) : null,
+          now: new Date(),
+        });
+        if (!eligibility.ok) return NextResponse.json({ error: eligibility.reason }, { status: 409 });
+      }
+    }
     const { orderId, approveUrl } = await createPayPalOrder(parsed.data.tier, user.sub);
 
     // 5. RETURN

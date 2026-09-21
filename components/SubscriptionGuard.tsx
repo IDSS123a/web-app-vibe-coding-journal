@@ -23,6 +23,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "@/lib/auth/use-session";
 import { PayPalCheckout } from "@/components/PayPalCheckout";
+import { PaymentAssurance } from "@/components/PaymentAssurance";
 import { BASIC_PRICE_USD, PREMIUM_PRICE_USD, centsPerDay } from "@/lib/pricing";
 
 type GuardState = "checking" | "anon" | "blocked" | "ok";
@@ -210,9 +211,7 @@ export function SubscriptionGuard({ children }: { children: ReactNode }) {
             )}
           </div>
         </div>
-        <p className="mt-8 text-black opacity-50 k-label">
-          Sandbox mode, no real payment is processed.
-        </p>
+        <PaymentAssurance variant="paragraph" />
       </div>
     );
   }

@@ -10,6 +10,7 @@ import { createHash } from "crypto";
 import Parser from "rss-parser";
 import { getEnabledSources, updateSource } from "./repository";
 import { computeSourceFailure, dropKnownUrls, SOURCE_HEALTH_CONFIG, SOURCE_RECOVERED } from "./domain";
+import { SITE_URL } from "@/lib/site";
 import { supabaseAdmin } from "@/lib/db/client";
 import { stripAiTells } from "@/lib/text/no-ai-tells";
 
@@ -30,7 +31,7 @@ const rssParser = new Parser();
 // URL is also just correct etiquette for an automated feed reader, not
 // merely a workaround.
 const FEED_FETCH_USER_AGENT =
-  "VibeCodingJournalBot/1.0 (+https://web-app-vibe-coding-journal.vercel.app)";
+  `VibeCodingJournalBot/1.0 (+${SITE_URL})`;
 
 // Same finding as above: several sources (Reddit confirmed directly) rate-
 // limit a burst of back-to-back requests from the same IP even with a good

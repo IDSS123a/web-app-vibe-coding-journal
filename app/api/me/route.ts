@@ -14,6 +14,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getVerifiedUser } from "@/lib/auth/verify-token";
 import { isBillingExempt, canAccessUniversity, canAccessPromptAssistant, canAccessPromptSchool } from "@/lib/permissions";
 import { evaluateSubscriptionAccess } from "@/features/onboarding/domain";
+import { resolvePayPalMode } from "@/lib/payments/paypal-mode";
 
 export async function GET(request: NextRequest) {
   const user = await getVerifiedUser(request.headers.get("authorization"));
@@ -81,6 +82,12 @@ export async function GET(request: NextRequest) {
       // trial | active | expired. The upgrade screens need it: only an ACTIVE Basic subscriber
       // (who has paid) may pay the $40 difference; a trial user has tier basic but paid nothing.
       subscriptionStatus: user.subscriptionStatus,
+      // The end of the paid year; the renewal banner shows in its last 7 days (PDL-079).
+      subscriptionExpiresAt: user.subscriptionExpiresAt,
+      // Sandbox or live PayPal, so the payment screens tell the truth about whether real money moves (PDL-079).
+      paypalMode: resolvePayPalMode(),
+      // When the free trial ends, for the trial banner on the dashboard.
+      trialEndsAt: user.trialEndsAt,
       isBlocked: user.isBlocked,
     },
     { status: 200 },

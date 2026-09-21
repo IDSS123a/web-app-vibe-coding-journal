@@ -2,6 +2,7 @@
 
 import { supabaseAdmin } from "@/lib/db/client";
 import { registerSchema } from "@/lib/validation/schemas";
+import { TRIAL_DAYS } from "@/lib/pricing";
 import { awardCoins } from "@/features/rewards/repository";
 
 interface AuthResponse {
@@ -67,7 +68,7 @@ export async function registerAction(input: unknown): Promise<AuthResponse> {
     // P-13 (Sprint 07): 3-day trial, Premium-level access during trial
     // (Director-confirmed 2026-07-23, sprints/SPRINT_07.md Decision 1).
     const trialStartedAt = new Date();
-    const trialEndsAt = new Date(trialStartedAt.getTime() + 3 * 24 * 60 * 60 * 1000);
+    const trialEndsAt = new Date(trialStartedAt.getTime() + TRIAL_DAYS * 24 * 60 * 60 * 1000);
 
     const { error: profileError } = await supabaseAdmin
       .from("user_profiles")
@@ -77,6 +78,7 @@ export async function registerAction(input: unknown): Promise<AuthResponse> {
         tools_used: parsed.tools_used,
         depth_preference: parsed.depth_preference,
         other_tools_freetext: parsed.other_tools_freetext || null,
+        terms_accepted_at: new Date().toISOString(),
         subscription_status: "trial",
         trial_started_at: trialStartedAt.toISOString(),
         trial_ends_at: trialEndsAt.toISOString(),

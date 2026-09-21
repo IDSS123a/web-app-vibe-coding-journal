@@ -1,13 +1,17 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import type { Article, DailyReport } from "@/lib/validation/schemas";
 import { useAuthedJson } from "@/lib/auth/use-authed-json";
 import { ArticleListWithBookmarks } from "@/components/ArticleListWithBookmarks";
+import { ArticleScan } from "@/components/ArticleScan";
 import { MarkdownContent } from "@/components/MarkdownContent";
 import { ReportHeader, dayKeyOf } from "@/components/ReportHeader";
 import { DailyReportOpenTracker } from "@/components/rewards/DailyReportOpenTracker";
 import { UpgradeToPremiumBanner } from "@/components/UpgradeToPremiumBanner";
+import { RenewalBanner } from "@/components/RenewalBanner";
+import { TrialBanner } from "@/components/TrialBanner";
 
 /**
  * Dashboard — the most recent PUBLISHED Daily Report.
@@ -36,6 +40,24 @@ export default function DashboardPage() {
   const report = data?.report ?? null;
   const articles = data?.articles ?? [];
 
+  // Read (the Edition layout) or Scan (a dense table, the Console layer, PDL-082). The choice is remembered in this browser only.
+  const [view, setView] = useState<"read" | "scan">("read");
+  useEffect(() => {
+    try {
+      if (window.localStorage.getItem("vbj-report-view") === "scan") setView("scan");
+    } catch {
+      // Not remembered, which is harmless.
+    }
+  }, []);
+  function chooseView(next: "read" | "scan") {
+    setView(next);
+    try {
+      window.localStorage.setItem("vbj-report-view", next);
+    } catch {
+      // Not remembered, which is harmless.
+    }
+  }
+
   return (
     <div className="k-page layer-edition">
       {report && <DailyReportOpenTracker reportId={report.id} />}
@@ -53,6 +75,8 @@ export default function DashboardPage() {
           </p>
         </div>
 
+        <TrialBanner />
+        <RenewalBanner />
         <UpgradeToPremiumBanner />
 
         {loading && <p className="text-sm text-black opacity-60">Loading…</p>}
@@ -77,8 +101,27 @@ export default function DashboardPage() {
             {/* Structured, bookmarkable article list when available (migration
                 009); raw markdown as the fallback for reports generated before
                 that shipped, or if linking ever fails. */}
+            {articles.length > 0 && (
+              <div role="group" aria-label="How to view the report" className="mt-6 inline-flex border border-black">
+                {(["read", "scan"] as const).map((v) => (
+                  <button
+                    key={v}
+                    type="button"
+                    aria-pressed={view === v}
+                    onClick={() => chooseView(v)}
+                    className={`inline-flex min-h-11 items-center px-5 text-xs font-bold uppercase tracking-widest transition-colors duration-150 ease-out ${view === v ? "bg-black text-white" : "bg-white text-black hover:bg-paper-2"}`}
+                  >
+                    {v === "read" ? "Read" : "Scan"}
+                  </button>
+                ))}
+              </div>
+            )}
             {articles.length > 0 ? (
-              <ArticleListWithBookmarks articles={articles} relatedSources={data?.relatedSources ?? {}} />
+              view === "scan" ? (
+                <ArticleScan articles={articles} />
+              ) : (
+                <ArticleListWithBookmarks articles={articles} relatedSources={data?.relatedSources ?? {}} />
+              )
             ) : (
               <div className="k-box-muted swiss-grid-pattern mt-6 p-6">
                 <MarkdownContent className="k-cols">{report.markdown}</MarkdownContent>

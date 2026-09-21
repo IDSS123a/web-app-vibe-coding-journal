@@ -66,12 +66,25 @@ async function main() {
   check("POST prompt-school lesson complete anonymous refused", (await call("POST", "/api/prompt-school/lessons/five-pillars/pillar-1-context/complete")) === 401);
   check("POST prompt-school sandbox run anonymous refused", (await call("POST", "/api/prompt-school/sandbox/five-pillars/pillar-4-constraints", { body: { prompt: "Summarise the text." } })) === 401);
   check("DELETE assistant history item anonymous refused", (await call("DELETE", "/api/assistant/history/00000000-0000-0000-0000-000000000000")) === 401);
+  // Public launch pages (PDL-079): the legal texts, robots, sitemap and the share picture are open to everyone.
+  for (const [path, needle] of [["/terms", "Terms of Use"], ["/privacy", "Privacy Policy"], ["/refunds", "money back guarantee"], ["/subscription", "does not renew by itself"], ["/cookies", "Cookie notice"], ["/forgot-password", "Forgot password"]]) {
+    const r = await fetch(`${BASE}${path}`);
+    check(`public page ${path} is open and says what it should`, r.status === 200 && (await r.text()).includes(needle));
+  }
+  const robotsTxt = await (await fetch(`${BASE}/robots.txt`)).text();
+  check("robots.txt keeps the account pages out and points to the sitemap", /Disallow: \/api\//.test(robotsTxt) && /Disallow: \/dashboard/.test(robotsTxt) && /Sitemap: https:\/\/[^\s]+\/sitemap\.xml/.test(robotsTxt));
+  const sitemapXml = await (await fetch(`${BASE}/sitemap.xml`)).text();
+  check("sitemap.xml lists the public pages and none of the account pages", ["/terms", "/privacy", "/refunds", "/subscription", "/cookies", "/register"].every((p) => sitemapXml.includes(p)) && !/dashboard|admin|prompt-school/.test(sitemapXml));
+  const og = await fetch(`${BASE}/opengraph-image`);
+  check("the share picture renders as a PNG", og.status === 200 && (og.headers.get("content-type") ?? "").includes("image/png"));
+  check("GET /api/certificates and /api/account/export anonymous refused", (await call("GET", "/api/certificates")) === 401 && (await call("GET", "/api/account/export")) === 401);
+  check("DELETE /api/account anonymous refused", (await call("DELETE", "/api/account", { body: { confirm: "DELETE MY ACCOUNT" } })) === 401);
   check("POST /api/assistant/generate anonymous refused", (await call("POST", "/api/assistant/generate", { body: {} })) === 401);
   check("POST /api/payments/create-order anonymous refused", (await call("POST", "/api/payments/create-order", { body: { tier: "premium" } })) === 401);
   check("POST /api/admin/users anonymous refused", (await call("POST", "/api/admin/users", { body: { email: "x@example.com", tier: "basic" } })) === 401);
 
   // 2. Cron endpoints
-  for (const p of ["/api/cron/daily-digest", "/api/cron/university-generate", "/api/cron/subscription-expiry-check"]) {
+  for (const p of ["/api/cron/daily-digest", "/api/cron/university-generate", "/api/cron/subscription-expiry-check", "/api/cron/health-check"]) {
     check(`cron ${p}: no secret`, (await call("POST", p)) === 401);
     check(`cron ${p}: built-in old default secret`, (await call("POST", p, { headers: { authorization: "Bearer dev-secret-change-in-production" } })) === 401);
     check(`cron ${p}: wrong secret`, (await call("POST", p, { headers: { authorization: "Bearer not-the-secret" } })) === 401);
@@ -97,6 +110,22 @@ async function main() {
   const adminToken = await sessionFor("admin@test.local");
   for (const p of ADMIN_ONLY_GET) check(`ordinary user refused on ${p}`, [401, 403].includes(await call("GET", p, { token: userToken })), String(await call("GET", p, { token: userToken })));
   for (const p of ADMIN_ONLY_GET.slice(0, 3)) check(`admin allowed on ${p}`, (await call("GET", p, { token: adminToken })) === 200);
+  const adminPayments = await (await fetch(`${BASE}/api/admin/payments`, { headers: { authorization: `Bearer ${adminToken}` } })).json();
+  check("the admin payments answer says which PayPal it talks to, and it is the sandbox unless live was set on purpose", ["sandbox", "live"].includes(adminPayments.paypalMode));
+  // Admin ends a plan or sets its end date (PDL-079): after a refund. Restored exactly afterwards.
+  {
+    const { data: who } = await admin.from("user_profiles").select("id, subscription_status, subscription_expires_at").eq("email", "user@test.local").single();
+    const planUrl = `/api/admin/users/${who.id}/plan`;
+    check("admin plan change: anonymous and ordinary user are refused", (await call("PATCH", planUrl, { body: { action: "end_now" } })) === 401 && (await call("PATCH", planUrl, { token: userToken, body: { action: "end_now" } })) === 401);
+    check("admin plan change: junk bodies are 422, an unknown user is 404", (await call("PATCH", planUrl, { token: adminToken, body: { action: "nope" } })) === 422 && (await call("PATCH", planUrl, { token: adminToken, body: { action: "set_end_date", date: "2026-13-45" } })) === 422 && (await call("PATCH", "/api/admin/users/00000000-0000-0000-0000-000000000000/plan", { token: adminToken, body: { action: "end_now" } })) === 404);
+    try {
+      const future = new Date(Date.now() + 400 * 86_400_000).toISOString().slice(0, 10);
+      check("admin plan change: a future end date makes an active plan ending that day", (await call("PATCH", planUrl, { token: adminToken, body: { action: "set_end_date", date: future } })) === 200 && (await admin.from("user_profiles").select("subscription_status, subscription_expires_at").eq("id", who.id).single()).data?.subscription_expires_at?.startsWith(future));
+      check("admin plan change: ending the access now makes it expired", (await call("PATCH", planUrl, { token: adminToken, body: { action: "end_now" } })) === 200 && (await admin.from("user_profiles").select("subscription_status").eq("id", who.id).single()).data?.subscription_status === "expired");
+    } finally {
+      await admin.from("user_profiles").update({ subscription_status: who.subscription_status, subscription_expires_at: who.subscription_expires_at }).eq("id", who.id);
+    }
+  }
   const authed = createClient(URL_, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY, { auth: { persistSession: false }, global: { headers: { Authorization: `Bearer ${userToken}` } } });
   const { data: others } = await authed.from("user_profiles").select("email");
   check("a user can read only their own profile row", (others ?? []).length <= 1, `${(others ?? []).length} rows`);
@@ -127,7 +156,64 @@ async function main() {
     check("assistant delete: it is gone from the history list and cannot be opened", !listedAfter.data?.some((g) => g.id === made.id) && (await call("GET", url, { token: userToken })) === 404);
     check("assistant delete: deleting twice is 404", (await call("DELETE", url, { token: userToken })) === 404);
     check("assistant delete: the row is kept (soft delete), so the daily limit still counts it", (await countRows()) === 1);
+    const { data: kept } = await admin.from("prompt_blueprint_generations").select("goal, prompt_blueprint, wizard_answers").eq("id", made.id).single();
+    check("assistant delete: the text is erased from the kept row (GDPR)", kept?.goal === "" && kept?.prompt_blueprint === "" && JSON.stringify(kept?.wizard_answers) === "{}");
     await admin.from("prompt_blueprint_generations").delete().eq("id", made.id);
+  }
+  // Certificates (PDL-080): issued once from the badges, verifiable in public without naming the holder.
+  {
+    const { data: who } = await admin.from("user_profiles").select("id").eq("email", "user@test.local").single();
+    const mine = async () => (await (await fetch(`${BASE}/api/certificates`, { headers: { authorization: `Bearer ${userToken}` } })).json()).data?.certificates ?? [];
+    try {
+      await admin.from("certificates").delete().eq("user_id", who.id);
+      await admin.from("user_badges").delete().eq("user_id", who.id).in("badge_id", ["uni-beginner", "uni-intermediate", "uni-expert"]);
+      const before = await mine();
+      check("certificates: both are listed and none is earned without the badges", before.length === 2 && before.every((c) => c.earned === false && c.code === null));
+      await admin.from("user_badges").insert(["uni-beginner", "uni-intermediate"].map((badge_id) => ({ user_id: who.id, badge_id })));
+      check("certificates: two of the three University level tests do not earn it", (await mine()).find((c) => c.kind === "university")?.earned === false);
+      await admin.from("user_badges").insert({ user_id: who.id, badge_id: "uni-expert" });
+      const earned = (await mine()).find((c) => c.kind === "university");
+      check("certificates: the third one issues it, with a code", earned?.earned === true && /^VBJ-[A-Z2-9]{5}-[A-Z2-9]{5}$/.test(earned.code ?? ""));
+      check("certificates: opening the page again gives the same code, not a new one", (await mine()).find((c) => c.kind === "university")?.code === earned?.code);
+      const pub = await fetch(`${BASE}/api/certificates/verify/${earned.code}`);
+      const pubBody = await pub.json();
+      check("certificates: anyone can verify the code, and the answer names the programme but never the holder", pub.status === 200 && pubBody.valid === true && /University/.test(pubBody.title) && !/user_id|email|@/.test(JSON.stringify(pubBody)));
+      check("certificates: an unknown or malformed code is 404", (await call("GET", "/api/certificates/verify/VBJ-AAAAA-BBBBB")) === 404 && (await call("GET", "/api/certificates/verify/not-a-code")) === 404);
+      const page = await fetch(`${BASE}/verify/${earned.code}`);
+      check("certificates: the public verify page shows a genuine certificate", page.status === 200 && (await page.text()).includes("This certificate is genuine"));
+    } finally {
+      await admin.from("certificates").delete().eq("user_id", who.id);
+      await admin.from("user_badges").delete().eq("user_id", who.id).in("badge_id", ["uni-beginner", "uni-intermediate", "uni-expert"]);
+    }
+  }
+
+  // Your data and deleting your account (GDPR, PDL-079).
+  {
+    const exp = await fetch(`${BASE}/api/account/export`, { headers: { authorization: `Bearer ${userToken}` } });
+    const expText = await exp.text();
+    let expJson = null;
+    try { expJson = JSON.parse(expText); } catch { /* checked below */ }
+    check("account export: the owner gets a JSON download with their own account and nothing secret", exp.status === 200 && (exp.headers.get("content-disposition") ?? "").includes("attachment") && expJson?.account?.email === "user@test.local" && !/encrypted_password|raw_payload|"password"/i.test(expText));
+    check("account delete: an admin account cannot be deleted through the API", (await call("DELETE", "/api/account", { token: adminToken, body: { confirm: "DELETE MY ACCOUNT" } })) === 403);
+    // A throwaway account with a payment: deleting it removes the person, keeps the payment record, unlinked.
+    const email = `probe-delete-${Date.now()}@example.invalid`;
+    const { data: created, error: ce } = await admin.auth.admin.createUser({ email, password: "Aa1!probe-delete-9", email_confirm: true });
+    if (ce) throw ce;
+    const tid = created.user.id;
+    try {
+      await admin.from("user_profiles").insert({ id: tid, email, tools_used: ["other"], depth_preference: "simple", subscription_status: "trial", trial_started_at: new Date().toISOString(), trial_ends_at: new Date(Date.now() + 86_400_000).toISOString(), subscription_tier: "premium" });
+      await admin.from("bookmarks").insert({ user_id: tid, article_id: (await admin.from("articles").select("id").limit(1).single()).data.id });
+      await admin.from("payment_events").insert({ paypal_event_id: `probe-${tid}`, event_type: "PAYMENT.CAPTURE.COMPLETED", user_id: tid, tier: "basic", amount_usd: 10, status: "processed", raw_payload: {} });
+      const tt = await sessionFor(email);
+      check("account delete: without the exact confirmation it is refused (422) and nothing is deleted", (await call("DELETE", "/api/account", { token: tt, body: { confirm: "yes" } })) === 422 && (await admin.from("user_profiles").select("id").eq("id", tid).maybeSingle()).data !== null);
+      check("account delete: the owner deletes their own account", (await call("DELETE", "/api/account", { token: tt, body: { confirm: "DELETE MY ACCOUNT" } })) === 200);
+      check("account delete: the sign-in account, the profile and their bookmarks are gone", (await admin.auth.admin.getUserById(tid)).data?.user == null && (await admin.from("user_profiles").select("id").eq("id", tid).maybeSingle()).data === null && ((await admin.from("bookmarks").select("*", { count: "exact", head: true }).eq("user_id", tid)).count ?? 0) === 0);
+      const kept = (await admin.from("payment_events").select("user_id, amount_usd").eq("paypal_event_id", `probe-${tid}`).maybeSingle()).data;
+      check("account delete: the payment record is kept, no longer linked to anyone (accounting law)", kept?.user_id === null && Number(kept?.amount_usd) === 10);
+    } finally {
+      await admin.from("payment_events").delete().eq("paypal_event_id", `probe-${tid}`);
+      await admin.auth.admin.deleteUser(tid).catch(() => undefined);
+    }
   }
   // Prompt School: input handling, and answers never leave the server before an attempt.
   {
@@ -299,6 +385,13 @@ async function main() {
       const ps = await call("GET", "/api/prompt-school", { token: t });
       const psCheck = await call("POST", "/api/prompt-school/exercises/00000000-0000-0000-0000-000000000000/check", { token: t, body: { answer: {} } });
       check(`${label}: prompt school`, ps === want.ps, `got ${ps}`);
+      // Nobody pays twice for a plan they already have (PDL-079). These are refused before PayPal is ever called.
+      if (label === "premium active") {
+        check(`${label}: cannot buy Premium or Basic again while the plan has more than 14 days left`, (await call("POST", "/api/payments/create-order", { token: t, body: { tier: "premium" } })) === 409 && (await call("POST", "/api/payments/create-order", { token: t, body: { tier: "basic" } })) === 409);
+      }
+      if (label === "basic active") {
+        check(`${label}: cannot buy Basic again, and Premium only through the upgrade`, (await call("POST", "/api/payments/create-order", { token: t, body: { tier: "basic" } })) === 409 && (await call("POST", "/api/payments/create-order", { token: t, body: { tier: "premium" } })) === 409);
+      }
       if (want.ps !== 200) check(`${label}: assistant delete refused`, (await call("DELETE", "/api/assistant/history/00000000-0000-0000-0000-000000000000", { token: t })) === 403);
       if (want.ps !== 200) check(`${label}: sandbox run refused`, (await call("POST", "/api/prompt-school/sandbox/five-pillars/pillar-4-constraints", { token: t, body: { prompt: "Summarise the text." } })) === 403);
       check(`${label}: prompt school exercise check`, want.ps === 200 ? psCheck === 404 : psCheck === 403, `got ${psCheck}`);

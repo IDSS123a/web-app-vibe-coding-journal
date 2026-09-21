@@ -56,15 +56,15 @@ export default function SetPasswordPage() {
   return (
     <div className="swiss-noise flex items-center justify-center k-page">
       <div className="w-full max-w-md border border-black p-8 md:p-12">
-        <p className="mb-2 text-signal k-label">Invitation</p>
-        <h1 className="mb-8 text-black k-display">Set Password</h1>
+        <p className="mb-2 text-signal k-label">Password</p>
+        <h1 className="mb-8 text-black k-display-card">Set Password</h1>
 
-        {sessionLoading && <p className="text-sm text-black opacity-60">Checking your invitation…</p>}
+        {sessionLoading && <p className="text-sm text-black opacity-60">Checking your link…</p>}
 
         {!sessionLoading && !token && (
           <div>
             <p className="mb-6 border border-signal p-3 text-sm text-signal">
-              This invitation link is invalid or has expired. Ask the administrator to send you a new one.
+              This link is invalid or has expired. Request a new one with Forgot password on the Sign In page, or write to us.
             </p>
             <Link
               href="/login"

@@ -3,6 +3,10 @@ import { Figtree, Geist_Mono, Inter, Source_Serif_4, Unbounded } from "next/font
 import "./globals.css";
 import { SiteNav } from "@/components/SiteNav";
 import { SiteCredit } from "@/components/SiteCredit";
+import { SiteFooter } from "@/components/SiteFooter";
+import { HideOnAdmin } from "@/components/HideOnAdmin";
+import { CookieNotice } from "@/components/legal/CookieNotice";
+import { SITE_NAME, SITE_TAGLINE, SITE_URL } from "@/lib/site";
 import { RewardsProvider } from "@/components/rewards/RewardsProvider";
 
 // KANON typography (PDL-074, specs/kanon-redesign/): five families, one role each. All five are variable
@@ -21,8 +25,13 @@ const geistMono = Geist_Mono({ subsets: ["latin"], variable: "--font-geist-mono"
 export const viewport: Viewport = { width: "device-width", initialScale: 1, viewportFit: "cover" };
 
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: "Vibe-Coding Journal, Daily Intelligence Digest",
-  description: "Daily intelligence digest for vibe-coders",
+  description: SITE_TAGLINE,
+  applicationName: SITE_NAME,
+  // Set from the Studio's identity in lib/site.ts; the share picture is app/opengraph-image.tsx.
+  openGraph: { type: "website", siteName: SITE_NAME, title: "Vibe-Coding Journal, Daily Intelligence Digest", description: SITE_TAGLINE, url: SITE_URL },
+  twitter: { card: "summary_large_image", title: "Vibe-Coding Journal, Daily Intelligence Digest", description: SITE_TAGLINE },
   // Icons come from the Next.js file conventions in app/ (icon.png,
   // apple-icon.png, favicon.ico), which Next links into <head> automatically.
   // Until 2026-09-19 only public/favicon.png existed -- a 640x640 / 107 KB image
@@ -38,7 +47,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <RewardsProvider>
           <SiteNav />
           {children}
+          <HideOnAdmin>
+            <SiteFooter />
+          </HideOnAdmin>
           <SiteCredit />
+          <CookieNotice />
         </RewardsProvider>
       </body>
     </html>

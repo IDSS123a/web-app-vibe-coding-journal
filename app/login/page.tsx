@@ -69,7 +69,7 @@ export default function LoginPage() {
         <p className="mb-2 text-signal k-label">
           Access
         </p>
-        <h1 className="mb-8 text-black k-display">
+        <h1 className="mb-8 text-black k-display-card">
           Sign In
         </h1>
 
@@ -117,7 +117,16 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <p className="mt-8 text-sm text-black">
+        <p className="mt-6 text-sm text-black">
+          <Link
+            href="/forgot-password"
+            className="inline-flex min-h-11 items-center underline decoration-1 underline-offset-4 transition-colors duration-150 ease-out hover:text-signal k-label"
+          >
+            Forgot password?
+          </Link>
+        </p>
+
+        <p className="mt-2 text-sm text-black">
           No account?{" "}
           <Link
             href="/register"

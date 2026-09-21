@@ -26,6 +26,8 @@ export const registerSchema = z.object({
   tools_used: z.array(z.enum(["no_code_low_code", "ai_assisted_ide", "agent_based_coding", "other"])).min(1, "Select at least one tool"),
   depth_preference: z.enum(["simple", "technical_when_needed", "deep_technical"]),
   other_tools_freetext: z.string().optional(),
+  // The Terms of Use and the Privacy Policy must be accepted to register (PDL-079). Checked again on the server.
+  accepted_terms: z.boolean().refine((v) => v === true, "You must accept the Terms of Use and the Privacy Policy to register"),
 });
 
 export type RegisterInput = z.infer<typeof registerSchema>;
@@ -447,3 +449,14 @@ export const adminSetTierSchema = z.object({
 });
 
 export type AdminSetTierInput = z.infer<typeof adminSetTierSchema>;
+
+// Admin ending a paid plan, or setting the day it ends (PDL-079): after a refund, or to correct a mistake.
+export const adminSetPlanSchema = z.discriminatedUnion("action", [
+  z.object({ action: z.literal("end_now") }),
+  z.object({
+    action: z.literal("set_end_date"),
+    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Use the form YYYY-MM-DD").refine((d) => !Number.isNaN(Date.parse(`${d}T00:00:00Z`)), "Not a real date"),
+  }),
+]);
+
+export type AdminSetPlanInput = z.infer<typeof adminSetPlanSchema>;

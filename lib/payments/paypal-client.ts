@@ -7,13 +7,12 @@
  * behind SDK internals (this matters especially for webhook signature
  * verification, where trusting the wire format precisely is the point).
  *
- * SANDBOX ONLY — hardcoded, deliberately not an env var. Per
- * sprints/SPRINT_08.md's hard-blocking DoD gate, switching to live mode
- * must be its own explicit, reviewed code change, never a config toggle
- * that could be flipped by accident or by copying a .env file.
+ * Sandbox or live is decided in lib/payments/paypal-mode.ts (PDL-079): live only with PAYPAL_MODE=live on Vercel
+ * Production, the sandbox everywhere else. This replaces the earlier hardcoded sandbox constant, on the Director's
+ * explicit instruction to go live.
  */
 
-const PAYPAL_API_BASE = "https://api-m.sandbox.paypal.com";
+import { paypalApiBase } from "./paypal-mode";
 
 export type TierName = "basic" | "premium";
 
@@ -35,7 +34,7 @@ async function getAccessToken(): Promise<string> {
   const { clientId, clientSecret } = getCredentials();
   const basicAuth = Buffer.from(`${clientId}:${clientSecret}`).toString("base64");
 
-  const response = await fetch(`${PAYPAL_API_BASE}/v1/oauth2/token`, {
+  const response = await fetch(`${paypalApiBase()}/v1/oauth2/token`, {
     method: "POST",
     headers: {
       Authorization: `Basic ${basicAuth}`,
@@ -68,7 +67,7 @@ export async function createPayPalOrder(
 ): Promise<{ orderId: string; approveUrl: string | null }> {
   const accessToken = await getAccessToken();
 
-  const response = await fetch(`${PAYPAL_API_BASE}/v2/checkout/orders`, {
+  const response = await fetch(`${paypalApiBase()}/v2/checkout/orders`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${accessToken}`,
@@ -124,7 +123,7 @@ export async function createPayPalUpgradeOrder(
 ): Promise<{ orderId: string; approveUrl: string | null }> {
   const accessToken = await getAccessToken();
 
-  const response = await fetch(`${PAYPAL_API_BASE}/v2/checkout/orders`, {
+  const response = await fetch(`${paypalApiBase()}/v2/checkout/orders`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${accessToken}`,
@@ -172,7 +171,7 @@ export async function createPayPalUpgradeOrder(
 export async function capturePayPalOrder(orderId: string): Promise<{ status: string }> {
   const accessToken = await getAccessToken();
 
-  const response = await fetch(`${PAYPAL_API_BASE}/v2/checkout/orders/${orderId}/capture`, {
+  const response = await fetch(`${paypalApiBase()}/v2/checkout/orders/${orderId}/capture`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${accessToken}`,
@@ -209,7 +208,7 @@ export async function verifyWebhookSignature(params: {
 
   const accessToken = await getAccessToken();
 
-  const response = await fetch(`${PAYPAL_API_BASE}/v1/notifications/verify-webhook-signature`, {
+  const response = await fetch(`${paypalApiBase()}/v1/notifications/verify-webhook-signature`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${accessToken}`,

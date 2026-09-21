@@ -1,5 +1,7 @@
 # PLAN and TASKS: KANON visual system (PDL-074)
 
+> **Status 2026-09-22: done.** Step 8 (the Director's review, then push) happened and the redesign is live (PDL-074).
+
 Decisions are in PDL-074 (DECISION_LOG.md) and ANALYSIS.md section 4. The rule for every step: change typography, colour,
 lines, radii, shadows, and the spacing needed to avoid clipping. Never routes, content hierarchy, structure, interactions, data.
 

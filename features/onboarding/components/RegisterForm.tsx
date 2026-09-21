@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -105,6 +106,22 @@ export function RegisterForm() {
         {errors.depth_preference && (
           <p className="mt-1 text-sm text-[#FF3000]">{errors.depth_preference.message}</p>
         )}
+      </div>
+
+      <div>
+        <label className="flex min-h-11 items-start gap-3">
+          <input
+            type="checkbox"
+            {...register("accepted_terms")}
+            className="mt-0.5 h-5 w-5 shrink-0 appearance-none border-2 border-black bg-white checked:bg-black"
+          />
+          <span className="text-sm text-black">
+            I accept the{" "}
+            <Link href="/terms" target="_blank" className="underline decoration-1 underline-offset-2 hover:text-[#FF3000]">Terms of Use</Link> and have read the{" "}
+            <Link href="/privacy" target="_blank" className="underline decoration-1 underline-offset-2 hover:text-[#FF3000]">Privacy Policy</Link>.
+          </span>
+        </label>
+        {errors.accepted_terms && <p className="mt-1 text-sm text-[#FF3000]">{errors.accepted_terms.message}</p>}
       </div>
 
       <button

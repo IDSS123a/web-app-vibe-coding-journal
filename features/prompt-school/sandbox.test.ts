@@ -106,6 +106,12 @@ describe("the authored sandbox tasks", () => {
     expect(findSandboxTask("five-pillars", "no-such-lesson")).toBeNull();
   });
 
+  it("every chapter of the course has a sandbox task", () => {
+    const withTask = new Set(SANDBOX_TASKS.map((t) => t.chapterSlug));
+    for (const c of AUTHORED_CHAPTERS) expect(withTask.has(c.slug), c.slug).toBe(true);
+    expect(SANDBOX_TASKS.length).toBeGreaterThanOrEqual(AUTHORED_CHAPTERS.length);
+  });
+
   it("has a brief, a short harmless sample and a checklist, and a starter that fits the prompt limit", () => {
     for (const t of SANDBOX_TASKS) {
       expect(t.brief.length, t.title).toBeGreaterThan(20);

@@ -8,7 +8,7 @@ export default function RegisterPage() {
         <p className="mb-2 text-signal k-label">
           Join
         </p>
-        <h1 className="text-black k-display">
+        <h1 className="text-black k-display-card">
           Vibe-Coding Journal
         </h1>
         <p className="mb-8 mt-2 text-sm text-black">

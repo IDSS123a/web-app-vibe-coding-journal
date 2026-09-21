@@ -208,8 +208,8 @@ function mapRow(row: GenerationRow): PromptBlueprintGeneration {
 }
 
 /**
- * Hides one of the caller's own generations from history (soft delete, migration 034). The row stays so the daily limits,
- * which count rows, cannot be dodged by deleting. Returns false when there is nothing to delete (unknown id, someone
+ * Deletes one of the caller's own generations from history (migration 034): its text is erased and the row is marked deleted.
+ * The empty row stays so the daily limits, which count rows, cannot be dodged by deleting. Returns false when there is nothing to delete (unknown id, someone
  * else's row, or already deleted), which the route answers with the same 404 in every case.
  */
 export async function deleteOwnedGeneration(id: string, userId: string): Promise<boolean> {
@@ -219,7 +219,18 @@ export async function deleteOwnedGeneration(id: string, userId: string): Promise
 
   const { data, error } = await supabaseAdmin
     .from("prompt_blueprint_generations")
-    .update({ deleted_at: new Date().toISOString() })
+    // The text is erased at once (GDPR, PDL-079); only an empty dated record stays, so the daily limit keeps counting it.
+    .update({
+      deleted_at: new Date().toISOString(),
+      wizard_answers: {},
+      domain: "",
+      scenario: "",
+      goal: "",
+      explanation: "",
+      prompt_blueprint: "",
+      mermaid_diagram: "",
+      next_steps: "",
+    })
     .eq("id", id)
     .eq("user_id", userId)
     .is("deleted_at", null)

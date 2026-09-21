@@ -1,5 +1,7 @@
 # SPEC: Knowledge Growth, Dictionary Expansion and the No-AI-Tells Writing Rule
 
+> **Status 2026-09-22: shipped** (PDL-059: 2,639 terms, relevance scores on stored articles, the Dictionary page). The acceptance boxes below were not ticked as the work landed.
+
 Status: DRAFT 2026-09-19, written from the Director's four-part instruction of the same day.
 Note on style: this document deliberately contains no em dashes. That is rule 4 below.
 

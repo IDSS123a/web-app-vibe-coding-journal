@@ -18,6 +18,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { PayPalCheckout } from "@/components/PayPalCheckout";
+import { PaymentAssurance } from "@/components/PaymentAssurance";
 import { BASIC_PRICE_USD, PREMIUM_PRICE_USD, UPGRADE_PRICE_USD, centsPerDay, perMonthUsd } from "@/lib/pricing";
 
 export type PremiumFeature = "university" | "dictionary" | "assistant" | "promptschool";
@@ -166,7 +167,7 @@ export function PremiumPitch({ feature, audience, token, onUnlocked, unlockedKey
           <ul className="mt-6 space-y-1.5 text-xs text-black/80">
             <li>Secure checkout with PayPal, no card details on our site.</li>
             <li>Access starts as soon as the payment is confirmed.</li>
-            <li>Sandbox mode: no real payment is processed yet.</li>
+            <PaymentAssurance variant="items" />
           </ul>
 
           <Link

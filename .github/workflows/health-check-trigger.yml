@@ -1,0 +1,20 @@
+name: Health Check Trigger
+
+# Daily watchdog (PDL-081): asks the app whether the Daily Report is still being produced, articles are still being collected
+# and no payment needs a person. The app e-mails the admin only when something is wrong, so a quiet run is a healthy run.
+# If the app itself is down, the request fails and GitHub marks this run as failed, which GitHub e-mails to the repository owner.
+
+on:
+  schedule:
+    - cron: "30 9 * * *"
+  workflow_dispatch: {}
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call the health-check endpoint
+        run: |
+          curl --fail-with-body -sS -X POST \
+            "${{ secrets.DIGEST_ENDPOINT_URL }}/api/cron/health-check" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"

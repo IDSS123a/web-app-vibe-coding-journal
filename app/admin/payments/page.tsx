@@ -25,6 +25,7 @@ export default function AdminPaymentsPage() {
   const [events, setEvents] = useState<PaymentEventRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [mode, setMode] = useState<"sandbox" | "live" | null>(null);
 
   useEffect(() => {
     if (sessionLoading || !token) return;
@@ -34,8 +35,11 @@ export default function AdminPaymentsPage() {
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         return r.json();
       })
-      .then((d: { events: PaymentEventRow[] }) => {
-        if (active) setEvents(d.events);
+      .then((d: { events: PaymentEventRow[]; paypalMode?: "sandbox" | "live" }) => {
+        if (active) {
+          setEvents(d.events);
+          setMode(d.paypalMode ?? null);
+        }
       })
       .catch(() => {
         if (active) setError("Failed to load payment events.");
@@ -57,6 +61,12 @@ export default function AdminPaymentsPage() {
           Every PayPal webhook event, newest first. Subscriptions activate automatically, this
           list is for visibility, not approval.
         </p>
+        {mode && (
+          <p className="mt-3 text-sm text-console-text">
+            PayPal mode:{" "}
+            <strong className={mode === "live" ? "text-signal" : ""}>{mode === "live" ? "LIVE, real money" : "Sandbox, test money only"}</strong>
+          </p>
+        )}
       </div>
 
       {loading && <p className="text-sm text-console-text opacity-60">Loading…</p>}
@@ -100,10 +110,10 @@ export default function AdminPaymentsPage() {
                     <span
                       className={`py-0.5 k-btn ${
                         event.status === "processed"
-                          ? "border-black text-black"
+                          ? "border-console-line text-console-text"
                           : event.status === "ambiguous"
                             ? "border-signal text-signal"
-                            : "border-black text-black opacity-50"
+                            : "border-console-line text-console-dim"
                       }`}
                     >
                       {STATUS_LABEL[event.status]}

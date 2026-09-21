@@ -4,6 +4,7 @@
  */
 
 import { Resend } from "resend";
+import { SITE_URL, STUDIO } from "@/lib/site";
 
 const resendApiKey = process.env.RESEND_API_KEY;
 const reviewQueueEmail = process.env.REVIEW_QUEUE_EMAIL || "admin@example.com";
@@ -189,7 +190,8 @@ export async function sendSubscriptionExpiringEmail(payload: {
 <h2>Your subscription is about to expire</h2>
 <p>Your annual Vibe-Coding Journal subscription expires on <strong>${expiresDateText}</strong> (in ${payload.daysRemaining} days).</p>
 <p>Renew before then to keep uninterrupted access to your Daily Report, Archive, Bookmarks, and any Premium features on your plan.</p>
-<p>Sign in to your account to renew.</p>
+<p>Sign in and open your dashboard: a renew button is there. A renewal made now starts when your current year ends, so you lose nothing. <a href="${SITE_URL}/dashboard">${SITE_URL}/dashboard</a></p>
+<p style="color:#666;font-size:12px">Plans do not renew by themselves and we never charge you without you paying. Questions: ${STUDIO.email}</p>
       `.trim(),
     });
 

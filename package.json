@@ -15,7 +15,8 @@
     "probe:security": "node --env-file=.env.local scripts/security-probe.mjs",
     "smoke:e2e": "node --env-file=.env.local scripts/e2e-smoke.mjs",
     "book:coverage": "npx --yes tsx scripts/book-coverage.ts",
-    "check:integrity": "npx --yes tsx --env-file=.env.local scripts/data-integrity.ts"
+    "check:integrity": "npx --yes tsx --env-file=.env.local scripts/data-integrity.ts",
+    "admin:walkthrough": "node --env-file=.env.local scripts/admin-walkthrough.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.3.0",
@@ -26,6 +27,7 @@
     "react-dom": "^19.0.0",
     "react-hook-form": "^7.48.0",
     "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1",
     "resend": "^3.0.0",
     "rss-parser": "^3.13.0",
     "zod": "^3.22.0"

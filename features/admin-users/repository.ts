@@ -194,6 +194,28 @@ export async function createAdminInvitedUser(
  * uses the invite/renewal flow, not this). Returns false when no such
  * user exists so the route can answer 404 instead of a silent no-op.
  */
+/**
+ * Sets the day a plan ends and the status that follows from it: a date in the future is an active plan, a date that has
+ * passed is an ended one (PDL-079). Returns the new values, or null for an unknown user. Payment records are never touched.
+ */
+export async function setUserPlanEnd(userId: string, endAt: Date): Promise<{ status: "active" | "expired"; expiresAt: string } | null> {
+  if (!supabaseAdmin) {
+    throw new Error("Admin client not available");
+  }
+
+  const status = endAt.getTime() > Date.now() ? "active" : "expired";
+  const { data, error } = await supabaseAdmin
+    .from("user_profiles")
+    .update({ subscription_status: status, subscription_expires_at: endAt.toISOString(), updated_at: new Date().toISOString() })
+    .eq("id", userId)
+    .select("id");
+
+  if (error) {
+    throw new Error(`Failed to update plan: ${error.message}`);
+  }
+  return (data ?? []).length > 0 ? { status, expiresAt: endAt.toISOString() } : null;
+}
+
 export async function setUserTier(userId: string, tier: "basic" | "premium"): Promise<boolean> {
   if (!supabaseAdmin) {
     throw new Error("Admin client not available");

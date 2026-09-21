@@ -78,6 +78,16 @@
     max-width: 16ch;
     overflow-wrap: break-word;
   }
+  /* The heading of a narrow card (sign in, register, password): sized to fit the card, never broken in the middle of a word. */
+  .k-display-card {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: clamp(1.5rem, 7vw, 2.25rem);
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+    max-width: none;
+    overflow-wrap: normal;
+  }
   .k-h2 {
     font-family: var(--font-display);
     font-weight: 800;

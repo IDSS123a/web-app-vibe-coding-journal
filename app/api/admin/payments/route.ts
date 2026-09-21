@@ -8,6 +8,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAdminToken } from "@/lib/auth/verify-token";
 import { getRecentPaymentEvents } from "@/features/payments/repository";
+import { resolvePayPalMode } from "@/lib/payments/paypal-mode";
 
 export async function GET(request: NextRequest) {
   try {
@@ -25,7 +26,8 @@ export async function GET(request: NextRequest) {
     const events = await getRecentPaymentEvents(limit);
 
     // E-6 Step 5: Return
-    return NextResponse.json({ success: true, events });
+    // paypalMode lets the admin page show, at a glance, whether this deployment takes real money (PDL-079).
+    return NextResponse.json({ success: true, events, paypalMode: resolvePayPalMode() });
   } catch (err) {
     const errorMsg = err instanceof Error ? err.message : String(err);
     console.error(`[ADMIN] Error fetching payment events: ${errorMsg}`);

@@ -1,5 +1,7 @@
 # SPEC — Hold-Gate Calibration Learning
 
+> **Status 2026-09-22: shipped.** The acceptance boxes below were not ticked at the time; see DECISION_LOG.md for what was verified.
+
 **Phase 1 of a larger idea** (Director, 2026-09-11): the system should
 learn from the accumulated history of past Daily Reports and continuously
 improve itself over time, across the full pipeline. Given P-1 (Almost-Zero-

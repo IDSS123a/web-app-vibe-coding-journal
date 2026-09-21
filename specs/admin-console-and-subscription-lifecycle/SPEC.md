@@ -1,5 +1,7 @@
 # SPEC — Admin Console & Subscription Lifecycle
 
+> **Status 2026-09-22: shipped and live** (PDL-048). The acceptance boxes below were not ticked as the work landed; the probe (`npm run probe:security`) now checks the admin, block and payment rules end to end.
+
 ## Purpose
 
 Today, managing the paying subscriber base requires either a self-service

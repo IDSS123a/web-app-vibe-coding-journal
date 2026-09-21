@@ -31,6 +31,8 @@ export interface VerifiedToken {
   // Admin Console & Subscription Lifecycle (specs/admin-console-and-
   // subscription-lifecycle/, migration 020).
   isBlocked: boolean;
+  // When the paid plan ends (PDL-079: the renewal banner in the last 7 days). Null for a trial or an admin-granted plan.
+  subscriptionExpiresAt: string | null;
 }
 
 /**
@@ -92,7 +94,7 @@ export async function getVerifiedUser(
 
   const { data: profile, error } = await supabaseAdmin
     .from("user_profiles")
-    .select("role, subscription_status, trial_ends_at, subscription_tier, is_blocked")
+    .select("role, subscription_status, trial_ends_at, subscription_tier, is_blocked, subscription_expires_at")
     .eq("id", authUser.id)
     .single();
 
@@ -113,6 +115,7 @@ export async function getVerifiedUser(
     trialEndsAt: (profile.trial_ends_at as string | null) ?? null,
     subscriptionTier: (profile.subscription_tier as VerifiedToken["subscriptionTier"]) || "basic",
     isBlocked: (profile.is_blocked as boolean) ?? false,
+    subscriptionExpiresAt: (profile.subscription_expires_at as string | null) ?? null,
   };
 }
 

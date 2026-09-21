@@ -8,6 +8,9 @@ export const BASIC_PRICE_USD = 10;
 export const PREMIUM_PRICE_USD = 50;
 export const UPGRADE_PRICE_USD = 40;
 
+/** The free trial a new account gets, with Premium access (P-13). Shown in the legal pages and used at registration. */
+export const TRIAL_DAYS = 3;
+
 /** Cost per day of a yearly price, in cents, rounded to the nearest cent. */
 export function centsPerDay(yearlyUsd: number): number {
   return Math.round((yearlyUsd / 365) * 100);

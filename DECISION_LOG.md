@@ -2508,6 +2508,70 @@ Not done: certificates, cumulative tests, a real Scan mode.
 
 ---
 
+
+## PDL-079 Launch preparation: domain, real PayPal, legal pages, GDPR, payment safety
+
+**Date:** 2026-09-21 and 22. The Director's instructions: publish on `vbj.ai-studio.wiki` under the name Prompt Hero Studio (ai-hero-studio@outlook.com, https://mulalic.ai-studio.wiki/); precise non-coder instructions for Resend and for going from PayPal sandbox to a real account (`LAUNCH_GUIDE.md`); prices stay $10 Basic, $50 Premium and $40 upgrade as a permanent, fixed solution, and the year of a Premium upgrade counts from the moment the $40 is paid; create Terms of Use, Privacy Policy, Refund Policy, subscription and renewal text and a cookie notice with clear GDPR policies. Items 4 and 5 of the earlier list (a paid Gemini tier, the Assistant's daily limits) stay as they are until the first customers arrive.
+
+**Domain.** `lib/site.ts` is the one place that names the site: `SITE_URL` (default `https://vbj.ai-studio.wiki`, override `NEXT_PUBLIC_SITE_URL`), the studio's name, e-mail and website. Used by the page metadata (`metadataBase`, Open Graph and Twitter cards), `app/opengraph-image.tsx` (the 1200 x 630 share picture), `app/robots.ts` and `app/sitemap.ts` (only the public pages are open to search engines), the feed reader's user agent and the expiry e-mail. The invitation link already uses the request's own origin, so nothing else names the host. The DNS record, the Vercel domain and the Supabase redirect addresses are the Director's clicks, described step by step in `LAUNCH_GUIDE.md`.
+
+**Real PayPal (supersedes the Sprint 08 gate).** The API address was a hardcoded sandbox constant on purpose ("going live must be its own explicit, reviewed code change"). This is that change, on the Director's explicit request, and it keeps what the gate wanted: `lib/payments/paypal-mode.ts` uses the live PayPal only when `PAYPAL_MODE=live` AND the code runs on Vercel Production (`VERCEL_ENV=production`); a laptop, a preview deployment or a copied `.env` are the sandbox whatever `PAYPAL_MODE` says. `/api/me` reports the mode, so the payment screens say "sandbox, no real payment" only in the sandbox (until 2026-09-21 that sentence was printed unconditionally and would have been false once live) and otherwise show the refund and renewal promise; the admin Payments page shows "PayPal mode: LIVE" so the Director can confirm it at a glance. Live credentials never go in `.env.local`.
+
+**Payments cannot be made twice (money is real now).** The server, not just the screen, refuses (409) a payment for something the person already has (`checkFreshOrderEligibility`): an active plan cannot be bought again until its last 14 days, a lower plan cannot be bought over a higher one, and Premium cannot be bought at $50 over an active Basic (that is the $40 upgrade). Trial and ended plans can buy anything. The end date after a payment (`computePurchaseExpiry`): the $40 upgrade starts a NEW 12 months on the day it is paid (the Director's rule; this is what the webhook already did, now tested and stated), an early renewal starts when the current year ends so nothing paid for is lost, and everything else starts on the day of payment. New: a trial banner on the dashboard with both plans (until now a trial user could only buy after the trial ended), a renewal banner in the last 14 days, and reminder e-mails that say where to renew.
+
+**Legal pages** (`features/legal/content.ts`, five pages, all public): Terms of Use, Privacy Policy (GDPR: controller, data and legal basis in a table, processors, retention, rights, children, security), Refund Policy, Subscription and renewal, Cookie notice, plus a footer on every page and a cookie notice. They are drafts written from what the code really does and are for the Director (ideally a lawyer) to review. Facts chosen or disclosed: Supabase runs in the EU (Ireland); Google Gemini receives what is typed into the Assistant and the sandbox, and on the free tier Google may use it (stated plainly, with a warning not to enter personal data); nothing tracks or advertises, so the cookie notice is information, not consent; the studio is named only by its public name and e-mail (business location privacy, PDL-015, a test enforces it); prices, limits and the trial length in the text are imported from the code and tested. **Refund: 14 days, full, no reason, is my proposal** (the safest for digital content in the EU) and needs the Director's confirmation. Not decided and not written: a postal address or registration number (privacy rule), the governing law, VAT. Registration now requires accepting the Terms and Privacy Policy (a checkbox, checked again on the server, the moment stored in `user_profiles.terms_accepted_at`, migration 035).
+
+**GDPR as buttons.** `/account` (from the coin menu): download all your data as JSON (`GET /api/account/export`), delete your account by typing DELETE MY ACCOUNT (`DELETE /api/account`; an admin account cannot be deleted this way). Deleting removes the sign-in account and everything the person owns cascades away; payment records stay for accounting law but no longer point at the person (migration 036: four foreign keys had no delete rule, and deleting anyone with a payment would have failed). Deleting an Assistant history item now also erases its text at once and keeps only an empty dated row, because that row is what the daily limit counts. "Forgot password" (`/forgot-password`) finally exists. The admin can end a paid plan or set its end date (`PATCH /api/admin/users/[id]/plan`, Admin, Users, Plan), which is how a refund is carried out.
+
+**Also.** Markdown tables now render (`remark-gfm`; the legal pages and some lessons have them). Migrations 034 to 037 are applied to production and are additive or (036) relax a constraint.
+
+**Verified.** 517 unit tests, security probe 216 of 216 (public pages, robots, sitemap, share picture, all payment refusals, the account export and deletion end to end with a throwaway account, certificates, the plan action), Chrome smoke test (registration without the checkbox is refused, the cookie notice, the legal pages, the account page, Scan mode), responsive audit.
+
+---
+
+## PDL-080 Certificates, and a sandbox task in every chapter
+
+**Date:** 2026-09-22 (plan phase E, the Director: "finish the sandbox, create the certificate").
+
+**Sandbox.** 13 more tasks, so every one of the 18 chapters has a "Try it live" task (19 in all, a test enforces one per chapter). Same rules as PDL-077: fixed sample, 3 runs a day, not graded, nothing stored. Two run for real: a calculator tool call came back as pure JSON, and a budget check gave the right 760.
+
+**Certificates** (migration 037, `features/certificates/`). Two: Prompt School (every chapter finished AND the three level tests passed) and the University (its three level tests passed). Issued lazily, once, the first time the person's badges prove it (`/certificates` issues it, so no badge route had to change); the issue date is the day the last required badge was earned. The person types the name when printing and it is kept only in their browser, never sent to us (we hold no name at all). Each has a code (`VBJ-XXXXX-XXXXX`, readable characters only) that anyone can check at `/verify/<code>` or `GET /api/certificates/verify/<code>`, which confirms the programme and the date and never names the holder. A4 landscape print layout, one page (checked as a real PDF). Kept out of search engines.
+
+---
+
+## PDL-081 Daily health check
+
+**Date:** 2026-09-22 (plan C). Verified first: the digest ran 12 hourly runs in a row without failing (about 3.5 minutes each, well under the 5 minute limit) and a report was published on 19, 20 and 21 September, so the open item from PDL-043 is closed. New `POST /api/cron/health-check` (daily, 09:30 UTC, `.github/workflows/health-check-trigger.yml`, same secret as the other crons) checks the age of the newest report (older than 36 hours is a missed day), that articles were collected in the last 24 hours, and payment events that need a person; it e-mails the admin only when something is wrong, so an e-mail always means something. If the app itself is down the request fails and GitHub e-mails the failed run.
+
+---
+
+## PDL-082 Scan mode for the Daily Report
+
+**Date:** 2026-09-22 (plan E, "a real Scan mode", the KANON Console layer). On the dashboard a Read and Scan switch: Scan is a dense dark table of the same articles (number, headline, category, source, worth trying, confidence), a row opens to the summary, why it matters and what to watch, with a source link, and two filters (worth trying only, a category). The choice is remembered in the browser only.
+
+**Not built, and why (open items, not dropped):** (1) *Cumulative tests* across chapters: a fourth test level touches the level type, three tables, the unlock rules, the routes and the certificates, and needs about 20 new, book-grounded questions; it is a piece of work of its own, best planned with the Director's choice of what it should cover. (2) The *weekly rollup* report (roadmap Phase 5): a new report type, schedule, table and page. (3) Firefox and Safari checks and real phones cannot be done here. (4) A hand review of the model-written University lessons. All four are listed in `specs/prompt-school/TASKS.md` and `LAUNCH_GUIDE.md` as the Director's or a later session's.
+
+---
+
+
+## PDL-083 Admin walkthrough, way back into the admin, sign-in heading, and the "More lessons" question
+
+**Date:** 2026-09-22. The Director: check "More lessons" in the University (are new supplementary lessons created by themselves?); the heading on /register and /login breaks in the middle of a word; test the admin settings end to end ("why can I not change a user's level from premium to beginner", "once an admin opens the dashboard there is no way back to the admin panel").
+
+**Admin walkthrough** (`npm run admin:walkthrough`, `scripts/admin-walkthrough.mjs`): a Chrome script that clicks through every admin page as the admin and checks each action in the database and from the affected user's side. It never approves or rejects anything real and restores the test account exactly. Found and fixed:
+- **The tier change worked but looked broken.** Every action (tier, plan, block) set its confirmation message and then re-opened the user, which cleared the message a moment later, so the admin saw nothing happen. `openUser` now keeps the message after an action. This is the likely cause of "I cannot change the level". The dropdown now reads "Basic, $10 (Daily Report, Archive, Bookmarks)" and "Premium, $50 (everything)". There is no separate "beginner" level for a user: a person has a plan (Basic or Premium), and the University's beginner, intermediate and expert are courses inside Premium. If a different control was meant (for example resetting someone's progress, or their coin level) it does not exist and needs a decision.
+- **No way back into the admin panel.** Nothing on the public pages linked to it. An "Admin" link now appears in the top bar for admins only (the server says who is one, `/api/me`); the admin header already had a Dashboard link back out.
+- **Unreadable text on the dark admin pages:** the University lesson preview (light box, light text), the payment status badges (black on dark) and the highlighted user row (light on light). Fixed with the console colours.
+- **A white public footer under the dark admin pages.** Hidden on `/admin`.
+- **The AI usage page did not exist** (only its API, which the Assistant's spec required to be visible). New Admin, AI Usage: today's Assistant and sandbox share of the free AI pool, and who used the Assistant.
+- The audit found the cookie notice's hard shadow, which the design rules reserve for the Campus layer. Removed.
+
+**Sign-in and register heading.** At 1920 px and wider the display type is very large and the 448 px card could not hold "Vibe-Coding", so the browser broke it inside the word ("Codin / g"). Narrow cards now use their own heading size (`k-display-card`, sized to the card, never broken inside a word); measured at 320, 390, 1920 and 2560 px, and a smoke check keeps it that way. Applied to sign in, register, forgot password and set password.
+
+**"More lessons" (supplementary University lessons), the facts.** A job (`/api/cron/university-generate`, triggered daily at 06:00 UTC but producing at most one lesson per week) asks the AI to propose one supplementary lesson from recent articles. It is created as `pending_review` and reaches nobody until an admin presses "Approve & Publish" (Admin, University). Today there are 2 published supplementary lessons (both approved by the admin on 2026-09-15) and 1 waiting in the queue; the 75 core lessons of the hand-authored curriculum are all published. So yes, the app proposes them by itself, but never publishes them by itself. Given the Director's rule that a learner must never feel the app fills itself (PDL-076), whether to keep this job and the "More lessons" list is her decision; it is asked in the report, not changed here.
+
+---
+
 ---
 
 *Vibe-Coding Journal — Project Decision Log — updated as decisions are made.*

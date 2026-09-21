@@ -1,5 +1,7 @@
 # TASKS — Hold-Gate Calibration Learning
 
+> **Status 2026-09-22: shipped** (PDL-020, PDL-021 and the calibration work). Boxes left open below are the honest record of what was not retested on the night it shipped; the mobile viewport of the admin pages is now covered by the responsive audit.
+
 Mirrors `FEATURE_LIFECYCLE.md` Step 3's fixed order — do not reorder,
 do not start a step before the one above it is complete and tested.
 Two items are added beyond the standard 8-step build sequence because

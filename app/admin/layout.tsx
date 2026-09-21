@@ -37,6 +37,12 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
                 Payments
               </Link>
               <Link
+                href="/admin/ai-usage"
+                className="inline-flex min-h-11 items-center text-console-text underline decoration-1 underline-offset-4 transition-colors duration-150 ease-out hover:text-signal"
+              >
+                AI Usage
+              </Link>
+              <Link
                 href="/admin/university"
                 className="inline-flex min-h-11 items-center text-console-text underline decoration-1 underline-offset-4 transition-colors duration-150 ease-out hover:text-signal"
               >

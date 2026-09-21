@@ -89,7 +89,7 @@ export default function AdminUniversityPage() {
               {lesson.course_slug} , Supplementary
             </p>
             <h3 className="text-console-text k-h4">{lesson.title}</h3>
-            <div className="swiss-grid-pattern mt-4 max-h-96 overflow-y-auto border border-console-line bg-paper-2 p-4 text-console-text">
+            <div className="swiss-grid-pattern mt-4 max-h-96 overflow-y-auto border border-console-line bg-console-panel p-4 text-console-text">
               <MarkdownContent>{lesson.body ?? ""}</MarkdownContent>
             </div>
             {lesson.candidate_terms.length > 0 && (

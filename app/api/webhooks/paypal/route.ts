@@ -20,7 +20,7 @@ import {
   getPaymentEventByPaypalId,
   recordPaymentEventIfNew,
 } from "@/features/payments/repository";
-import { classifyPaymentWebhookEvent, classifyUpgradeEvent, computeSubscriptionExpiry } from "@/features/payments/domain";
+import { classifyPaymentWebhookEvent, classifyUpgradeEvent, computePurchaseExpiry } from "@/features/payments/domain";
 import { supabaseAdmin } from "@/lib/db/client";
 import { sendPaymentIssueAlert, sendAdminNotification } from "@/lib/email/resend";
 
@@ -142,7 +142,17 @@ export async function POST(request: NextRequest) {
     throw new Error("Admin client not available");
   }
 
-  const expiresAt = computeSubscriptionExpiry(new Date());
+  // The $40 upgrade starts a new 12 months today; a renewal in the last 7 days starts when the current year ends (PDL-079).
+  const { data: before } = await supabaseAdmin
+    .from("user_profiles")
+    .select("subscription_status, subscription_expires_at")
+    .eq("id", userId)
+    .maybeSingle();
+  const expiresAt = computePurchaseExpiry(amountUsd === 40 ? "upgrade" : "purchase", {
+    status: ((before?.subscription_status as "trial" | "active" | "expired" | undefined) ?? "expired"),
+    expiresAt: before?.subscription_expires_at ? new Date(before.subscription_expires_at as string) : null,
+    now: new Date(),
+  });
   const { error } = await supabaseAdmin
     .from("user_profiles")
     .update({

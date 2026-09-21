@@ -31,7 +31,7 @@
  */
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { useSession } from "@/lib/auth/use-session";
 import { supabase } from "@/lib/db/client";
@@ -51,6 +51,27 @@ export function SiteNav() {
   const pathname = usePathname();
   const { token, loading } = useSession();
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  // An admin needs a way back into the admin area from the rest of the site (found 2026-09-22: once an admin opened the dashboard
+  // there was no link back). The server says who is an admin; nothing here is a permission, the admin pages and API check again.
+  const [isAdmin, setIsAdmin] = useState(false);
+  useEffect(() => {
+    if (loading || !token) {
+      setIsAdmin(false);
+      return;
+    }
+    let active = true;
+    fetch("/api/me", { headers: { authorization: `Bearer ${token}` } })
+      .then((r) => r.json())
+      .then((d: { isAdmin?: boolean }) => {
+        if (active) setIsAdmin(Boolean(d.isAdmin));
+      })
+      .catch(() => undefined);
+    return () => {
+      active = false;
+    };
+  }, [token, loading]);
+  const links = isAdmin ? [...LOGGED_IN_LINKS, { href: "/admin/users", label: "Admin" }] : LOGGED_IN_LINKS;
 
   // The admin section has its own nav (app/admin/layout.tsx) -- avoid
   // stacking two navigation bars on top of each other there.
@@ -82,7 +103,7 @@ export function SiteNav() {
             <div className="hidden items-center gap-4 xl:flex">
               {token ? (
                 <>
-                  {LOGGED_IN_LINKS.map((link) => (
+                  {links.map((link) => (
                     <a key={link.href} href={link.href} className={linkClass(link.href)}>
                       {link.label}
                     </a>
@@ -141,7 +162,7 @@ export function SiteNav() {
           <div className="k-nav-link flex flex-col text-sm">
             {token ? (
               <>
-                {LOGGED_IN_LINKS.map((link) => (
+                {links.map((link) => (
                   <a
                     key={link.href}
                     href={link.href}

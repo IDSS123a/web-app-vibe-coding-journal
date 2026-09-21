@@ -6,6 +6,11 @@ reconstructed here retroactively — this file covers from its own start
 date forward). One entry per user-visible or operationally significant
 change, newest first.
 
+## 2026-09-22
+
+- **Admin panel checked end to end, and the sign-in heading fixed (PDL-083).** Changing a user's tier now shows its confirmation, admins have an Admin link back into their panel, the dark admin pages no longer have unreadable text, there is an AI usage page, and the heading of the sign-in and register cards no longer breaks inside a word on wide screens.
+- **Ready for launch (PDL-079 to PDL-082).** The site is prepared for its own address, real PayPal payments and the law: Terms of Use, Privacy Policy, Refund Policy, Subscription and renewal, and a cookie notice; a page where you can download all your data or delete your account; Forgot password; a free-trial banner and a renewal banner; and protection against paying twice. New: certificates of completion you can print or save as a PDF and anyone can verify, a Try it live sandbox task in every Prompt School chapter, and Scan mode for the Daily Report.
+
 ## 2026-09-21
 
 - **Wider screens, and deleting Assistant prompts (PDL-078).** Pages now use the whole width of your screen: lists show more columns, lesson text flows in columns, and the sandbox sits side by side. You can also delete a prompt from your Assistant history (Delete, then Confirm); a deleted prompt still counts toward your daily limit.

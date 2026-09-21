@@ -57,9 +57,29 @@ async function visit(ctx, path, expectText, extra, allowStatus = []) {
 try {
   const [vw, vh0] = (process.env.SMOKE_VIEWPORT ?? "1280x900").split("x").map(Number);
   const userCtx = await browser.newContext({ viewport: { width: vw, height: vh0 } });
+  const anonCtxEarly = await browser.newContext({ viewport: { width: vw, height: vh0 } });
+  await anonCtxEarly.addInitScript(() => localStorage.setItem("vbj-cookie-notice-seen", "1"));
   await userCtx.addInitScript(([k, v]) => localStorage.setItem(k, v), [`sb-${REF}-auth-token`, await sessionFor("user@test.local")]);
+  // The cookie notice is tested on its own below; here it would only sit over the buttons being clicked.
+  await userCtx.addInitScript(() => localStorage.setItem("vbj-cookie-notice-seen", "1"));
 
-  await visit(userCtx, "/dashboard", "In this report");
+  await visit(userCtx, "/dashboard", "In this report", async (page) => {
+    // Scan mode (PDL-082): the same articles as a dense table, with two filters, remembered in this browser.
+    const total = await page.locator('a.k-editorial-title').count();
+    await page.getByRole("button", { name: "Scan", exact: true }).click();
+    const view = page.getByTestId("scan-view");
+    await view.waitFor({ timeout: 8000 });
+    const rowCount = await view.locator("li details").count();
+    ok("scan mode lists every article of the report as a row", rowCount === total && rowCount > 0, `${rowCount} rows, ${total} articles`);
+    await view.locator("summary").first().click();
+    ok("a row opens to the summary and a link to the source", (await view.getByRole("link", { name: "Open the source" }).count()) >= 1);
+    await view.getByRole("button", { name: "Worth trying only" }).click();
+    ok("the worth trying filter never shows more rows than before", (await view.locator("li details").count()) <= rowCount);
+    await page.reload({ waitUntil: "networkidle" });
+    ok("the choice of Scan is remembered after a reload", (await page.getByTestId("scan-view").count()) === 1);
+    await page.getByRole("button", { name: "Read", exact: true }).click();
+    ok("and Read brings the reading view back", (await page.getByTestId("scan-view").count()) === 0 && (await page.locator("a.k-editorial-title").count()) === total);
+  });
   await visit(userCtx, "/archive", "Archive");
   const { data: rep } = await admin.from("daily_reports").select("date").in("review_status", ["auto_published", "manually_approved"]).order("date", { ascending: false }).limit(3);
   if (rep?.[2]) await visit(userCtx, `/archive/${rep[2].date}`, "In this report");
@@ -74,6 +94,38 @@ try {
     ok("dictionary search finds Context window first", /context window/i.test(first), first);
   });
   await visit(userCtx, "/assistant", "Generate My Prompt");
+  // Certificates (PDL-080) and the account page (PDL-079).
+  {
+    const { data: owner } = await admin.from("user_profiles").select("id").eq("email", "user@test.local").single();
+    const badgeIds = ["uni-beginner", "uni-intermediate", "uni-expert"];
+    try {
+      await admin.from("certificates").delete().eq("user_id", owner.id);
+      await admin.from("user_badges").upsert(badgeIds.map((badge_id) => ({ user_id: owner.id, badge_id })), { onConflict: "user_id,badge_id" });
+      let code = "";
+      await visit(userCtx, "/certificates", "Vibe-Coding University Certificate", async (page) => {
+        await page.getByText("Earned").first().waitFor({ timeout: 10000 });
+        code = (await page.locator("span.font-mono").first().innerText()).trim();
+        ok("an earned certificate is listed with its code, and the locked one says how to earn it", /^VBJ-/.test(code) && (await page.getByText("Finish every chapter of Prompt School").count()) === 1);
+      });
+      await visit(userCtx, "/certificates/university", "Print or save as PDF", async (page) => {
+        await page.getByPlaceholder("Your full name").fill("Ada Lovelace");
+        const sheet = page.getByRole("article", { name: "Vibe-Coding University Certificate" });
+        ok("the certificate shows the typed name, the programme, the code and the check address", (await sheet.innerText()).includes("Ada Lovelace") && (await sheet.innerText()).includes("Vibe-Coding University") && (await sheet.innerText()).includes(code) && (await sheet.innerText()).includes("/verify/"));
+      });
+      await visit(anonCtxEarly, `/verify/${code}`, "This certificate is genuine");
+      await visit(userCtx, "/account", "Download my data", async (page) => {
+        const del = page.getByRole("button", { name: "Delete my account" });
+        ok("account delete stays disabled until the exact words are typed", await del.isDisabled());
+        await page.getByLabel(/Type DELETE MY ACCOUNT to confirm/).fill("DELETE MY ACCOUNT");
+        ok("and opens once they are typed exactly (not clicked here)", await del.isEnabled());
+        const [download] = await Promise.all([page.waitForEvent("download", { timeout: 15000 }), page.getByRole("button", { name: "Download my data" }).click()]);
+        ok("the data download is a JSON file", /vibe-coding-journal-my-data\.json$/.test(download.suggestedFilename()));
+      });
+    } finally {
+      await admin.from("certificates").delete().eq("user_id", owner.id);
+      await admin.from("user_badges").delete().eq("user_id", owner.id).in("badge_id", badgeIds);
+    }
+  }
   // Assistant history delete (2026-09-21): two clicks, and the item leaves the list. A temporary item is used, no AI run.
   {
     const { data: owner } = await admin.from("user_profiles").select("id").eq("email", "user@test.local").single();
@@ -297,6 +349,7 @@ try {
 
   const adminCtx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
   await adminCtx.addInitScript(([k, v]) => localStorage.setItem(k, v), [`sb-${REF}-auth-token`, await sessionFor("admin@test.local")]);
+  await adminCtx.addInitScript(() => localStorage.setItem("vbj-cookie-notice-seen", "1"));
   await visit(adminCtx, "/admin/users", "Users");
   await visit(adminCtx, "/admin/review-queue", "Review");
   await visit(adminCtx, "/admin/payments", "Payment");
@@ -316,7 +369,36 @@ try {
   const anonCtx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
   await visit(anonCtx, "/", "Enter the Journal");
   await visit(anonCtx, "/login", "Sign In");
-  await visit(anonCtx, "/register", "Register");
+  await visit(anonCtx, "/register", "Register", async (page) => {
+    // The heading of a narrow card must wrap between words, never inside one (found 2026-09-22 at 1920 px: "Codin / g").
+    ok("the register heading does not overflow its card (it wraps between words, never inside one)", await page.evaluate(() => { const h = document.querySelector("h1"); return h.scrollWidth <= h.clientWidth + 1; }));
+    ok("registration asks for the Terms and Privacy Policy, with links", (await page.getByText("I accept the").count()) === 1 && (await page.getByRole("link", { name: "Terms of Use" }).count()) >= 1 && (await page.getByRole("link", { name: "Privacy Policy" }).count()) >= 1);
+    await page.fill("#email", "smoke-nobody@example.invalid");
+    await page.fill("#password", "Aa1!aaaaaaaaaa");
+    await page.getByRole("checkbox").first().check();
+    await page.getByRole("button", { name: /^Register$/ }).click();
+    await page.getByText(/accept the Terms of Use and the Privacy Policy to register/).waitFor({ timeout: 8000 });
+    ok("registering without accepting the terms is refused with a clear message", true);
+  });
+  // Cookie notice (PDL-079): shown to a new visitor, closes with one click and stays closed.
+  {
+    const page = await anonCtx.newPage();
+    await page.goto(BASE + "/terms", { waitUntil: "networkidle" });
+    const notice = page.getByRole("region", { name: "Cookie notice" });
+    await notice.waitFor({ timeout: 8000 });
+    ok("a new visitor sees the cookie notice, in plain words, with a link to the details", /no advertising or tracking cookies/.test(await notice.innerText()) && (await notice.getByRole("link", { name: "Details" }).count()) === 1);
+    await notice.getByRole("button", { name: "Got it" }).click();
+    ok("the cookie notice closes with one click", (await page.getByRole("region", { name: "Cookie notice" }).count()) === 0);
+    await page.goto(BASE + "/privacy", { waitUntil: "networkidle" });
+    await page.waitForTimeout(600);
+    ok("and it does not come back on the next page", (await page.getByRole("region", { name: "Cookie notice" }).count()) === 0);
+    const text = await page.locator("body").innerText();
+    ok("the privacy page has its heading, a table of what is collected and the footer links", /Privacy Policy/.test(text) && (await page.locator("table").count()) >= 1 && (await page.getByRole("navigation", { name: "Legal", exact: true }).getByRole("link").count()) === 5);
+    await page.close();
+  }
+  for (const [path, text] of [["/terms", "Terms of Use"], ["/refunds", "money back guarantee"], ["/subscription", "does not renew by itself"], ["/cookies", "Cookie notice"], ["/forgot-password", "Send the link"]]) {
+    await visit(anonCtx, path, text);
+  }
   {
     const page = await anonCtx.newPage();
     await page.goto(BASE + "/dashboard", { waitUntil: "networkidle" });

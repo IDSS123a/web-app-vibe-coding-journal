@@ -14,11 +14,13 @@
  */
 
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 export function MarkdownContent({ children, className = "" }: { children: string; className?: string }) {
   return (
     <div className={`k-prose ${className}`.trim()}>
       <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
         components={{
           a: ({ children, href }) => (
             <a href={href} target="_blank" rel="noopener noreferrer">

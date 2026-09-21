@@ -47,3 +47,14 @@ Options for the next session, in the order the plan gives them:
 3. Director tasks that are not code: repair the manuscript (five holes, four stray drafting notes, old chapter numbers, the bare
    "Note:" at the end; see PDL-068, PDL-070 and memory book-canon-docx), and look at the new design on a real iPhone and Android phone.
 4. Not started, only mentioned: a real Scan mode (KANON Console layer for the Daily Report), a certificate, cumulative tests.
+
+## State on 2026-09-22
+
+Done since the last update: D live sandbox (a task in all 18 chapters, PDL-077 and PDL-080), certificates (PDL-080), Scan mode for the Daily Report (PDL-082), launch preparation (PDL-079), health check (PDL-081).
+
+Still open:
+- [ ] Cumulative tests across chapters (a "final exam"): needs a fourth test level (level type, three tables, unlock rule, routes, certificate) and about 20 new questions grounded in the book. Plan it with the Director.
+- [ ] Weekly rollup report (roadmap Phase 5): schedule, table, one AI request a week, a page.
+- [ ] The Director's manuscript repair (five holes, four stray notes, old chapter numbers, the bare "Note:" at the end), then a reseed.
+- [ ] Real phones and Firefox/Safari.
+- [ ] Hand review of the model-written University lessons.
