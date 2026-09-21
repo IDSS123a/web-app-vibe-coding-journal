@@ -83,6 +83,6 @@ export function PayPalCheckout({ checkout, token, onApproved }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [checkoutKey, token]);
 
-  if (sdkError) return <p className="text-sm text-[#FF3000]">{sdkError}</p>;
+  if (sdkError) return <p className="text-sm text-signal">{sdkError}</p>;
   return <div ref={containerRef} className="min-h-[45px]" />;
 }

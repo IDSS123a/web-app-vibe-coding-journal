@@ -2,10 +2,10 @@
 
 import Link from "next/link";
 import type { Article, DailyReport } from "@/lib/validation/schemas";
-import { formatPublicTimestamp } from "@/lib/time/format-public-timestamp";
 import { useAuthedJson } from "@/lib/auth/use-authed-json";
 import { ArticleListWithBookmarks } from "@/components/ArticleListWithBookmarks";
 import { MarkdownContent } from "@/components/MarkdownContent";
+import { ReportHeader, dayKeyOf } from "@/components/ReportHeader";
 import { DailyReportOpenTracker } from "@/components/rewards/DailyReportOpenTracker";
 import { UpgradeToPremiumBanner } from "@/components/UpgradeToPremiumBanner";
 
@@ -37,15 +37,15 @@ export default function DashboardPage() {
   const articles = data?.articles ?? [];
 
   return (
-    <div className="min-h-dvh bg-white px-4 py-12 md:px-12">
+    <div className="k-page layer-edition">
       {report && <DailyReportOpenTracker reportId={report.id} />}
       <div className="mx-auto max-w-4xl xl:max-w-5xl">
         {/* Header */}
-        <div className="mb-12 border-b-4 border-black pb-8">
-          <p className="mb-2 text-xs font-bold uppercase tracking-widest text-[#FF3000]">
+        <div className="mb-12 border-b border-black pb-8">
+          <p className="mb-2 text-signal k-label">
             Daily Digest
           </p>
-          <h1 className="text-4xl font-black uppercase tracking-tighter text-black md:text-5xl">
+          <h1 className="text-black k-display">
             Vibe-Coding Journal
           </h1>
           <p className="mt-2 text-sm text-black">
@@ -56,44 +56,23 @@ export default function DashboardPage() {
         <UpgradeToPremiumBanner />
 
         {loading && <p className="text-sm text-black opacity-60">Loading…</p>}
-        {error && <p className="border-2 border-[#FF3000] p-3 text-sm text-[#FF3000]">{error}</p>}
+        {error && <p className="border border-signal p-3 text-sm text-signal">{error}</p>}
 
         {!loading && !error && !report && (
-          <div className="border-4 border-black p-4 sm:p-8 md:p-12">
-            <p className="text-center text-sm italic text-black opacity-60">
+          <div className="border border-black p-4 sm:p-8 md:p-12">
+            <p className="k-ui text-center text-ink-soft">
               No Daily Report has been published yet, check back soon.
             </p>
           </div>
         )}
 
-        {/* Daily Report Card */}
+        {/* Daily Report Card: the Edition layer (PDL-074). The day colour is the report's own signal (bar and badges). */}
         {report && (
-          <div className="border-4 border-black p-4 sm:p-8 md:p-12">
-            {/* Meta info */}
-            <div className="mb-8 flex flex-wrap items-center justify-between gap-3 border-b-2 border-black pb-6">
-              <div>
-                <p className="text-sm font-bold uppercase tracking-wide text-black">
-                  {new Date(report.date).toLocaleDateString("en-US", {
-                    weekday: "long",
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                  })}
-                </p>
-                <p className="mt-1 text-sm text-black">
-                  {report.article_count} articles • {report.reading_time_minutes || "< 1"} min read
-                </p>
-                <p className="mt-1 text-xs text-black opacity-60">
-                  Updated {formatPublicTimestamp(report.updated_at)}
-                </p>
-              </div>
-              <div className="text-right">
-                <span className="inline-block border-2 border-black px-3 py-1 text-xs font-bold uppercase tracking-widest text-black">
-                  {report.review_status === "auto_published" && "Auto-published"}
-                  {report.review_status === "manually_approved" && "Approved"}
-                </span>
-              </div>
-            </div>
+          <div data-day={dayKeyOf(report.date)} className="k-box k-daybar p-4 sm:p-8 md:p-12">
+            <ReportHeader
+              report={report}
+              status={report.review_status === "auto_published" ? "Auto-published" : report.review_status === "manually_approved" ? "Approved" : null}
+            />
 
             {/* Structured, bookmarkable article list when available (migration
                 009); raw markdown as the fallback for reports generated before
@@ -101,21 +80,21 @@ export default function DashboardPage() {
             {articles.length > 0 ? (
               <ArticleListWithBookmarks articles={articles} relatedSources={data?.relatedSources ?? {}} />
             ) : (
-              <div className="swiss-grid-pattern mt-6 border-2 border-black bg-[#F2F2F2] p-6">
+              <div className="k-box-muted swiss-grid-pattern mt-6 p-6">
                 <MarkdownContent>{report.markdown}</MarkdownContent>
               </div>
             )}
 
             {/* Sections */}
-            <div className="mt-8 border-t-2 border-black pt-6">
-              <h3 className="mb-3 text-xs font-bold uppercase tracking-widest text-[#FF3000]">
+            <div className="mt-8 border-t border-black pt-6">
+              <h3 className="k-label mb-3 text-signal">
                 Sections
               </h3>
               <div className="flex flex-wrap gap-2">
                 {report.sections.map((section) => (
                   <span
                     key={section}
-                    className="inline-block border-2 border-black px-3 py-1 text-xs font-bold uppercase tracking-wide text-black"
+                    className="k-badge"
                   >
                     {section}
                   </span>
@@ -126,26 +105,26 @@ export default function DashboardPage() {
         )}
 
         {/* Navigation */}
-        <div className="mt-8 flex flex-wrap justify-center gap-x-6 gap-y-0 text-xs font-bold uppercase tracking-widest text-black">
-          <Link href="/" className="inline-flex min-h-11 items-center underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]">
+        <div className="mt-8 flex flex-wrap justify-center gap-x-6 gap-y-0 text-black k-label">
+          <Link href="/" className="inline-flex min-h-11 items-center underline decoration-1 underline-offset-4 transition-colors duration-150 ease-out hover:text-signal">
             ← Home
           </Link>
-          <Link href="/archive" className="inline-flex min-h-11 items-center underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]">
+          <Link href="/archive" className="inline-flex min-h-11 items-center underline decoration-1 underline-offset-4 transition-colors duration-150 ease-out hover:text-signal">
             Archive
           </Link>
-          <Link href="/bookmarks" className="inline-flex min-h-11 items-center underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]">
+          <Link href="/bookmarks" className="inline-flex min-h-11 items-center underline decoration-1 underline-offset-4 transition-colors duration-150 ease-out hover:text-signal">
             My Bookmarks
           </Link>
-          <Link href="/university" className="inline-flex min-h-11 items-center underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]">
+          <Link href="/university" className="inline-flex min-h-11 items-center underline decoration-1 underline-offset-4 transition-colors duration-150 ease-out hover:text-signal">
             University
           </Link>
-          <Link href="/dictionary" className="inline-flex min-h-11 items-center underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]">
+          <Link href="/dictionary" className="inline-flex min-h-11 items-center underline decoration-1 underline-offset-4 transition-colors duration-150 ease-out hover:text-signal">
             Dictionary
           </Link>
-          <Link href="/assistant" className="inline-flex min-h-11 items-center underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]">
+          <Link href="/assistant" className="inline-flex min-h-11 items-center underline decoration-1 underline-offset-4 transition-colors duration-150 ease-out hover:text-signal">
             Assistant
           </Link>
-          <Link href="/prompt-school" className="inline-flex min-h-11 items-center underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]">
+          <Link href="/prompt-school" className="inline-flex min-h-11 items-center underline decoration-1 underline-offset-4 transition-colors duration-150 ease-out hover:text-signal">
             Prompt School
           </Link>
         </div>

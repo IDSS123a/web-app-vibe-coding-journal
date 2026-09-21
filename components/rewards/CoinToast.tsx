@@ -24,11 +24,11 @@ export function CoinToast({ coins, onDone }: { coins: number; onDone: () => void
 
   return (
     <div
-      className={`pointer-events-none fixed bottom-8 right-8 z-[60] flex items-center gap-2 border-4 border-black bg-white px-4 py-2 text-sm font-bold uppercase tracking-widest text-black transition-all duration-300 ease-out ${
+      className={`pointer-events-none fixed bottom-[max(2rem,env(safe-area-inset-bottom))] right-[max(2rem,env(safe-area-inset-right))] z-[60] flex items-center gap-2 border border-black bg-white px-4 py-2 text-black transition-all duration-300 ease-out k-meta font-semibold ${
         visible ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0"
       }`}
     >
-      <span className="inline-block h-3 w-3 bg-[#D4A017]" aria-hidden />+{coins} Vibe Coins
+      <span className="inline-block h-3 w-3 border border-black bg-studio-lemon" aria-hidden />+{coins} Vibe Coins
     </div>
   );
 }

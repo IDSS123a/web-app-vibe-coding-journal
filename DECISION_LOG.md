@@ -2419,6 +2419,30 @@ Still open in phase E: badges, and the same coins for the University.
 
 ---
 
+
+## PDL-074 KANON visual system applied to the whole app
+
+**Date:** 2026-09-21. Director: before the next Prompt School step, apply the KANON typography and box-line system (`TYPOGRAPHY_SPEC.md`) across the existing application, as a visual-system change, not a redesign of routes, content, structure, interactions or data.
+
+**Decisions taken with the Director (asked before any code):**
+1. The spec is the source of truth for size. Its fixed px scale and content caps (1760px, 1840px from 1920px) **replace the fluid root font of PDL-060**, which is superseded for typography. Sizes are written in rem (16px = 1rem) so browser zoom and the system text size still work.
+2. **Constitution P-20 is amended** (see the banner in CONSTITUTION.md and DESIGN_NOTES.md): Unbounded, Source Serif 4, Figtree and Geist Mono join Inter, 1px lines replace 4px and 2px ones, headings are no longer uppercase, and Campus is the one rounded, shadowed layer.
+3. **Console** is applied only to the technical admin screens that exist (review queue, review of a day, payments, users, University admin, hold-gate calibration). A real Scan mode is a separate future feature, not built here.
+4. **University follows Prompt School into Campus.** Dictionary, Assistant, Archive, Bookmarks, Welcome, Login and Admin stay Swiss (Admin as Console); the Daily Report and its archive are Edition.
+
+**How it is built (centralised, no second token system).**
+- Fonts through the existing `next/font` mechanism in `app/layout.tsx`: five variable families, one file each (Inter incl. Greek for the Prompt School title, Source Serif 4 with italics and the optical-size axis, Unbounded, Figtree, Geist Mono), covering every weight in the spec.
+- `app/globals.css`: one token block (fonts, all Swiss, Console, studio and day colours, the type scale, lines, content caps, gutters), the Tailwind theme names for them (`text-signal`, `bg-paper-2`, `font-serif`, `font-display`, `bg-studio-lemon` and so on), the spec's breakpoints as named variants (`xs` 420, `nav` 820, `split` 1000, `laptop` 1200, `wide` 1600, `ultra` 1920; Tailwind's own `sm` 640 and `xl` 1280 stay), the ultrawide and small-phone and short-landscape overrides, safe-area padding on the body, and the red focus outline on the token.
+- `app/kanon.css`: the reusable blocks (`k-display`, `k-h2` to `k-h4`, `k-date-report`, `k-eyebrow`, `k-label`, `k-meta`, `k-editorial`, `k-editorial-title`, `k-lede`, `k-box`, `k-rule`, `k-btn`, `k-badge`, the day bar, and the layer scopes `layer-edition`, `layer-console`, `layer-campus` with `k-card`, `k-cbtn`, `k-pill` and the Campus type). `MarkdownContent` now renders through `.k-prose`, which follows the layer it sits in (serif in Edition, Figtree and Unbounded headings in Campus).
+- The pages moved onto these blocks with `scripts/kanon-migrate.py` and `scripts/kanon-console.py` (class names only, never structure, text or logic), then tuned by hand where a pattern needed judgement (navigation, the report header, the story list, the exercise player, the pop-up, the rewards UI). The Daily Report header is one shared component (`components/ReportHeader.tsx`) used by the dashboard and the archive: weekday and year as a label, the day and month as the large Unbounded date, count and times as mono metadata, and the weekday colour on the 7px bar and the badge. Dates are now shown in UTC, the day the report is filed under, so the weekday and its colour always agree.
+
+**Values that could not be aligned, and why.**
+- Full navigation still starts at 1280px, not 820px: seven links plus the coin balance and Sign Out do not fit a row between 820 and 1280px at the spec's 12.5px. The menu button covers everything below 1280px.
+- The mascot in the celebration keeps its drop shadow and highlight gradient (a deliberate, earlier-approved exception, PDL-030), and the celebration keeps its spring motion (PDL-044). Both are confined to the celebration layer.
+- The spec's 12.5px minimum for editorial text and its 9 to 10px metadata are below common accessibility guidance; they are kept as specified. The audit now flags text under 10px.
+**Validation done.** The audit now has the spec's matrix. Core pages (home, login, dashboard, archive, University, Dictionary, Assistant, Prompt School overview, chapter, practice and level test, admin users and review queue) on all 31 spec viewports: 403 page-by-viewport checks, first run 1 finding (the Daily Report date, 24px too wide at 320px, fixed by a width-following mobile date size and word-wrap; a story link and the login inputs had also dropped under 44px with the spec's 1.55 line height and were fixed), rerun 0 findings. Also clean: browser zoom 125% and 200% at 1280x720, pixel ratio 3 at 390x844, reduced motion with pixel ratio 2 at 844x390, plus the earlier 12 viewports on all pages. Measured on every page: h1 in Unbounded, editorial text in Source Serif 4, metadata in Geist Mono, nothing rounded or shadowed outside Campus, no text under 10px, no horizontal overflow, 44px touch targets. 459 unit tests, lint, typecheck, build, security probe 149/149 and the Chrome end-to-end smoke test all pass.
+- Safari, Firefox, iOS and Android Chrome could not be run here (Chrome through Playwright only); their behaviour is reasoned from the CSS used (safe-area insets, dvh with a vh fallback, no reliance on `window.innerWidth`), not observed.
+
 ---
 
 *Vibe-Coding Journal — Project Decision Log — updated as decisions are made.*

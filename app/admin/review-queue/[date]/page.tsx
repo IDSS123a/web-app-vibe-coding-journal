@@ -131,7 +131,7 @@ export default function ReviewDetailPage({ params }: { params: Promise<{ date: s
   if (sessionLoading || loading) {
     return (
       <div className="flex justify-center items-center min-h-dvh">
-        <div className="text-gray-600 dark:text-gray-400">Loading report...</div>
+        <div className="text-console-dim">Loading report...</div>
       </div>
     );
   }
@@ -139,10 +139,10 @@ export default function ReviewDetailPage({ params }: { params: Promise<{ date: s
   if (!token) {
     return (
       <div className="text-center py-12">
-        <p className="text-gray-600 dark:text-gray-400 mb-4">
+        <p className="text-console-dim mb-4">
           You must be signed in as an admin to review reports.
         </p>
-        <Link href="/login" className="text-blue-600 hover:text-blue-800 font-semibold">
+        <Link href="/login" className="text-console-ice hover:text-signal font-semibold">
           Sign in →
         </Link>
       </div>
@@ -151,8 +151,8 @@ export default function ReviewDetailPage({ params }: { params: Promise<{ date: s
 
   if (error) {
     return (
-      <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
-        <p className="text-red-800 dark:text-red-200">Error: {error}</p>
+      <div className="bg-console-panel-2 border border-signal p-4">
+        <p className="text-signal">Error: {error}</p>
       </div>
     );
   }
@@ -160,7 +160,7 @@ export default function ReviewDetailPage({ params }: { params: Promise<{ date: s
   if (!report) {
     return (
       <div className="text-center py-12">
-        <p className="text-gray-600 dark:text-gray-400">Report not found.</p>
+        <p className="text-console-dim">Report not found.</p>
       </div>
     );
   }
@@ -177,9 +177,9 @@ export default function ReviewDetailPage({ params }: { params: Promise<{ date: s
   return (
     <div className="space-y-6">
       {isRisky && (
-        <div className="rounded-lg border-2 border-red-400 bg-red-50 p-4 dark:border-red-700 dark:bg-red-950/40">
-          <p className="mb-1 font-bold text-red-900 dark:text-red-100">⚠ This report is flagged as risky</p>
-          <ul className="list-disc space-y-1 pl-5 text-sm text-red-800 dark:text-red-200">
+        <div className="border border-signal bg-console-panel-2 p-4">
+          <p className="mb-1 font-bold text-signal">⚠ This report is flagged as risky</p>
+          <ul className="list-disc space-y-1 pl-5 text-sm text-signal">
             {riskyReasons.map((reason) => (
               <li key={reason}>{reason}</li>
             ))}
@@ -189,8 +189,8 @@ export default function ReviewDetailPage({ params }: { params: Promise<{ date: s
       {/* Header */}
       <div className="flex justify-between items-start">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-50">{date}</h2>
-          <p className="text-gray-600 dark:text-gray-400">
+          <h2 className="text-console-text k-h2">{date}</h2>
+          <p className="text-console-dim">
             {report.article_count} articles • {report.review_status}
           </p>
         </div>
@@ -198,14 +198,14 @@ export default function ReviewDetailPage({ params }: { params: Promise<{ date: s
           <button
             onClick={handleApprove}
             disabled={approving}
-            className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-4 py-2 bg-console-panel-2 text-console-text hover:bg-console-panel-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {approving ? "Approving..." : "Approve"}
           </button>
           <button
             onClick={() => setShowRejectModal(true)}
             disabled={rejecting}
-            className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-4 py-2 bg-console-panel-2 text-console-text hover:bg-console-panel-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {rejecting ? "Rejecting..." : "Reject"}
           </button>
@@ -213,14 +213,14 @@ export default function ReviewDetailPage({ params }: { params: Promise<{ date: s
       </div>
 
       {/* Report Info */}
-      <div className="bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-lg p-6 space-y-4">
+      <div className="bg-console-panel border border-console-line p-6 space-y-4">
         <div>
-          <h3 className="font-semibold text-gray-900 dark:text-gray-50">Status</h3>
-          <p className="text-gray-600 dark:text-gray-400">{report.review_status}</p>
+          <h3 className="text-console-text k-h4">Status</h3>
+          <p className="text-console-dim">{report.review_status}</p>
         </div>
         <div>
-          <h3 className="font-semibold text-gray-900 dark:text-gray-50">Reading Time</h3>
-          <p className="text-gray-600 dark:text-gray-400">
+          <h3 className="text-console-text k-h4">Reading Time</h3>
+          <p className="text-console-dim">
             {report.reading_time_minutes} minutes
           </p>
         </div>
@@ -228,20 +228,20 @@ export default function ReviewDetailPage({ params }: { params: Promise<{ date: s
 
       {/* Articles */}
       <div className="space-y-4">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-50">Articles</h3>
+        <h3 className="text-console-text k-h4">Articles</h3>
         <div className="space-y-3">
           {articles.map((article) => (
             <div
               key={article.id}
-              className="bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-lg p-4"
+              className="bg-console-panel border border-console-line p-4"
             >
-              <h4 className="font-semibold text-gray-900 dark:text-gray-50 mb-2">
+              <h4 className="text-console-text mb-2 k-h4">
                 {article.title}
               </h4>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+              <p className="text-sm text-console-dim mb-3">
                 {article.summary || article.raw_summary || "No summary"}
               </p>
-              <div className="flex gap-4 text-xs text-gray-500 dark:text-gray-500">
+              <div className="flex gap-4 text-xs text-console-dim">
                 <span>Source: {article.source || "Unknown"}</span>
                 <span>Category: {article.category || "Uncategorized"}</span>
                 <span>Confidence: {article.confidence_score?.toFixed(2) || "N/A"}</span>
@@ -254,25 +254,25 @@ export default function ReviewDetailPage({ params }: { params: Promise<{ date: s
       {/* Reject Modal */}
       {showRejectModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center">
-          <div className="bg-white dark:bg-gray-950 rounded-lg p-6 max-w-md w-full">
-            <h3 className="text-lg font-semibold mb-4">Reject Report</h3>
+          <div className="bg-console-panel p-6 max-w-md w-full">
+            <h3 className="mb-4 k-h4">Reject Report</h3>
             <textarea
               value={rejectReason}
               onChange={(e) => setRejectReason(e.target.value)}
               placeholder="Reason for rejection (optional)"
-              className="w-full border border-gray-300 dark:border-gray-700 rounded px-3 py-2 mb-4 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-50"
+              className="w-full border border-console-line px-3 py-2 mb-4 bg-console-panel text-console-text"
               rows={4}
             />
             <div className="flex gap-2">
               <button
                 onClick={() => setShowRejectModal(false)}
-                className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-700 rounded hover:bg-gray-50 dark:hover:bg-gray-900"
+                className="flex-1 px-4 py-2 border border-console-line hover:bg-console-panel"
               >
                 Cancel
               </button>
               <button
                 onClick={handleReject}
-                className="flex-1 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+                className="flex-1 px-4 py-2 bg-console-panel-2 text-console-text hover:bg-console-panel-2"
               >
                 Reject
               </button>

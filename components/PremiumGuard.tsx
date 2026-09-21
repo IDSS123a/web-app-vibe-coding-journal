@@ -86,19 +86,19 @@ export function PremiumGuard({ children, accessKey = "hasUniversityAccess", feat
 
   if (loading || state === "checking") {
     return (
-      <div className="flex min-h-dvh items-center justify-center bg-white">
-        <div className="text-sm font-bold uppercase tracking-widest text-black">Checking access…</div>
+      <div className="flex items-center justify-center k-page">
+        <div className="text-black k-label">Checking access…</div>
       </div>
     );
   }
 
   if (state === "anon") {
     return (
-      <div className="border-4 border-black py-16 text-center">
+      <div className="border border-black py-16 text-center">
         <p className="mb-4 text-sm text-black">You must be signed in to view this page.</p>
         <Link
           href="/login"
-          className="inline-flex min-h-11 items-center text-sm font-bold uppercase tracking-widest underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]"
+          className="inline-flex min-h-11 items-center underline decoration-1 underline-offset-4 k-btn"
         >
           Sign In →
         </Link>
@@ -108,9 +108,9 @@ export function PremiumGuard({ children, accessKey = "hasUniversityAccess", feat
 
   if (state === "accountBlocked") {
     return (
-      <div className="mx-auto max-w-xl border-4 border-black px-4 py-16 text-center">
-        <p className="mb-2 text-xs font-bold uppercase tracking-widest text-[#FF3000]">Access</p>
-        <h2 className="mb-4 text-2xl font-black uppercase tracking-tight text-black">Account Blocked</h2>
+      <div className="mx-auto max-w-xl border border-black px-4 py-16 text-center">
+        <p className="mb-2 text-signal k-label">Access</p>
+        <h2 className="mb-4 text-black k-h2">Account Blocked</h2>
         <p className="text-sm text-black">
           Your account has been blocked. Contact support if you believe this is a mistake.
         </p>
@@ -120,7 +120,7 @@ export function PremiumGuard({ children, accessKey = "hasUniversityAccess", feat
 
   if (state === "blocked") {
     return (
-      <div className="min-h-dvh bg-white px-4 py-10 sm:py-14 md:px-8">
+      <div className="k-page">
         <PremiumPitch
           feature={shownFeature}
           audience={{ isActiveBasic }}

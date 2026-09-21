@@ -75,38 +75,38 @@ function Lesson() {
   }
 
   const navLink =
-    "inline-flex min-h-11 items-center justify-center border-4 border-black px-4 py-2 text-xs font-bold uppercase tracking-widest text-black transition-colors duration-150 ease-out hover:border-[#FF3000] hover:text-[#FF3000] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#FF3000]";
+    "inline-flex min-h-11 items-center justify-center border-4 border-studio-ink px-4 py-2 text-xs font-bold uppercase tracking-widest text-studio-ink transition-colors duration-150 ease-out hover:border-signal hover:text-signal focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-signal";
 
   return (
-    <div className="min-h-dvh bg-white px-4 py-10 md:px-12 md:py-12">
-      <article className="mx-auto max-w-3xl text-black">
-        <Link href={`/prompt-school/${chapterSlug}`} className="mb-6 inline-flex min-h-11 items-center text-xs font-bold uppercase tracking-widest underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]">
+    <div className="k-page layer-campus">
+      <article className="mx-auto max-w-3xl text-studio-ink">
+        <Link href={`/prompt-school/${chapterSlug}`} className="mb-6 inline-flex min-h-11 items-center underline decoration-1 underline-offset-4 k-cbtn">
           ← {data?.chapter.title ?? "Chapter"}
         </Link>
 
-        {error && <p role="alert" className="mb-4 border-2 border-[#FF3000] p-3 text-sm text-[#FF3000]">{error}</p>}
+        {error && <p role="alert" className="mb-4 k-card-sm border-signal p-3 text-sm text-signal">{error}</p>}
         {!data && !error && <p className="text-sm opacity-60">Loading…</p>}
 
         {data && (
           <>
-            <div className="mb-8 border-b-4 border-black pb-6">
-              <p className="mb-2 text-xs font-bold uppercase tracking-widest text-[#FF3000]">
+            <div className="mb-8 border-b border-studio-ink pb-6">
+              <p className="mb-2 text-studio-blueberry k-clabel">
                 Lesson {data.position.index} of {data.position.total}, {data.lesson.minutes} min
               </p>
-              <h1 className="break-words text-3xl font-black uppercase tracking-tighter md:text-4xl">{data.lesson.title}</h1>
+              <h1 className="break-words k-cheading">{data.lesson.title}</h1>
             </div>
 
             <MarkdownContent>{data.lesson.body}</MarkdownContent>
 
-            <div className="mt-10 border-t-4 border-black pt-6">
+            <div className="mt-10 border-t border-studio-ink pt-6">
               {completed ? (
-                <p className="mb-4 text-xs font-bold uppercase tracking-widest">Lesson done ✓</p>
+                <p className="mb-4 k-clabel">Lesson done ✓</p>
               ) : (
                 <button
                   type="button"
                   onClick={markDone}
                   disabled={saving}
-                  className="mb-4 inline-flex min-h-11 w-full items-center justify-center border-4 border-black bg-black px-4 py-2 text-xs font-bold uppercase tracking-widest text-white transition-colors duration-150 ease-out hover:border-[#FF3000] hover:bg-[#FF3000] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#FF3000] disabled:opacity-40 sm:w-auto"
+                  className="mb-4 inline-flex min-h-11 w-full items-center justify-center disabled:opacity-40 sm:w-auto k-cbtn k-cbtn-primary"
                 >
                   {saving ? "Saving…" : "Mark lesson as done"}
                 </button>

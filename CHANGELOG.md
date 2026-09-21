@@ -8,6 +8,7 @@ change, newest first.
 
 ## 2026-09-21
 
+- **New look: the KANON visual system (PDL-074).** The whole app now follows one type and line system: Unbounded for headings and dates, Source Serif 4 for reading the Daily Report, Inter for the interface, Geist Mono for sources, scores and times, Figtree for learning. The Daily Report opens with a large date and a bar in the colour of the weekday. Prompt School and the University are a friendlier learning layer with rounded cards, the technical admin screens are dark, and everything else keeps thin black lines and square corners. Content, pages and behaviour are unchanged.
 - **A workshop for every blueprint (PDL-073).** Each of the fifteen blueprints in the Prompt School now ends in a hands-on workshop: adapt the blueprint to a case of your own and get feedback on the parts that make it work (for example the running stock of the production plan, the ban on protected characteristics in the banking analysis, or asking an investigative assistant for only what the documents state). Twelve new workshops, so each blueprint chapter has 14 exercises.
 - **Prompt School pays coins and celebrates (PDL-072).** Finishing a lesson earns 5 Vibe Coins, passing an exercise for the first time 5, completing a chapter 50 and passing a level test 150, each once. After you check an answer the result now shows the coins you earned, your balance updates at once, and a completed chapter, a passed level test or a new level gets the confetti celebration. Before, answers were graded and saved but nothing visibly happened.
 

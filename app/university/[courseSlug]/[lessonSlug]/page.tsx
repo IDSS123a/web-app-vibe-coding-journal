@@ -57,13 +57,13 @@ function LessonReader() {
   }
 
   if (loading) {
-    return <p className="p-12 text-center text-sm text-black opacity-60">Loading…</p>;
+    return <p className="p-12 text-center text-sm text-studio-ink opacity-60">Loading…</p>;
   }
 
   if (error || !data) {
     return (
-      <div className="min-h-dvh bg-white px-4 py-12">
-        <p className="mx-auto max-w-2xl border-2 border-[#FF3000] p-3 text-sm text-[#FF3000]">
+      <div className="k-page layer-campus">
+        <p className="mx-auto max-w-2xl k-card-sm border-signal p-3 text-sm text-signal">
           {error ?? "Lesson not found."}
         </p>
       </div>
@@ -71,18 +71,18 @@ function LessonReader() {
   }
 
   return (
-    <div className="min-h-dvh bg-white px-4 py-12 md:px-12">
+    <div className="k-page layer-campus">
       <div className="mx-auto max-w-2xl xl:max-w-3xl">
         <Link
           href="/university"
-          className="inline-flex min-h-11 items-center text-xs font-bold uppercase tracking-widest text-black underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]"
+          className="inline-flex min-h-11 items-center underline decoration-1 underline-offset-4 k-cbtn"
         >
           ← University
         </Link>
-        <p className="mt-6 text-xs font-bold uppercase tracking-widest text-[#FF3000]">
+        <p className="mt-6 text-studio-blueberry k-clabel">
           {data.course.title}
         </p>
-        <h1 className="mt-2 text-4xl font-black uppercase tracking-tighter text-black">
+        <h1 className="mt-2 text-studio-ink k-cheading">
           {data.lesson.title}
         </h1>
         <MarkdownContent className="mt-8">{data.lesson.body ?? ""}</MarkdownContent>
@@ -91,7 +91,7 @@ function LessonReader() {
           type="button"
           onClick={markComplete}
           disabled={completing || completed}
-          className="mt-12 h-14 w-full border-4 border-black bg-black text-sm font-bold uppercase tracking-widest text-white transition-colors duration-150 ease-out hover:border-[#FF3000] hover:bg-[#FF3000] disabled:cursor-not-allowed disabled:opacity-50"
+          className="mt-12 h-14 w-full disabled:cursor-not-allowed disabled:opacity-50 k-cbtn k-cbtn-primary"
         >
           {completed ? "Completed ✓" : completing ? "Saving…" : "Mark Lesson Complete"}
         </button>

@@ -61,70 +61,70 @@ function CourseList() {
   }, [token, sessionLoading]);
 
   return (
-    <div className="min-h-dvh bg-white px-4 py-12 md:px-12">
+    <div className="k-page layer-campus">
       <div className="mx-auto max-w-4xl xl:max-w-5xl">
-        <div className="mb-12 border-b-4 border-black pb-8">
-          <p className="mb-2 text-xs font-bold uppercase tracking-widest text-[#FF3000]">Premium</p>
-          <h1 className="break-words text-4xl font-black uppercase tracking-tighter text-black md:text-5xl">
+        <div className="mb-12 border-b border-studio-ink pb-8">
+          <p className="mb-2 text-studio-blueberry k-clabel">Premium</p>
+          <h1 className="break-words text-studio-ink k-cheading">
             Vibe-Coding University - <span lang="grc" className="normal-case">Στοά</span>
           </h1>
-          <p className="mt-2 text-sm text-black">
+          <p className="mt-2 text-sm text-studio-ink">
             25 core lessons per level across 5 chapters. Pass each chapter&apos;s quiz to unlock the
             next, then clear the level final test.
           </p>
           <Link
             href="/dictionary"
-            className="mt-4 inline-flex min-h-11 items-center text-xs font-bold uppercase tracking-widest text-black underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]"
+            className="mt-4 inline-flex min-h-11 items-center underline decoration-1 underline-offset-4 k-cbtn"
           >
             Browse the Dictionary →
           </Link>
         </div>
 
-        {loading && <p className="text-sm text-black opacity-60">Loading…</p>}
-        {error && <p className="border-2 border-[#FF3000] p-3 text-sm text-[#FF3000]">{error}</p>}
+        {loading && <p className="text-sm text-studio-ink opacity-60">Loading…</p>}
+        {error && <p className="k-card-sm border-signal p-3 text-sm text-signal">{error}</p>}
 
         <div className="space-y-16">
           {courses.map((course) => (
             <div key={course.id}>
-              <div className="mb-6 flex items-center justify-between border-b-2 border-black pb-3">
+              <div className="mb-6 flex items-center justify-between border-b border-studio-ink pb-3">
                 <div>
-                  <p className="text-xs font-bold uppercase tracking-widest text-[#FF3000]">
+                  <p className="text-studio-blueberry k-clabel">
                     {course.level}
                   </p>
-                  <h2 className="text-2xl font-black uppercase tracking-tight text-black">
+                  <h2 className="text-studio-ink k-h3">
                     {course.title}
                   </h2>
                 </div>
                 {course.levelTestUnlocked && (
                   <a
                     href={`/university/level-test/${course.level}`}
-                    className={`border-4 px-4 py-2 text-xs font-bold uppercase tracking-widest transition-colors duration-150 ease-out ${
+                    className={`k-cbtn ${
                       course.levelTestPassed
-                        ? "border-black text-black"
-                        : "border-black bg-black text-white hover:border-[#FF3000] hover:bg-[#FF3000]"
+                        ? "border-studio-ink text-studio-ink"
+                        : "border-studio-ink bg-studio-ink text-white hover:border-signal hover:bg-signal"
                     }`}
                   >
                     {course.levelTestPassed ? "Level Test: Passed ✓" : "Take Level Final Test"}
                   </a>
                 )}
               </div>
-              <p className="mb-6 text-sm text-black">{course.description}</p>
+              <p className="mb-6 text-sm text-studio-ink">{course.description}</p>
 
               <div className="space-y-4">
                 {course.chapters.map((chapter) => (
                   <div
                     key={chapter.id}
-                    className={`border-4 p-6 ${chapter.unlocked ? "border-black" : "border-black opacity-50"}`}
+                    className={`k-card p-6 ${chapter.unlocked ? "border-studio-ink" : "border-studio-ink opacity-50"}`}
                   >
                     <div className="flex items-center justify-between">
-                      <h3 className="text-lg font-black uppercase tracking-tight text-black">
+                      <h3 className="text-studio-ink k-h4">
                         {chapter.order_index}. {chapter.title}
                       </h3>
                       {!chapter.unlocked && (
-                        <span className="text-xs font-bold uppercase tracking-widest text-black">🔒 Locked</span>
+                        <span className="text-studio-ink k-clabel">🔒 Locked</span>
                       )}
                       {chapter.quizPassed && (
-                        <span className="border-2 border-black px-2 py-0.5 text-xs font-bold uppercase tracking-widest text-black">
+                        <span className="py-0.5 k-cbtn">
                           Quiz Passed ✓
                         </span>
                       )}
@@ -136,10 +136,10 @@ function CourseList() {
                             <li key={lesson.id}>
                               <a
                                 href={`/university/${course.slug}/${lesson.slug}`}
-                                className="flex min-h-11 items-center gap-3 text-sm text-black transition-colors duration-150 ease-out hover:text-[#FF3000]"
+                                className="flex min-h-11 items-center gap-3 text-sm text-studio-ink transition-colors duration-150 ease-out hover:text-signal"
                               >
                                 <span
-                                  className={`inline-block h-3 w-3 shrink-0 border-2 border-black ${lesson.completed ? "bg-black" : "bg-white"}`}
+                                  className={`inline-block h-3 w-3 shrink-0 border-2 border-studio-ink ${lesson.completed ? "bg-studio-ink" : "bg-studio-paper"}`}
                                   aria-hidden
                                 />
                                 {lesson.title}
@@ -150,7 +150,7 @@ function CourseList() {
                         {chapter.quizAvailable && !chapter.quizPassed && (
                           <a
                             href={`/university/chapters/${chapter.id}/quiz`}
-                            className="mt-4 inline-flex h-11 items-center justify-center border-4 border-black bg-black px-4 text-xs font-bold uppercase tracking-widest text-white transition-colors duration-150 ease-out hover:border-[#FF3000] hover:bg-[#FF3000]"
+                            className="mt-4 inline-flex h-11 items-center justify-center k-cbtn k-cbtn-primary"
                           >
                             Take Chapter Quiz
                           </a>
@@ -163,7 +163,7 @@ function CourseList() {
 
               {course.supplementaryLessons.length > 0 && (
                 <div className="mt-8">
-                  <p className="mb-3 text-xs font-bold uppercase tracking-widest text-[#FF3000]">
+                  <p className="mb-3 text-studio-blueberry k-clabel">
                     Supplementary
                   </p>
                   <ul className="space-y-2">
@@ -171,10 +171,10 @@ function CourseList() {
                       <li key={lesson.id}>
                         <a
                           href={`/university/${course.slug}/${lesson.slug}`}
-                          className="flex min-h-11 items-center gap-3 text-sm text-black transition-colors duration-150 ease-out hover:text-[#FF3000]"
+                          className="flex min-h-11 items-center gap-3 text-sm text-studio-ink transition-colors duration-150 ease-out hover:text-signal"
                         >
                           <span
-                            className={`inline-block h-3 w-3 shrink-0 border-2 border-black ${lesson.completed ? "bg-black" : "bg-white"}`}
+                            className={`inline-block h-3 w-3 shrink-0 border-2 border-studio-ink ${lesson.completed ? "bg-studio-ink" : "bg-studio-paper"}`}
                             aria-hidden
                           />
                           {lesson.title}

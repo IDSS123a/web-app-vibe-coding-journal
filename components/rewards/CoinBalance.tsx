@@ -78,9 +78,9 @@ export function CoinBalance({ variant = "full" }: { variant?: "full" | "compact"
         onClick={() => setExpanded((v) => !v)}
         aria-expanded={expanded}
         aria-label={`${state.coinBalance} Vibe Coins, Level ${state.level}, ${state.currentStreak}-day streak. Show details.`}
-        className={`flex shrink-0 items-center gap-2 border-2 border-black px-3 py-1 text-xs${variant === "compact" ? " min-h-11" : ""} font-bold uppercase tracking-widest text-black transition-colors duration-150 ease-out hover:border-[#FF3000]`}
+        className={`k-meta flex shrink-0 items-center gap-2 border border-black px-3 py-1 font-semibold text-black transition-colors duration-150 ease-out hover:border-signal${variant === "compact" ? " min-h-11" : ""}`}
       >
-        <span className="inline-block h-2.5 w-2.5 shrink-0 bg-[#D4A017]" aria-hidden />
+        <span className="inline-block h-2.5 w-2.5 shrink-0 border border-black bg-studio-lemon" aria-hidden />
         <span>{displayCoins}</span>
         {variant === "full" && (
           <>
@@ -97,17 +97,17 @@ export function CoinBalance({ variant = "full" }: { variant?: "full" | "compact"
       </button>
 
       {expanded && (
-        <div className="absolute right-0 top-full z-30 mt-2 w-56 border-4 border-black bg-white p-4 text-xs font-bold uppercase tracking-widest text-black shadow-none">
-          <div className="flex items-center justify-between border-b-2 border-black pb-2">
-            <span className="text-black/60">Vibe Coins</span>
+        <div className="k-meta absolute right-0 top-full z-30 mt-2 w-56 border border-black bg-white p-4 font-semibold text-black shadow-none">
+          <div className="flex items-center justify-between border-b border-rule pb-2">
+            <span className="text-ink-soft">Vibe Coins</span>
             <span>{state.coinBalance}</span>
           </div>
-          <div className="flex items-center justify-between border-b-2 border-black py-2">
-            <span className="text-black/60">Level</span>
+          <div className="flex items-center justify-between border-b border-rule py-2">
+            <span className="text-ink-soft">Level</span>
             <span>{state.level}</span>
           </div>
           <div className="flex items-center justify-between pt-2">
-            <span className="text-black/60">Current Streak</span>
+            <span className="text-ink-soft">Current Streak</span>
             <span>{state.currentStreak} day{state.currentStreak === 1 ? "" : "s"}</span>
           </div>
         </div>

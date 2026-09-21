@@ -43,7 +43,7 @@ function LightRays() {
         y1="200"
         x2={200 + 200 * Math.cos((angle * Math.PI) / 180)}
         y2={200 + 200 * Math.sin((angle * Math.PI) / 180)}
-        stroke="#FF3000"
+        stroke="var(--studio-blueberry)"
         strokeWidth="2"
         opacity="0.18"
       />
@@ -64,32 +64,32 @@ export function CelebrationOverlay({ open, title, subtitle, coins, onDismiss }: 
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/95 px-4">
+    <div className="layer-campus fixed inset-0 z-50 flex items-center justify-center bg-studio-canvas/95 px-4">
       <LightRays />
-      <div className="celebration-spring-in relative w-full max-w-md border-4 border-black bg-white p-10 text-center">
+      <div className="k-card celebration-spring-in relative w-full max-w-md p-10 text-center">
         <div className="relative mb-6 flex justify-center">
           {/* Soft glow behind the mascot -- the celebration layer's one
               permitted blur, per this component's header comment. */}
           <div
-            className="celebration-glow-pulse pointer-events-none absolute left-1/2 top-1/2 h-32 w-32 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#FF3000] blur-2xl"
+            className="celebration-glow-pulse pointer-events-none absolute left-1/2 top-1/2 h-32 w-32 -translate-x-1/2 -translate-y-1/2 rounded-full bg-studio-lemon blur-2xl"
             aria-hidden
           />
           <Mascot size={72} className="relative" />
         </div>
-        <p className="mb-2 text-xs font-bold uppercase tracking-widest text-[#FF3000]">
+        <p className="k-clabel mb-2 text-studio-blueberry">
           Vibe-Coding Journal
         </p>
-        <h2 className="text-3xl font-black uppercase tracking-tighter text-black">{title}</h2>
-        <p className="mt-3 text-sm text-black">{subtitle}</p>
+        <h2 className="k-cheading">{title}</h2>
+        <p className="k-cintro mt-3">{subtitle}</p>
         {coins != null && (
-          <p className="celebration-coin-pop mt-4 text-lg font-black text-black">
-            +{coins} <span className="text-sm font-bold uppercase tracking-widest">Vibe Coins</span>
+          <p className="celebration-coin-pop k-h4 mt-4">
+            +{coins} <span className="k-clabel">Vibe Coins</span>
           </p>
         )}
         <button
           type="button"
           onClick={onDismiss}
-          className="mt-8 h-14 w-full border-4 border-black bg-black text-sm font-bold uppercase tracking-widest text-white transition-colors duration-150 ease-out hover:border-[#FF3000] hover:bg-[#FF3000]"
+          className="k-cbtn k-cbtn-primary mt-8 h-14 w-full"
         >
           Continue
         </button>

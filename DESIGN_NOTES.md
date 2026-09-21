@@ -5,6 +5,10 @@ captured 2026-07-18 so it isn't lost before the design pass begins.
 Formalize into CONSTITUTION.md as its own P-section when the design
 sprint actually starts, not before.
 
+> **2026-09-21: superseded in part by the KANON visual system (PDL-074, `specs/kanon-redesign/`).** The Swiss International
+> philosophy below still describes the Swiss spine, but its typography (Inter only, uppercase Inter Black headings) and its
+> 4px structure were replaced by `TYPOGRAPHY_SPEC.md`. Read that spec before any design work.
+
 ## Timing decision
 UI/UX design pass is sequenced AFTER functional sprints (06 through
 09, plus Bookmarks/Archive UI) — not parallel. Director's explicit

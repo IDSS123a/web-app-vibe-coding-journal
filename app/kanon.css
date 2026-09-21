@@ -66,6 +66,7 @@
     font-size: var(--text-report-date);
     line-height: 0.86;
     letter-spacing: -0.05em;
+    overflow-wrap: anywhere;
   }
   .k-date-read {
     font-family: var(--font-display);

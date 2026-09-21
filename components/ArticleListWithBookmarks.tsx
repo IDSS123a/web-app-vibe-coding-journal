@@ -59,18 +59,18 @@ const articleAnchor = (id: string) => `article-${id}`;
 function HeadlineIndex({ articles }: { articles: Article[] }) {
   if (articles.length < 2) return null;
   return (
-    <nav aria-label="Articles in this report" className="mt-6 border-2 border-black bg-[#F2F2F2] p-4 sm:p-6">
-      <h2 className="mb-3 text-xs font-bold uppercase tracking-widest text-[#FF3000]">
+    <nav aria-label="Articles in this report" className="k-box-muted mt-6 p-4 sm:p-6">
+      <h2 className="mb-3 text-signal k-h4">
         In this report, {articles.length} articles
       </h2>
       <ol className="space-y-0">
         {articles.map((article, i) => (
-          <li key={article.id} className="border-t border-black/20 first:border-t-0">
+          <li key={article.id} className="border-t border-rule first:border-t-0">
             <a
               href={`#${articleAnchor(article.id)}`}
-              className="flex min-h-11 items-start gap-3 py-2 text-sm font-bold text-black transition-colors duration-150 ease-out hover:text-[#FF3000]"
+              className="k-ui flex min-h-11 items-start gap-3 py-2 font-semibold text-black transition-colors duration-150 ease-out hover:text-signal"
             >
-              <span className="w-6 shrink-0 text-xs tabular-nums text-black/60">{String(i + 1).padStart(2, "0")}</span>
+              <span className="k-meta w-6 shrink-0 tabular-nums">{String(i + 1).padStart(2, "0")}</span>
               <span className="break-words">{article.title}</span>
             </a>
           </li>
@@ -126,7 +126,7 @@ function MoreBelowCue({ articles }: { articles: Article[] }) {
       type="button"
       onClick={goToNext}
       aria-label={`Scroll to the next article, ${below} more below`}
-      className="fixed bottom-10 left-1/2 z-30 inline-flex min-h-11 -translate-x-1/2 items-center gap-2 whitespace-nowrap border-2 border-black bg-black px-4 text-xs font-bold uppercase tracking-widest text-white transition-colors duration-150 ease-out hover:border-[#FF3000] hover:bg-[#FF3000]"
+      className="fixed bottom-[max(2.5rem,env(safe-area-inset-bottom))] left-1/2 z-30 inline-flex min-h-11 -translate-x-1/2 items-center gap-2 whitespace-nowrap k-btn k-btn-primary"
     >
       <span aria-hidden="true">↓</span>
       {below} more below
@@ -220,14 +220,14 @@ export function ArticleListWithBookmarks({
             <div
               key={article.id}
               id={articleAnchor(article.id)}
-              className={`scroll-mt-20 border-black p-4 sm:p-6 md:p-8 ${i === 0 ? "border-2" : "border-2 border-t-0"}`}
+              className={`scroll-mt-20 p-4 sm:p-6 md:p-8 ${i === 0 ? "" : "k-rule"}`}
             >
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
                 <a
                   href={article.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-block break-words py-2 text-lg font-black uppercase tracking-tight text-black transition-colors duration-150 ease-out hover:text-[#FF3000] lg:py-0"
+                  className="k-editorial-title inline-block min-h-11 py-2 transition-colors duration-150 ease-out hover:text-signal"
                 >
                   {article.title}
                 </a>
@@ -237,60 +237,56 @@ export function ArticleListWithBookmarks({
                     onClick={() => (token ? toggleBookmark(article.id) : undefined)}
                     disabled={!token || !bookmarksLoaded}
                     title={token ? (isBookmarked ? "Remove bookmark" : "Bookmark") : "Sign in to bookmark"}
-                    className={`min-h-11 shrink-0 self-start border-2 px-3 py-1 text-xs font-bold uppercase tracking-widest transition-colors duration-150 ease-out ${
+                    className={`min-h-11 shrink-0 self-start k-btn px-4 py-2 text-xs ${
                       isBookmarked
-                        ? "border-[#FF3000] bg-[#FF3000] text-white"
+                        ? "border-signal bg-signal text-white"
                         : "border-black bg-white text-black"
-                    } ${token ? "hover:border-[#FF3000] hover:bg-[#FF3000] hover:text-white" : "cursor-not-allowed opacity-40"}`}
+                    } ${token ? "hover:border-signal hover:bg-signal hover:text-white" : "cursor-not-allowed opacity-40"}`}
                   >
                     {isBookmarked ? "★ Bookmarked" : "☆ Bookmark"}
                   </button>
                 )}
               </div>
               {(article.summary || article.raw_summary) && (
-                <p className="mt-3 text-sm leading-relaxed text-black">
+                <p className="k-editorial mt-3">
                   {article.summary || article.raw_summary}
                 </p>
               )}
               {article.why_it_matters && (
-                <p className="mt-3 text-sm text-black">
-                  <span className="font-bold uppercase tracking-wide">Why it matters: </span>
+                <p className="k-editorial mt-3">
+                  <span className="k-label">Why it matters: </span>
                   {article.why_it_matters}
                   {article.who_it_affects ? ` (${article.who_it_affects})` : ""}
                 </p>
               )}
               {article.what_to_watch && (
-                <p className="mt-3 text-sm text-black">
-                  <span className="font-bold uppercase tracking-wide">What to watch: </span>
+                <p className="k-editorial mt-3">
+                  <span className="k-label">What to watch: </span>
                   {article.what_to_watch}
                 </p>
               )}
-              <div className="mt-4 flex flex-wrap gap-2 text-xs font-bold uppercase tracking-wide text-black">
+              <div className="mt-4 flex flex-wrap items-center gap-2">
                 {article.category && (
-                  <span className="border-2 border-black px-2 py-0.5">{article.category}</span>
+                  <span className="k-badge">{article.category}</span>
                 )}
                 {article.source && (
-                  <span className="border-2 border-black px-2 py-0.5">{article.source}</span>
+                  <span className="k-meta">{article.source}</span>
                 )}
                 {article.confidence_score != null && (
-                  <span className="border-2 border-black px-2 py-0.5">
+                  <span className="k-badge">
                     {Math.round(article.confidence_score * 100)}% confidence
                   </span>
                 )}
                 {article.worth_trying && (
                   <span
-                    className={`border-2 px-2 py-0.5 ${
-                      article.worth_trying === "yes"
-                        ? "border-[#FF3000] text-[#FF3000]"
-                        : "border-black text-black"
-                    }`}
+                    className={`k-badge ${article.worth_trying === "yes" ? "k-badge-day" : ""}`}
                   >
                     Worth trying: {article.worth_trying === "yes" ? "Yes" : article.worth_trying === "no" ? "No" : "Maybe"}
                   </span>
                 )}
               </div>
               {relatedSources?.[article.id] && relatedSources[article.id]!.length > 0 && (
-                <p className="mt-3 text-xs italic text-black opacity-60">
+                <p className="k-meta mt-3">
                   Also covered by: {relatedSources[article.id]!.join(", ")}
                 </p>
               )}

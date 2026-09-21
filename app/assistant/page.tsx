@@ -75,7 +75,7 @@ function CopyButton({ text }: { text: string }) {
           })
           .catch(() => undefined);
       }}
-      className="h-11 shrink-0 border-4 border-black bg-black px-4 text-xs font-bold uppercase tracking-widest text-white transition-colors duration-150 ease-out hover:border-[#FF3000] hover:bg-[#FF3000]"
+      className="h-11 shrink-0 k-btn k-btn-primary"
     >
       {copied ? "Copied ✓" : "Copy"}
     </button>
@@ -84,42 +84,42 @@ function CopyButton({ text }: { text: string }) {
 
 function BlueprintResult({ generation }: { generation: Generation }) {
   return (
-    <div className="mt-10 border-4 border-black">
-      <div className="border-b-4 border-black bg-[#F2F2F2] p-6">
-        <p className="text-xs font-bold uppercase tracking-widest text-[#FF3000]">{generation.domain}</p>
+    <div className="mt-10 border border-black">
+      <div className="border-b border-black bg-paper-2 p-6">
+        <p className="text-signal k-label">{generation.domain}</p>
         <p className="mt-2 text-sm text-black">{generation.scenario}</p>
         <p className="mt-2 text-sm font-bold text-black">{generation.goal}</p>
       </div>
 
-      <div className="border-b-4 border-black p-6">
-        <h3 className="mb-3 text-xs font-bold uppercase tracking-widest text-black">Explanation</h3>
+      <div className="border-b border-black p-6">
+        <h3 className="mb-3 text-black k-label">Explanation</h3>
         <MarkdownContent className="text-black">{generation.explanation}</MarkdownContent>
       </div>
 
-      <div className="border-b-4 border-black p-6">
+      <div className="border-b border-black p-6">
         <div className="mb-3 flex items-center justify-between gap-4">
-          <h3 className="text-xs font-bold uppercase tracking-widest text-black">
+          <h3 className="text-black k-label">
             Prompt Blueprint, copy this into Claude Code
           </h3>
           <CopyButton text={generation.promptBlueprint} />
         </div>
-        <pre className="max-h-[32rem] overflow-auto whitespace-pre-wrap break-words bg-[#F2F2F2] p-4 font-mono text-xs text-black">
+        <pre className="max-h-[32rem] overflow-auto whitespace-pre-wrap break-words bg-paper-2 p-4 font-mono text-xs text-black">
           {generation.promptBlueprint}
         </pre>
       </div>
 
-      <div className="border-b-4 border-black p-6">
+      <div className="border-b border-black p-6">
         <div className="mb-3 flex items-center justify-between gap-4">
-          <h3 className="text-xs font-bold uppercase tracking-widest text-black">Flow Diagram (Mermaid)</h3>
+          <h3 className="text-black k-label">Flow Diagram (Mermaid)</h3>
           <CopyButton text={generation.mermaidDiagram} />
         </div>
-        <pre className="max-h-80 overflow-auto whitespace-pre-wrap break-words bg-[#F2F2F2] p-4 font-mono text-xs text-black">
+        <pre className="max-h-80 overflow-auto whitespace-pre-wrap break-words bg-paper-2 p-4 font-mono text-xs text-black">
           {generation.mermaidDiagram}
         </pre>
       </div>
 
       <div className="p-6">
-        <h3 className="mb-3 text-xs font-bold uppercase tracking-widest text-black">Suggested Next Steps</h3>
+        <h3 className="mb-3 text-black k-label">Suggested Next Steps</h3>
         <MarkdownContent className="text-black">{generation.nextSteps}</MarkdownContent>
       </div>
     </div>
@@ -146,13 +146,13 @@ function GeneratingStatus() {
   }, []);
   const stage = [...GENERATION_STAGES].reverse().find((s) => seconds >= s.atSeconds)!;
   return (
-    <div role="status" aria-live="polite" className="border-4 border-black p-4 text-sm text-black">
+    <div role="status" aria-live="polite" className="border border-black p-4 text-sm text-black">
       <p className="font-bold">{stage.text}</p>
       <p className="mt-1 text-xs text-[#666]">
         {seconds}s elapsed, please keep this tab open; your Blueprint appears here and is saved to History.
       </p>
-      <div className="mt-3 h-1 w-full overflow-hidden bg-[#E5E5E5]" aria-hidden="true">
-        <div className="h-full w-1/3 animate-pulse bg-[#FF3000]" />
+      <div className="mt-3 h-1 w-full overflow-hidden bg-rule" aria-hidden="true">
+        <div className="h-full w-1/3 animate-pulse bg-signal" />
       </div>
     </div>
   );
@@ -262,11 +262,11 @@ function Wizard() {
   }
 
   return (
-    <div className="min-h-dvh bg-white px-4 py-12 md:px-12">
+    <div className="k-page">
       <div className="mx-auto max-w-3xl xl:max-w-4xl">
-        <div className="mb-10 border-b-4 border-black pb-8">
-          <p className="mb-2 text-xs font-bold uppercase tracking-widest text-[#FF3000]">Premium</p>
-          <h1 className="text-4xl font-black uppercase tracking-tighter text-black md:text-5xl">
+        <div className="mb-10 border-b border-black pb-8">
+          <p className="mb-2 text-signal k-label">Premium</p>
+          <h1 className="text-black k-display">
             Vibe-Coding Assistant
           </h1>
           <p className="mt-2 text-sm text-black">
@@ -276,12 +276,12 @@ function Wizard() {
           </p>
         </div>
 
-        <div className="mb-8 flex gap-0 border-4 border-black">
+        <div className="mb-8 flex gap-0 border border-black">
           <button
             type="button"
             onClick={() => setView("new")}
-            className={`h-12 flex-1 text-xs font-bold uppercase tracking-widest transition-colors duration-150 ease-out ${
-              view === "new" ? "bg-black text-white" : "bg-white text-black hover:bg-[#F2F2F2]"
+            className={`h-12 flex-1 transition-colors duration-150 ease-out k-label ${
+              view === "new" ? "bg-black text-white" : "bg-white text-black hover:bg-paper-2"
             }`}
           >
             New Prompt
@@ -289,8 +289,8 @@ function Wizard() {
           <button
             type="button"
             onClick={() => setView("history")}
-            className={`h-12 flex-1 border-l-4 border-black text-xs font-bold uppercase tracking-widest transition-colors duration-150 ease-out ${
-              view === "history" ? "bg-black text-white" : "bg-white text-black hover:bg-[#F2F2F2]"
+            className={`h-12 flex-1 border-l-4 border-black transition-colors duration-150 ease-out k-label ${
+              view === "history" ? "bg-black text-white" : "bg-white text-black hover:bg-paper-2"
             }`}
           >
             History
@@ -300,7 +300,7 @@ function Wizard() {
         {view === "history" ? (
           <div>
             {historyLoading && <p className="text-sm text-black opacity-60">Loading…</p>}
-            {historyError && <p className="border-2 border-[#FF3000] p-3 text-sm text-[#FF3000]">{historyError}</p>}
+            {historyError && <p className="border border-signal p-3 text-sm text-signal">{historyError}</p>}
             {!historyLoading && !historyError && history.length === 0 && (
               <p className="text-sm text-black opacity-60">No prompts generated yet.</p>
             )}
@@ -310,9 +310,9 @@ function Wizard() {
                   <button
                     type="button"
                     onClick={() => openHistoryItem(item.id)}
-                    className="block w-full border-4 border-black p-4 text-left transition-colors duration-150 ease-out hover:border-[#FF3000]"
+                    className="block w-full border border-black p-4 text-left transition-colors duration-150 ease-out hover:border-signal"
                   >
-                    <p className="text-xs font-bold uppercase tracking-widest text-[#FF3000]">{item.domain}</p>
+                    <p className="text-signal k-label">{item.domain}</p>
                     <p className="mt-1 text-sm text-black">{item.goal}</p>
                     <p className="mt-2 text-xs text-black opacity-50">
                       {new Date(item.createdAt).toLocaleString()}
@@ -332,7 +332,7 @@ function Wizard() {
                   value={form.projectDescription}
                   onChange={(e) => setForm({ ...form, projectDescription: e.target.value })}
                   placeholder="e.g. A habit tracker for daily journaling"
-                  className="h-11 w-full border-4 border-black px-3 text-sm text-black"
+                  className="h-11 w-full border border-black px-3 text-sm text-black"
                 />
               </Field>
 
@@ -340,7 +340,7 @@ function Wizard() {
                 <select
                   value={form.projectType}
                   onChange={(e) => setForm({ ...form, projectType: e.target.value })}
-                  className="h-11 w-full border-4 border-black px-3 text-sm text-black"
+                  className="h-11 w-full border border-black px-3 text-sm text-black"
                 >
                   <option value="web_app">Web app</option>
                   <option value="mobile_app">Mobile app</option>
@@ -356,7 +356,7 @@ function Wizard() {
                     value={form.projectTypeOtherText}
                     onChange={(e) => setForm({ ...form, projectTypeOtherText: e.target.value })}
                     placeholder="Describe the project type"
-                    className="mt-2 h-11 w-full border-4 border-black px-3 text-sm text-black"
+                    className="mt-2 h-11 w-full border border-black px-3 text-sm text-black"
                   />
                 )}
               </Field>
@@ -368,7 +368,7 @@ function Wizard() {
                   value={form.targetUser}
                   onChange={(e) => setForm({ ...form, targetUser: e.target.value })}
                   placeholder="e.g. Myself, tracking a daily writing habit"
-                  className="h-11 w-full border-4 border-black px-3 text-sm text-black"
+                  className="h-11 w-full border border-black px-3 text-sm text-black"
                 />
               </Field>
 
@@ -380,7 +380,7 @@ function Wizard() {
                   value={form.coreGoal}
                   onChange={(e) => setForm({ ...form, coreGoal: e.target.value })}
                   placeholder="Describe the core functionality in a few sentences"
-                  className="w-full border-4 border-black px-3 py-2 text-sm text-black"
+                  className="w-full border border-black px-3 py-2 text-sm text-black"
                 />
               </Field>
 
@@ -388,7 +388,7 @@ function Wizard() {
                 <select
                   value={form.experienceLevel}
                   onChange={(e) => setForm({ ...form, experienceLevel: e.target.value })}
-                  className="h-11 w-full border-4 border-black px-3 text-sm text-black"
+                  className="h-11 w-full border border-black px-3 text-sm text-black"
                 >
                   <option value="beginner">Complete beginner</option>
                   <option value="some_experience">Some experience</option>
@@ -403,7 +403,7 @@ function Wizard() {
                   value={form.techPreferences}
                   onChange={(e) => setForm({ ...form, techPreferences: e.target.value })}
                   placeholder="e.g. Next.js, Supabase"
-                  className="h-11 w-full border-4 border-black px-3 text-sm text-black disabled:opacity-40"
+                  className="h-11 w-full border border-black px-3 text-sm text-black disabled:opacity-40"
                 />
                 <label className="mt-2 flex min-h-11 items-center gap-2 text-xs text-black">
                   <input
@@ -421,7 +421,7 @@ function Wizard() {
                   value={form.inspiration}
                   onChange={(e) => setForm({ ...form, inspiration: e.target.value })}
                   placeholder="An existing app/site this should resemble or avoid resembling"
-                  className="h-11 w-full border-4 border-black px-3 text-sm text-black"
+                  className="h-11 w-full border border-black px-3 text-sm text-black"
                 />
               </Field>
 
@@ -431,13 +431,13 @@ function Wizard() {
                   value={form.constraints}
                   onChange={(e) => setForm({ ...form, constraints: e.target.value })}
                   placeholder="e.g. Must run on the free tier only"
-                  className="h-11 w-full border-4 border-black px-3 text-sm text-black"
+                  className="h-11 w-full border border-black px-3 text-sm text-black"
                 />
               </Field>
 
               {submitting && <GeneratingStatus />}
               {error && (
-                <p role="alert" className="border-2 border-[#FF3000] p-3 text-sm text-[#FF3000]">
+                <p role="alert" className="border border-signal p-3 text-sm text-signal">
                   {error}
                 </p>
               )}
@@ -445,7 +445,7 @@ function Wizard() {
               <button
                 type="submit"
                 disabled={submitting}
-                className="h-14 w-full border-4 border-black bg-black text-sm font-bold uppercase tracking-widest text-white transition-colors duration-150 ease-out hover:border-[#FF3000] hover:bg-[#FF3000] disabled:opacity-50"
+                className="h-14 w-full disabled:opacity-50 k-btn k-btn-primary"
               >
                 {submitting ? "Generating…" : "Generate My Prompt"}
               </button>
@@ -466,9 +466,9 @@ function Wizard() {
 function Field({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
   return (
     <label className="block">
-      <span className="mb-2 block text-xs font-bold uppercase tracking-widest text-black">
+      <span className="mb-2 block text-black k-label">
         {label}
-        {required && <span className="text-[#FF3000]"> *</span>}
+        {required && <span className="text-signal"> *</span>}
       </span>
       {children}
     </label>

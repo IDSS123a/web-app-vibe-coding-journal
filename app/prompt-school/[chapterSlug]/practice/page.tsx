@@ -63,42 +63,42 @@ function Practice() {
   const nextChapter = outlineIndex >= 0 ? PROMPT_SCHOOL_OUTLINE[outlineIndex + 1] : undefined;
 
   return (
-    <div className="min-h-dvh bg-white px-4 py-10 md:px-12 md:py-12">
+    <div className="k-page layer-campus">
       <div className="mx-auto max-w-3xl">
-        <Link href={`/prompt-school/${chapterSlug}`} className="mb-6 inline-flex min-h-11 items-center text-xs font-bold uppercase tracking-widest text-black underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]">
+        <Link href={`/prompt-school/${chapterSlug}`} className="mb-6 inline-flex min-h-11 items-center underline decoration-1 underline-offset-4 k-cbtn">
           ← {data?.chapter.title ?? "Chapter"}
         </Link>
 
-        {error && <p role="alert" className="border-2 border-[#FF3000] p-3 text-sm text-[#FF3000]">{error}</p>}
-        {!data && !error && <p className="text-sm text-black opacity-60">Loading…</p>}
+        {error && <p role="alert" className="k-card-sm border-signal p-3 text-sm text-signal">{error}</p>}
+        {!data && !error && <p className="text-sm text-studio-ink opacity-60">Loading…</p>}
 
         {data && !data.practiceAvailable && (
-          <p role="alert" className="border-4 border-black p-4 text-sm text-black">
+          <p role="alert" className="k-card p-4 text-sm text-studio-ink">
             The practice opens when you have finished every lesson of this chapter.{" "}
-            <Link href={`/prompt-school/${chapterSlug}`} className="font-bold underline decoration-2 underline-offset-4 hover:text-[#FF3000]">Back to the lessons</Link>
+            <Link href={`/prompt-school/${chapterSlug}`} className="font-bold underline decoration-1 underline-offset-4 hover:text-signal">Back to the lessons</Link>
           </p>
         )}
 
         {data && data.practiceAvailable && token && (
           <>
-            <div className="sticky top-16 z-30 mb-8 border-4 border-black bg-white p-3 sm:top-[4.25rem]" role="status" aria-live="polite">
-              <p className="text-xs font-bold uppercase tracking-widest text-black">
+            <div className="sticky top-16 z-30 mb-8 k-card p-3 sm:top-[4.25rem]" role="status" aria-live="polite">
+              <p className="text-studio-ink k-clabel">
                 Chapter score {Math.round(score * 100)}% · pass at {Math.round(PASS_SCORE * 100)}%
-                {passed && <span className="ml-2 text-[#FF3000]">Chapter complete ✓</span>}
+                {passed && <span className="ml-2 text-signal">Chapter complete ✓</span>}
               </p>
-              <div className="mt-2 h-2 border-2 border-black" aria-hidden="true">
-                <div className="h-full bg-black" style={{ width: `${Math.round(score * 100)}%` }} />
+              <div className="mt-2 h-2 border-2 border-studio-ink" aria-hidden="true">
+                <div className="h-full bg-studio-ink" style={{ width: `${Math.round(score * 100)}%` }} />
               </div>
             </div>
 
-            <h1 className="mb-6 text-3xl font-black uppercase tracking-tighter text-black md:text-4xl">Practice</h1>
+            <h1 className="mb-6 text-studio-ink k-cheading">Practice</h1>
 
             {passed && (
-              <p role="status" className="mb-6 border-l-8 border-black py-1 pl-3 text-sm text-black">
+              <p role="status" className="mb-6 border-l-4 border-studio-ink py-1 pl-3 text-sm text-studio-ink">
                 {nextChapter
                   ? `You have passed this chapter. The next one, "${nextChapter.title}", is now open in the School.`
                   : "You have passed the last chapter. You have completed Prompt School."}{" "}
-                <Link href="/prompt-school" className="font-bold underline decoration-2 underline-offset-4 hover:text-[#FF3000]">Back to the School</Link>
+                <Link href="/prompt-school" className="font-bold underline decoration-1 underline-offset-4 hover:text-signal">Back to the School</Link>
               </p>
             )}
 

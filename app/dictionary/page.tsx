@@ -34,35 +34,35 @@ const GROUP_LABEL = Object.fromEntries(DICTIONARY_GROUPS.map((g) => [g.id, g.lab
 
 const chip = (active: boolean) =>
   `inline-flex min-h-11 items-center border-2 px-3 text-xs font-bold uppercase tracking-widest transition-colors duration-150 ease-out ${
-    active ? "border-black bg-black text-white" : "border-black bg-white text-black hover:border-[#FF3000] hover:text-[#FF3000]"
+    active ? "border-black bg-black text-white" : "border-black bg-white text-black hover:border-signal hover:text-signal"
   }`;
 
 function TermCard({ term, now, onRelated }: { term: PublicDictionaryTerm; now: Date; onRelated: (name: string) => void }) {
   const isNew = isNewTerm(term, now);
   const trending = isTrendingTerm(term, now);
   return (
-    <article className="border-4 border-black p-4 sm:p-6">
+    <article className="border border-black p-4 sm:p-6">
       <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
-        <h3 className="break-words text-lg font-black uppercase tracking-tight text-black">{term.term}</h3>
+        <h3 className="break-words text-black k-h4">{term.term}</h3>
         <div className="flex flex-wrap gap-2">
-          {isNew && <span className="border-2 border-[#FF3000] bg-[#FF3000] px-2 py-0.5 text-[11px] font-bold uppercase tracking-widest text-white">New</span>}
-          {trending && <span className="border-2 border-[#FF3000] px-2 py-0.5 text-[11px] font-bold uppercase tracking-widest text-[#FF3000]">Trending</span>}
-          {term.level && <span className="border-2 border-black px-2 py-0.5 text-[11px] font-bold uppercase tracking-widest text-black">{term.level}</span>}
-          {term.tier === "adjacent" && <span className="border-2 border-black bg-[#F2F2F2] px-2 py-0.5 text-[11px] font-bold uppercase tracking-widest text-black">Adjacent</span>}
+          {isNew && <span className="bg-signal py-0.5 text-[11px] k-btn">New</span>}
+          {trending && <span className="py-0.5 text-[11px] text-signal k-btn">Trending</span>}
+          {term.level && <span className="py-0.5 text-[11px] k-btn">{term.level}</span>}
+          {term.tier === "adjacent" && <span className="bg-paper-2 py-0.5 text-[11px] k-btn">Adjacent</span>}
         </div>
       </div>
       <p className="mt-3 text-sm leading-relaxed text-black">{term.definition}</p>
       {term.aliases.length > 0 && <p className="mt-2 text-xs text-black/70">Also known as: {term.aliases.join(", ")}</p>}
-      {term.category_group && <p className="mt-2 text-xs font-bold uppercase tracking-widest text-black/60">{GROUP_LABEL[term.category_group] ?? term.category_group}</p>}
+      {term.category_group && <p className="mt-2 text-black/60 k-label">{GROUP_LABEL[term.category_group] ?? term.category_group}</p>}
       {term.related_terms.length > 0 && (
         <div className="mt-3 flex flex-wrap items-center gap-2">
-          <span className="text-xs font-bold uppercase tracking-widest text-black/60">See also</span>
+          <span className="text-black/60 k-label">See also</span>
           {term.related_terms.map((name) => (
             <button
               key={name}
               type="button"
               onClick={() => onRelated(name)}
-              className="inline-flex min-h-11 items-center border-2 border-black px-3 text-xs font-bold text-black transition-colors duration-150 ease-out hover:border-[#FF3000] hover:text-[#FF3000]"
+              className="inline-flex min-h-11 items-center border border-black px-3 text-xs font-bold text-black transition-colors duration-150 ease-out hover:border-signal hover:text-signal"
             >
               {name}
             </button>
@@ -123,11 +123,11 @@ function TermList() {
   }
 
   return (
-    <div className="min-h-dvh bg-white px-4 py-12 md:px-12">
+    <div className="k-page">
       <div ref={topRef} className="mx-auto max-w-4xl scroll-mt-24 xl:max-w-5xl">
-        <div className="mb-8 border-b-4 border-black pb-8">
-          <p className="mb-2 text-xs font-bold uppercase tracking-widest text-[#FF3000]">Premium</p>
-          <h1 className="text-4xl font-black uppercase tracking-tighter text-black md:text-5xl">Vibe-Coding Dictionary</h1>
+        <div className="mb-8 border-b border-black pb-8">
+          <p className="mb-2 text-signal k-label">Premium</p>
+          <h1 className="text-black k-display">Vibe-Coding Dictionary</h1>
           <p className="mt-2 text-sm text-black">
             Plain-language definitions for the terms you meet in the University and the Daily Digest.
             {terms.length > 0 && ` ${terms.length.toLocaleString("en-US")} terms, growing as new ones appear in the market.`}
@@ -143,11 +143,11 @@ function TermList() {
           value={filters.query}
           onChange={(e) => set({ query: e.target.value })}
           placeholder="Search terms and abbreviations"
-          className="mb-4 h-12 w-full border-b-4 border-black bg-white px-1 text-base text-black outline-none transition-colors duration-150 ease-out focus:border-[#FF3000]"
+          className="mb-4 h-12 w-full border-b border-black bg-white px-1 text-base text-black outline-none transition-colors duration-150 ease-out focus:border-signal"
         />
 
         {loading && <p className="text-sm text-black opacity-60">Loading…</p>}
-        {error && <p role="alert" className="border-2 border-[#FF3000] p-3 text-sm text-[#FF3000]">{error}</p>}
+        {error && <p role="alert" className="border border-signal p-3 text-sm text-signal">{error}</p>}
 
         {!loading && !error && (
           <>
@@ -192,20 +192,20 @@ function TermList() {
 
             {showTiles && (
               <section aria-label="Browse by topic" className="mb-8">
-                <h2 className="mb-3 text-xs font-bold uppercase tracking-widest text-[#FF3000]">Browse by topic</h2>
+                <h2 className="mb-3 text-signal k-h4">Browse by topic</h2>
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
                   {DICTIONARY_GROUPS.filter((g) => (tileCounts[g.id] ?? 0) > 0).map((g) => (
                     <button
                       key={g.id}
                       type="button"
                       onClick={() => set({ group: g.id })}
-                      className="flex min-h-11 items-center justify-between gap-3 border-2 border-black p-3 text-left transition-colors duration-150 ease-out hover:border-[#FF3000] hover:text-[#FF3000]"
+                      className="flex min-h-11 items-center justify-between gap-3 border border-black p-3 text-left transition-colors duration-150 ease-out hover:border-signal hover:text-signal"
                     >
                       <span>
-                        <span className="block text-sm font-black uppercase tracking-tight text-black">{g.label}</span>
+                        <span className="block text-black k-label">{g.label}</span>
                         <span className="mt-1 block text-xs text-black/70">{g.description}</span>
                       </span>
-                      <span className="shrink-0 text-sm font-black tabular-nums text-black">{tileCounts[g.id]}</span>
+                      <span className="k-value shrink-0 text-base tabular-nums text-black">{tileCounts[g.id]}</span>
                     </button>
                   ))}
                 </div>
@@ -218,23 +218,23 @@ function TermList() {
             )}
 
             {filters.group && (
-              <div className="mb-4 flex flex-wrap items-center gap-3 border-2 border-black bg-[#F2F2F2] p-3 text-sm text-black">
-                <span className="font-bold uppercase tracking-widest">{GROUP_LABEL[filters.group] ?? filters.group}</span>
-                <button type="button" onClick={() => set({ group: null })} className="inline-flex min-h-11 items-center border-2 border-black bg-white px-3 text-xs font-bold uppercase tracking-widest hover:border-[#FF3000] hover:text-[#FF3000]">
+              <div className="mb-4 flex flex-wrap items-center gap-3 border border-black bg-paper-2 p-3 text-sm text-black">
+                <span className="k-label">{GROUP_LABEL[filters.group] ?? filters.group}</span>
+                <button type="button" onClick={() => set({ group: null })} className="inline-flex min-h-11 items-center k-btn">
                   Show all topics
                 </button>
               </div>
             )}
 
             <div className="mb-6 sm:hidden">
-              <label htmlFor="dictionary-letter" className="mb-1 block text-xs font-bold uppercase tracking-widest text-black/70">
+              <label htmlFor="dictionary-letter" className="mb-1 block text-black/70 k-label">
                 Jump to letter
               </label>
               <select
                 id="dictionary-letter"
                 value={filters.letter ?? ""}
                 onChange={(e) => set({ letter: e.target.value || null })}
-                className="h-11 w-full border-2 border-black bg-white px-3 text-sm text-black"
+                className="h-11 w-full border border-black bg-white px-3 text-sm text-black"
               >
                 <option value="">All letters</option>
                 {LETTERS.filter((l) => (letterCounts[l] ?? 0) > 0 || filters.letter === l).map((l) => (
@@ -257,8 +257,8 @@ function TermList() {
                     aria-pressed={active}
                     aria-label={`Terms starting with ${l}, ${count}`}
                     onClick={() => set({ letter: active ? null : l })}
-                    className={`inline-flex h-11 min-w-11 items-center justify-center border-2 px-2 text-xs font-black transition-colors duration-150 ease-out ${
-                      active ? "border-black bg-black text-white" : count === 0 ? "border-black/20 text-black/30" : "border-black text-black hover:border-[#FF3000] hover:text-[#FF3000]"
+                    className={`inline-flex h-11 min-w-11 items-center justify-center border px-2 text-xs font-black transition-colors duration-150 ease-out ${
+                      active ? "border-black bg-black text-white" : count === 0 ? "border-black/20 text-black/30" : "border-black text-black hover:border-signal hover:text-signal"
                     }`}
                   >
                     {l}
@@ -267,17 +267,17 @@ function TermList() {
               })}
             </nav>
 
-            <p className="mb-4 text-xs font-bold uppercase tracking-widest text-black/70" aria-live="polite">
+            <p className="mb-4 text-black/70 k-label" aria-live="polite">
               {results.length === 0 ? "No terms" : `Showing ${Math.min(shown, results.length).toLocaleString("en-US")} of ${results.length.toLocaleString("en-US")} terms`}
               {anyFacet && (
-                <button type="button" onClick={() => setFilters({ ...EMPTY_FILTERS, includeAdjacent: filters.includeAdjacent })} className="ml-3 inline-flex min-h-11 items-center underline decoration-2 underline-offset-4 hover:text-[#FF3000]">
+                <button type="button" onClick={() => setFilters({ ...EMPTY_FILTERS, includeAdjacent: filters.includeAdjacent })} className="ml-3 inline-flex min-h-11 items-center underline decoration-1 underline-offset-4 hover:text-signal">
                   Clear filters
                 </button>
               )}
             </p>
 
             {results.length === 0 ? (
-              <p className="border-4 border-black py-16 text-center text-sm italic text-black opacity-60">
+              <p className="border border-black py-16 text-center text-sm italic text-black opacity-60">
                 {filters.query.trim() ? `No terms match "${filters.query}".` : "No terms in this selection."}
                 {!filters.includeAdjacent && hiddenAdjacent > 0 && filters.query.trim() ? " Try including advanced and adjacent terms." : ""}
               </p>
@@ -293,7 +293,7 @@ function TermList() {
               <button
                 type="button"
                 onClick={() => setShown((n) => n + PAGE_SIZE)}
-                className="mt-6 flex min-h-12 w-full items-center justify-center border-4 border-black bg-black px-4 text-sm font-bold uppercase tracking-widest text-white transition-colors duration-150 ease-out hover:border-[#FF3000] hover:bg-[#FF3000]"
+                className="mt-6 flex min-h-12 w-full items-center justify-center k-btn k-btn-primary"
               >
                 Show {Math.min(PAGE_SIZE, results.length - shown)} more ({(results.length - shown).toLocaleString("en-US")} left)
               </button>

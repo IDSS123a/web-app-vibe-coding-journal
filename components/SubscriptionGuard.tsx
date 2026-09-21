@@ -104,19 +104,19 @@ export function SubscriptionGuard({ children }: { children: ReactNode }) {
 
   if (loading || state === "checking") {
     return (
-      <div className="flex min-h-dvh items-center justify-center bg-white">
-        <div className="text-sm font-bold uppercase tracking-widest text-black">Checking access…</div>
+      <div className="flex items-center justify-center k-page">
+        <div className="text-black k-label">Checking access…</div>
       </div>
     );
   }
 
   if (state === "anon") {
     return (
-      <div className="border-4 border-black py-16 text-center">
+      <div className="border border-black py-16 text-center">
         <p className="mb-4 text-sm text-black">You must be signed in to view this page.</p>
         <Link
           href="/login"
-          className="text-sm font-bold uppercase tracking-widest underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]"
+          className="underline decoration-1 underline-offset-4 transition-colors duration-150 ease-out hover:text-signal k-label"
         >
           Sign In →
         </Link>
@@ -134,8 +134,8 @@ export function SubscriptionGuard({ children }: { children: ReactNode }) {
     if (accessReason === "blocked") {
       return (
         <div className="mx-auto max-w-2xl px-4 py-16 text-center">
-          <p className="mb-2 text-xs font-bold uppercase tracking-widest text-[#FF3000]">Access</p>
-          <h2 className="mb-2 text-3xl font-black uppercase tracking-tighter text-black">
+          <p className="mb-2 text-signal k-label">Access</p>
+          <h2 className="mb-2 text-black k-h2">
             Account Blocked
           </h2>
           <p className="text-sm text-black">
@@ -147,8 +147,8 @@ export function SubscriptionGuard({ children }: { children: ReactNode }) {
 
     if (awaitingWebhook) {
       return (
-        <div className="mx-auto max-w-md border-4 border-black px-4 py-16 text-center">
-          <h2 className="mb-2 text-xl font-black uppercase tracking-tight text-black">
+        <div className="mx-auto max-w-md border border-black px-4 py-16 text-center">
+          <h2 className="mb-2 text-black k-h4">
             Processing Your Payment…
           </h2>
           <p className="text-sm text-black">
@@ -161,10 +161,10 @@ export function SubscriptionGuard({ children }: { children: ReactNode }) {
 
     return (
       <div className="mx-auto w-full max-w-5xl px-4 py-12 text-center sm:py-16">
-        <p className="mb-2 text-xs font-bold uppercase tracking-widest text-[#FF3000]">
+        <p className="mb-2 text-signal k-label">
           Access
         </p>
-        <h2 className="mb-2 text-3xl font-black uppercase tracking-tighter text-black">
+        <h2 className="mb-2 text-black k-h2">
           {isTrialExpired ? "Your Trial Has Ended" : "Subscription Required"}
         </h2>
         <p className="mb-10 text-sm text-black">
@@ -173,9 +173,9 @@ export function SubscriptionGuard({ children }: { children: ReactNode }) {
             : "Subscribe to access the Daily Report, Archive, and Bookmarks."}
         </p>
         <div className="grid gap-0 border-black sm:grid-cols-2 sm:border-4">
-          <div className="border-4 border-black p-6 text-left sm:border-4 sm:border-r-0">
-            <h3 className="mb-1 text-xs font-bold uppercase tracking-widest text-black">Basic</h3>
-            <p className="mb-1 text-4xl font-black text-black">
+          <div className="border border-black p-6 text-left sm:border-4 sm:border-r-0">
+            <h3 className="mb-1 text-black k-label">Basic</h3>
+            <p className="k-value mb-1 text-3xl text-black">
               ${BASIC_PRICE_USD}<span className="text-sm font-normal">/year</span>
             </p>
             <p className="mb-4 text-xs text-black/70">About {centsPerDay(BASIC_PRICE_USD)} cents a day</p>
@@ -188,12 +188,12 @@ export function SubscriptionGuard({ children }: { children: ReactNode }) {
               />
             )}
           </div>
-          <div className="border-4 border-t-0 border-[#FF3000] p-6 text-left sm:border-t-4">
-            <h3 className="mb-1 flex flex-wrap items-center gap-2 text-xs font-bold uppercase tracking-widest text-[#FF3000]">
+          <div className="border border-t-0 border-signal p-6 text-left sm:border-t-4">
+            <h3 className="mb-1 flex flex-wrap items-center gap-2 text-signal k-label">
               Premium
-              <span className="border-2 border-[#FF3000] bg-[#FF3000] px-2 py-0.5 text-[11px] text-white">Best value</span>
+              <span className="border border-signal bg-signal px-2 py-0.5 text-[11px] text-white">Best value</span>
             </h3>
-            <p className="mb-1 text-4xl font-black text-black">
+            <p className="k-value mb-1 text-3xl text-black">
               ${PREMIUM_PRICE_USD}<span className="text-sm font-normal">/year</span>
             </p>
             <p className="mb-4 text-xs text-black/70">About {centsPerDay(PREMIUM_PRICE_USD)} cents a day, for everything</p>
@@ -210,7 +210,7 @@ export function SubscriptionGuard({ children }: { children: ReactNode }) {
             )}
           </div>
         </div>
-        <p className="mt-8 text-xs uppercase tracking-wide text-black opacity-50">
+        <p className="mt-8 text-black opacity-50 k-label">
           Sandbox mode, no real payment is processed.
         </p>
       </div>

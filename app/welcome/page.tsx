@@ -69,15 +69,15 @@ const FEATURES = [
 
 export default function WelcomePage() {
   return (
-    <div className="min-h-dvh bg-white px-4 py-16 md:px-12">
+    <div className="k-page">
       <div className="mx-auto max-w-3xl xl:max-w-4xl">
         <div className="mb-4 flex justify-center">
           <Mascot size={64} />
         </div>
-        <p className="text-center text-xs font-bold uppercase tracking-widest text-[#FF3000]">
+        <p className="text-center text-signal k-label">
           You&apos;re In
         </p>
-        <h1 className="mt-2 text-center text-4xl font-black uppercase tracking-tighter text-black md:text-5xl">
+        <h1 className="mt-2 text-center text-black k-display">
           Welcome to Vibe-Coding Journal
         </h1>
         <p className="mx-auto mt-4 max-w-xl text-center text-sm text-black">
@@ -88,19 +88,19 @@ export default function WelcomePage() {
           {FEATURES.map((feature, i) => (
             <div
               key={feature.n}
-              className={`border-4 border-black p-8 ${i > 0 ? "border-t-0" : ""}`}
+              className={`border border-black p-8 ${i > 0 ? "border-t-0" : ""}`}
             >
-              <span className="text-xs font-bold uppercase tracking-widest text-[#FF3000]">
+              <span className="text-signal k-label">
                 {feature.n}
                 {"premium" in feature && feature.premium ? " · Premium" : ""}
               </span>
-              <h2 className="mt-2 text-2xl font-black uppercase tracking-tight text-black">
+              <h2 className="mt-2 text-black k-h2">
                 {feature.title}
               </h2>
               <p className="mt-3 text-sm leading-relaxed text-black">{feature.body}</p>
               <a
                 href={feature.href}
-                className="mt-5 inline-flex h-12 items-center justify-center border-4 border-black bg-black px-6 text-xs font-bold uppercase tracking-widest text-white transition-colors duration-150 ease-out hover:border-[#FF3000] hover:bg-[#FF3000]"
+                className="mt-5 inline-flex h-12 items-center justify-center k-btn k-btn-primary"
               >
                 {feature.cta}
               </a>
@@ -108,9 +108,9 @@ export default function WelcomePage() {
           ))}
         </div>
 
-        <div className="swiss-dots mt-8 border-4 border-black bg-[#F2F2F2] p-8 text-center">
-          <p className="text-xs font-bold uppercase tracking-widest text-[#FF3000]">Bonus</p>
-          <h3 className="mt-2 text-xl font-black uppercase tracking-tight text-black">
+        <div className="swiss-dots mt-8 border border-black bg-paper-2 p-8 text-center">
+          <p className="text-signal k-label">Bonus</p>
+          <h3 className="mt-2 text-black k-h4">
             Earn Vibe Coins as You Go
           </h3>
           <p className="mx-auto mt-3 max-w-lg text-sm text-black">
@@ -122,7 +122,7 @@ export default function WelcomePage() {
         <div className="mt-8 text-center">
           <Link
             href="/dashboard"
-            className="inline-flex min-h-11 items-center text-xs font-bold uppercase tracking-widest text-black underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]"
+            className="inline-flex min-h-11 items-center underline decoration-1 underline-offset-4 k-btn"
           >
             Skip to Dashboard →
           </Link>

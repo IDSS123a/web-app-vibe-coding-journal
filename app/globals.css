@@ -182,6 +182,9 @@
   :root {
     --text-display-xl: clamp(1.875rem, 9vw, 2.5rem);
     --text-display-lg: clamp(1.375rem, 7vw, 1.875rem);
+    /* the spec's mobile date is 40px; "September" must still fit a 320px screen (and the 280px fold), so it follows the width */
+    --text-report-date: clamp(1.5rem, 11vw, 2.5rem);
+    --text-read-date: clamp(1.5rem, 11vw, 2.5rem);
     --gutter: 1rem;
   }
 }

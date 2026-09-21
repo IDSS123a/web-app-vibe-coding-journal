@@ -50,25 +50,25 @@ export default function SetPasswordPage() {
   }
 
   const inputClass =
-    "w-full border-b-2 border-black bg-white px-1 py-2 text-black outline-none transition-colors duration-150 ease-out focus:border-[#FF3000]";
+    "w-full border-b-2 border-black bg-white px-1 py-2 text-black outline-none transition-colors duration-150 ease-out focus:border-signal";
   const labelClass = "mb-1 block text-xs font-bold uppercase tracking-widest text-black";
 
   return (
-    <div className="swiss-noise flex min-h-dvh items-center justify-center bg-white px-4">
-      <div className="w-full max-w-md border-4 border-black p-8 md:p-12">
-        <p className="mb-2 text-xs font-bold uppercase tracking-widest text-[#FF3000]">Invitation</p>
-        <h1 className="mb-8 text-4xl font-black uppercase tracking-tighter text-black">Set Password</h1>
+    <div className="swiss-noise flex items-center justify-center k-page">
+      <div className="w-full max-w-md border border-black p-8 md:p-12">
+        <p className="mb-2 text-signal k-label">Invitation</p>
+        <h1 className="mb-8 text-black k-display">Set Password</h1>
 
         {sessionLoading && <p className="text-sm text-black opacity-60">Checking your invitation…</p>}
 
         {!sessionLoading && !token && (
           <div>
-            <p className="mb-6 border-2 border-[#FF3000] p-3 text-sm text-[#FF3000]">
+            <p className="mb-6 border border-signal p-3 text-sm text-signal">
               This invitation link is invalid or has expired. Ask the administrator to send you a new one.
             </p>
             <Link
               href="/login"
-              className="inline-flex min-h-11 items-center text-sm font-bold uppercase tracking-wide underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]"
+              className="inline-flex min-h-11 items-center underline decoration-1 underline-offset-4 k-btn"
             >
               Go to Sign In
             </Link>
@@ -82,7 +82,7 @@ export default function SetPasswordPage() {
               letter and one number.
             </p>
 
-            {error && <div className="border-2 border-[#FF3000] p-3 text-sm text-[#FF3000]">{error}</div>}
+            {error && <div className="border border-signal p-3 text-sm text-signal">{error}</div>}
 
             <div>
               <label className={labelClass}>New Password</label>
@@ -113,7 +113,7 @@ export default function SetPasswordPage() {
             <button
               type="submit"
               disabled={saving}
-              className="h-14 w-full border-4 border-black bg-black text-sm font-bold uppercase tracking-widest text-white transition-colors duration-150 ease-out hover:border-[#FF3000] hover:bg-[#FF3000] disabled:cursor-not-allowed disabled:opacity-50"
+              className="h-14 w-full disabled:cursor-not-allowed disabled:opacity-50 k-btn k-btn-primary"
             >
               {saving ? "Saving…" : "Set Password"}
             </button>

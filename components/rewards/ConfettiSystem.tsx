@@ -19,7 +19,8 @@
 
 import { useEffect, useState } from "react";
 
-const COLORS = ["#000000", "#FF3000", "#D4A017"]; // black, Swiss Red, muted gold (reward accent)
+// KANON tokens (app/globals.css): ink, Swiss Red, and the studio lemon, blueberry and mint of the learning layer
+const COLORS = ["var(--ink)", "var(--signal)", "var(--studio-lemon)", "var(--studio-blueberry)", "var(--studio-mint)"];
 const PARTICLE_COUNT = 40;
 
 interface Particle {

@@ -64,24 +64,24 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="swiss-noise flex min-h-dvh items-center justify-center bg-white px-4">
-      <div className="w-full max-w-md border-4 border-black p-8 md:p-12">
-        <p className="mb-2 text-xs font-bold uppercase tracking-widest text-[#FF3000]">
+    <div className="swiss-noise flex items-center justify-center k-page">
+      <div className="w-full max-w-md border border-black p-8 md:p-12">
+        <p className="mb-2 text-signal k-label">
           Access
         </p>
-        <h1 className="mb-8 text-4xl font-black uppercase tracking-tighter text-black">
+        <h1 className="mb-8 text-black k-display">
           Sign In
         </h1>
 
         {error && (
-          <div className="mb-6 border-2 border-[#FF3000] p-3 text-sm text-[#FF3000]">
+          <div className="mb-6 border border-signal p-3 text-sm text-signal">
             {error}
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label className="mb-1 block text-xs font-bold uppercase tracking-widest text-black">
+            <label className="mb-1 block text-black k-label">
               Email
             </label>
             <input
@@ -89,13 +89,13 @@ export default function LoginPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full border-b-2 border-black bg-white px-1 py-2 text-black outline-none transition-colors duration-150 ease-out focus:border-[#FF3000]"
+              className="min-h-11 w-full border-b border-black bg-white px-1 py-2 text-black outline-none transition-colors duration-150 ease-out focus:border-signal"
               disabled={loading}
             />
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-bold uppercase tracking-widest text-black">
+            <label className="mb-1 block text-black k-label">
               Password
             </label>
             <input
@@ -103,7 +103,7 @@ export default function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="w-full border-b-2 border-black bg-white px-1 py-2 text-black outline-none transition-colors duration-150 ease-out focus:border-[#FF3000]"
+              className="min-h-11 w-full border-b border-black bg-white px-1 py-2 text-black outline-none transition-colors duration-150 ease-out focus:border-signal"
               disabled={loading}
             />
           </div>
@@ -111,7 +111,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="h-14 w-full border-4 border-black bg-black text-sm font-bold uppercase tracking-widest text-white transition-colors duration-150 ease-out hover:border-[#FF3000] hover:bg-[#FF3000] disabled:cursor-not-allowed disabled:opacity-50"
+            className="h-14 w-full disabled:cursor-not-allowed disabled:opacity-50 k-btn k-btn-primary"
           >
             {loading ? "Signing In..." : "Sign In"}
           </button>
@@ -121,7 +121,7 @@ export default function LoginPage() {
           No account?{" "}
           <Link
             href="/register"
-            className="font-bold uppercase tracking-wide underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]"
+            className="underline decoration-1 underline-offset-4 transition-colors duration-150 ease-out hover:text-signal k-label"
           >
             Register
           </Link>

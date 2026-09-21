@@ -9,48 +9,48 @@ import { AdminGuard } from "@/components/AdminGuard";
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="min-h-dvh bg-white">
+    <div className="layer-console min-h-dvh">
       {/* Admin Header */}
-      <header className="sticky top-0 z-50 border-b-4 border-black bg-white">
+      <header className="sticky top-0 z-50 border-b border-console-line bg-console-panel">
         <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
           <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-            <h1 className="text-xl font-black uppercase tracking-tighter text-black">
+            <h1 className="k-h3 text-console-text">
               Admin
             </h1>
-            <nav className="flex flex-wrap gap-x-5 gap-y-0 text-xs font-bold uppercase tracking-widest">
+            <nav className="flex flex-wrap gap-x-5 gap-y-0 k-label">
               <Link
                 href="/admin/users"
-                className="inline-flex min-h-11 items-center text-black underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]"
+                className="inline-flex min-h-11 items-center text-console-text underline decoration-1 underline-offset-4 transition-colors duration-150 ease-out hover:text-signal"
               >
                 Users
               </Link>
               <Link
                 href="/admin/review-queue"
-                className="inline-flex min-h-11 items-center text-black underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]"
+                className="inline-flex min-h-11 items-center text-console-text underline decoration-1 underline-offset-4 transition-colors duration-150 ease-out hover:text-signal"
               >
                 Review Queue
               </Link>
               <Link
                 href="/admin/payments"
-                className="inline-flex min-h-11 items-center text-black underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]"
+                className="inline-flex min-h-11 items-center text-console-text underline decoration-1 underline-offset-4 transition-colors duration-150 ease-out hover:text-signal"
               >
                 Payments
               </Link>
               <Link
                 href="/admin/university"
-                className="inline-flex min-h-11 items-center text-black underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]"
+                className="inline-flex min-h-11 items-center text-console-text underline decoration-1 underline-offset-4 transition-colors duration-150 ease-out hover:text-signal"
               >
                 University
               </Link>
               <Link
                 href="/admin/hold-gate-calibration"
-                className="inline-flex min-h-11 items-center text-black underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]"
+                className="inline-flex min-h-11 items-center text-console-text underline decoration-1 underline-offset-4 transition-colors duration-150 ease-out hover:text-signal"
               >
                 Hold-Gate Calibration
               </Link>
               <Link
                 href="/dashboard"
-                className="inline-flex min-h-11 items-center text-black underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]"
+                className="inline-flex min-h-11 items-center text-console-text underline decoration-1 underline-offset-4 transition-colors duration-150 ease-out hover:text-signal"
               >
                 Dashboard
               </Link>

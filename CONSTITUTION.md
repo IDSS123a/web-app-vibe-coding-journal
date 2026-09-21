@@ -642,6 +642,17 @@ this project is not done until:
 
 ## P-20. Visual Design System — Swiss International Style `[ACTIVE]` 🟡 STANDARD
 
+> **AMENDED 2026-09-21 (PDL-074, Director's decision): the KANON visual system.** The Director replaced the
+> typography and box-line details of this rule with `TYPOGRAPHY_SPEC.md` (kept in `specs/kanon-redesign/`).
+> What changed: five font roles instead of Inter only (Inter UI, Source Serif 4 editorial, Unbounded display,
+> Figtree learning, Geist Mono metadata); 1px lines (black structure, `#E4E4E4` dividers) instead of 4px and 2px;
+> headings in sentence case (uppercase only for tracked labels); four layers (Swiss spine, Edition, Console, Campus),
+> of which ONLY Campus has rounded cards (14px) and hard shadows; the Daily Report's weekday colour ("day ink")
+> next to the global Swiss Red. What did NOT change: `#FF3000` Swiss Red is still the one brand accent, the
+> Swiss spine and Edition stay rectangular (0px radius) and shadowless, no gradients, mechanical motion, 44px touch
+> targets, reduced-motion and focus rules. Where the text below says "Inter typeface", "4px" or "uppercase
+> headings", the KANON spec now governs; tokens live in `app/globals.css`, blocks in `app/kanon.css`.
+
 - **Formalized 2026-09-14** (design sprint opened) per `DESIGN_NOTES.md`'s
   own instruction to promote this from "early direction" to a
   Constitution rule once the design pass actually starts, not before.

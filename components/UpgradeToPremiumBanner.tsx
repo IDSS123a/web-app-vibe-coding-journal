@@ -72,11 +72,11 @@ export function UpgradeToPremiumBanner() {
   if (!eligible || upgraded) return null;
 
   return (
-    <section className="mb-8 border-4 border-[#FF3000] p-5 sm:p-6">
+    <section className="mb-8 border border-signal p-5 sm:p-6">
       <div className="grid gap-5 md:grid-cols-[1fr_auto] md:items-center md:gap-8">
         <div>
-          <p className="mb-1 text-xs font-bold uppercase tracking-widest text-[#FF3000]">Unlock the rest of the Journal</p>
-          <h3 className="mb-2 text-xl font-black uppercase leading-tight tracking-tight text-black sm:text-2xl">
+          <p className="mb-1 text-signal k-label">Unlock the rest of the Journal</p>
+          <h3 className="mb-2 text-black k-h4">
             Go Premium for ${UPGRADE_PRICE_USD}, not ${PREMIUM_PRICE_USD}
           </h3>
           <p className="mb-3 text-sm leading-relaxed text-black">
@@ -84,7 +84,7 @@ export function UpgradeToPremiumBanner() {
             (75 lessons with quizzes and level tests), the Dictionary of 2,600+ terms, the Assistant that writes your
             build-ready prompts and the Prompt School.
           </p>
-          <ul className="flex flex-wrap gap-x-5 gap-y-1 text-xs font-bold uppercase tracking-widest text-black">
+          <ul className="flex flex-wrap gap-x-5 gap-y-1 text-black k-label">
             <li>University</li>
             <li>Dictionary</li>
             <li>Assistant</li>
@@ -93,7 +93,7 @@ export function UpgradeToPremiumBanner() {
         </div>
         <div className="w-full md:w-72">
           {awaitingWebhook ? (
-            <p role="status" className="border-2 border-black p-3 text-sm text-black">
+            <p role="status" className="border border-black p-3 text-sm text-black">
               Processing your upgrade…
             </p>
           ) : token ? (

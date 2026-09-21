@@ -47,6 +47,26 @@ const VIEWPORTS = [
   { name: "desktop-1440-osdark", width: 1440, height: 900, touch: false, colorScheme: "dark" },
 ];
 
+// The KANON validation matrix (TYPOGRAPHY_SPEC.md section 16.2, PDL-074): 31 CSS viewports. Select it with
+// AUDIT_VIEWPORTS=spec (all), spec-mobile, spec-landscape, spec-tablet, spec-desktop or spec-ultrawide.
+const SPEC = {
+  "spec-mobile": [[320, 568], [360, 800], [375, 812], [390, 844], [393, 873], [414, 896], [430, 932]],
+  "spec-landscape": [[568, 320], [667, 375], [812, 375], [844, 390], [896, 414], [932, 430]],
+  "spec-tablet": [[768, 1024], [820, 1180], [834, 1112], [1024, 1366], [1024, 768], [1112, 834], [1180, 820], [1366, 1024]],
+  "spec-desktop": [[1280, 720], [1280, 900], [1366, 768], [1440, 900], [1536, 864], [1600, 900], [1920, 1080]],
+  "spec-ultrawide": [[2560, 1440], [3440, 1440], [3840, 2160]],
+};
+for (const [group, sizes] of Object.entries(SPEC)) {
+  for (const [w, h] of sizes) VIEWPORTS.push({ name: `${group}-${w}x${h}`, width: w, height: h, touch: w <= 1366 && group !== "spec-desktop" && group !== "spec-ultrawide", group });
+}
+const wanted = (process.env.AUDIT_VIEWPORTS ?? "").split(",").filter(Boolean);
+const selectViewport = (v) => wanted.length === 0 ? !v.group : wanted.some((w) => w === v.name || w === v.group || (w === "spec" && v.group));
+// Browser zoom (AUDIT_ZOOM=1.25 or 2): Chrome shrinks the CSS viewport by the zoom and raises the pixel ratio by it.
+const ZOOM = Number(process.env.AUDIT_ZOOM ?? 1);
+const DPR = Number(process.env.AUDIT_DPR ?? 1);
+const REDUCED = process.env.AUDIT_REDUCED === "1";
+const CORE = new Set(["/", "/login", "/dashboard", "/archive", "/university", "/dictionary", "/assistant", "/prompt-school", "/prompt-school/level-test/beginner", "/prompt-school/five-pillars", "/prompt-school/five-pillars/practice", "/admin/users", "/admin/review-queue"]);
+
 const admin = createClient(SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } });
 const anon = createClient(SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY, { auth: { persistSession: false } });
 
@@ -140,10 +160,35 @@ function measure({ touch }) {
     const el = n.parentElement;
     if (!el || seen.has(el) || !visible(el)) continue;
     seen.add(el);
-    if (parseFloat(getComputedStyle(el).fontSize) < 12) tinyText++;
+    if (parseFloat(getComputedStyle(el).fontSize) < 10) tinyText++;
   }
 
+  // KANON conformance (PDL-074): the font roles and the flat/rounded rule, measured on the rendered page.
+  const kanon = [];
+  const family = (el) => getComputedStyle(el).fontFamily.split(",")[0].replace(/["']/g, "").trim();
+  const isCampus = (el) => Boolean(el.closest(".layer-campus"));
+  for (const h of document.querySelectorAll("h1")) {
+    if (visible(h) && !/unbounded/i.test(getComputedStyle(h).fontFamily)) kanon.push(`h1 is not Unbounded (${family(h)})`);
+  }
+  for (const el of document.querySelectorAll(".k-editorial, .k-editorial-title")) {
+    if (visible(el) && !/serif/i.test(getComputedStyle(el).fontFamily)) kanon.push(`editorial text is not Source Serif (${family(el)})`);
+  }
+  for (const el of document.querySelectorAll(".k-meta")) {
+    if (visible(el) && !/mono/i.test(getComputedStyle(el).fontFamily)) kanon.push(`metadata is not Geist Mono (${family(el)})`);
+  }
+  const roundedOutsideCampus = [];
+  for (const el of document.querySelectorAll("body *")) {
+    if (!visible(el) || isCampus(el)) continue;
+    if (el.closest("svg, img, canvas, [data-kanon-exempt]") || el.matches("input[type=checkbox], input[type=radio]")) continue;
+    const cs = getComputedStyle(el);
+    const rounded = ["borderTopLeftRadius", "borderTopRightRadius", "borderBottomLeftRadius", "borderBottomRightRadius"].some((k) => parseFloat(cs[k]) > 0);
+    if (rounded || cs.boxShadow !== "none") roundedOutsideCampus.push(describe(el));
+    if (roundedOutsideCampus.length >= 4) break;
+  }
+  if (roundedOutsideCampus.length) kanon.push(`rounded or shadowed outside Campus: ${roundedOutsideCampus.join(" | ")}`);
+
   return {
+    kanon: [...new Set(kanon)].slice(0, 6),
     overflowX: Math.max(0, overflowX),
     offenders,
     smallTargets: small.length,
@@ -185,7 +230,7 @@ async function main() {
     { path: "/admin/payments", who: "admin" },
     { path: "/admin/university", who: "admin" },
     { path: "/admin/hold-gate-calibration", who: "admin" },
-  ].filter(Boolean);
+  ].filter(Boolean).filter((p) => process.env.AUDIT_PAGES !== "core" || CORE.has(p.path));
 
   const browser = await chromium.launch({ channel: "chrome", headless: true });
   const rows = [];
@@ -202,17 +247,18 @@ async function main() {
   }
 
   try {
-    for (const vp of VIEWPORTS.filter((v) => !process.env.AUDIT_VIEWPORTS || process.env.AUDIT_VIEWPORTS.split(",").includes(v.name))) {
+    for (const vp of VIEWPORTS.filter(selectViewport)) {
       // Fresh sessions per viewport: one long run with a single session started
       // returning 401 partway through (token/refresh-token reuse across many contexts).
       const sessions = { anon: null, user: await sessionFor("user@test.local"), admin: await sessionFor("admin@test.local") };
       for (const who of ["anon", "user", "admin"]) {
         const context = await browser.newContext({
-          viewport: { width: vp.width, height: vp.height },
+          viewport: { width: Math.round(vp.width / ZOOM), height: Math.round(vp.height / ZOOM) },
           hasTouch: vp.touch,
           isMobile: vp.width <= 812 && vp.touch,
-          deviceScaleFactor: 1,
+          deviceScaleFactor: DPR * ZOOM,
           colorScheme: vp.colorScheme ?? "light",
+          reducedMotion: REDUCED ? "reduce" : "no-preference",
         });
         if (sessions[who]) {
           await context.addInitScript(([k, v]) => { try { localStorage.setItem(k, v); } catch {} }, [`sb-${REF}-auth-token`, sessions[who]]);
@@ -249,7 +295,7 @@ async function main() {
   // Legitimately black surfaces (buttons) exist in light mode too: compare with the light run of the same page.
   const lightDark = new Map(rows.filter((r) => r.vp === "desktop-1440").map((r) => [r.path, r.darkSurfaces]));
   const extraDark = (r) => r.vp.endsWith("osdark") ? Math.max(0, (r.darkSurfaces ?? 0) - (lightDark.get(r.path) ?? 0)) : 0;
-  const bad = rows.filter((r) => r.failed || r.overflowX > 1 || r.errors?.length || extraDark(r) > 0);
+  const bad = rows.filter((r) => r.failed || r.overflowX > 1 || r.errors?.length || extraDark(r) > 0 || r.kanon?.length);
   console.log(`\n${rows.length} page x viewport checks; ${bad.length} with overflow / errors / failure\n`);
   for (const r of bad) {
     console.log(`${r.vp.padEnd(20)} ${r.path}`);
@@ -257,16 +303,17 @@ async function main() {
     if (r.overflowX > 1) console.log(`   OVERFLOW +${r.overflowX}px: ${r.offenders.join(" | ")}`);
     if (r.errors?.length) console.log(`   console: ${r.errors.join(" | ")}`);
     if (extraDark(r) > 0) console.log(`   ${extraDark(r)} extra DARK SURFACES in OS dark mode`);
+    if (r.kanon?.length) console.log(`   KANON: ${r.kanon.join(" | ")}`);
   }
 
-  const touchRows = rows.filter((r) => !r.failed && r.smallTargets > 0 && ["phone-320", "phone-375", "tablet-768"].includes(r.vp));
+  const touchRows = rows.filter((r) => !r.failed && r.smallTargets > 0 && (["phone-320", "phone-375", "tablet-768"].includes(r.vp) || /^spec-(mobile|landscape|tablet)/.test(r.vp)));
   console.log(`\nSmall tap targets (<44px) at 320/375/768: ${touchRows.length} page x viewport combos`);
   const byPath = new Map();
   for (const r of touchRows) if (r.vp === "phone-375") byPath.set(r.path, r);
   for (const [p, r] of byPath) console.log(`   ${p.padEnd(44)} ${r.smallTargets} targets, e.g. ${r.smallTargetExamples.slice(0, 2).join(" ; ")}`);
 
-  const tiny = rows.filter((r) => r.vp === "phone-375" && r.tinyText > 0);
-  console.log(`\nPages with text <12px at 375: ${tiny.map((r) => `${r.path}(${r.tinyText})`).join(", ") || "none"}`);
+  const tiny = rows.filter((r) => r.tinyText > 0);
+  console.log(`\nPages with text <10px (the spec's smallest metadata size): ${[...new Set(tiny.map((r) => `${r.path}(${r.tinyText})`))].slice(0, 12).join(", ") || "none"}`);
   console.log(`\nScreenshots + report.json: ${OUT}`);
 }
 

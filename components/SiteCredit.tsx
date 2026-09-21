@@ -20,7 +20,7 @@ export function SiteCredit() {
       <span className="mx-1">·</span>
       <a
         href="mailto:ai-hero-studio@outlook.com"
-        className="pointer-events-auto -my-1.5 py-1.5 underline decoration-1 underline-offset-2 transition-colors duration-150 ease-out hover:text-[#FF3000]"
+        className="pointer-events-auto -my-4 py-4 underline decoration-1 underline-offset-2 transition-colors duration-150 ease-out hover:text-signal"
       >
         ai-hero-studio@outlook.com
       </a>

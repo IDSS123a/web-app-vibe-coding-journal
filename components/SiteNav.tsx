@@ -62,16 +62,16 @@ export function SiteNav() {
   }
 
   const linkClass = (href: string) =>
-    `inline-flex min-h-11 shrink-0 items-center underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000] ${
-      pathname === href ? "text-[#FF3000]" : "text-black"
+    `k-nav-link inline-flex min-h-11 shrink-0 items-center underline decoration-1 underline-offset-4 transition-colors duration-150 ease-out hover:text-signal ${
+      pathname === href ? "text-signal" : "text-black"
     }`;
 
   return (
-    <header className="sticky top-0 z-40 border-b-4 border-black bg-white">
+    <header className="sticky top-0 z-40 border-b border-black bg-white pt-[env(safe-area-inset-top)]">
       <nav className="mx-auto flex max-w-7xl items-center justify-between px-4 py-2 md:px-12">
         <Link
           href="/"
-          className="flex min-h-11 items-center text-sm font-black uppercase tracking-tighter text-black transition-colors duration-150 ease-out hover:text-[#FF3000]"
+          className="flex min-h-11 items-center font-extrabold tracking-[-0.02em] text-black transition-colors duration-150 ease-out hover:text-signal"
         >
           Vibe-Coding Journal
         </Link>
@@ -79,7 +79,7 @@ export function SiteNav() {
         {!loading && (
           <>
             {/* Desktop / tablet: full horizontal row, unchanged. */}
-            <div className="hidden items-center gap-4 text-xs font-bold uppercase tracking-widest xl:flex">
+            <div className="hidden items-center gap-4 xl:flex">
               {token ? (
                 <>
                   {LOGGED_IN_LINKS.map((link) => (
@@ -91,19 +91,19 @@ export function SiteNav() {
                   <button
                     type="button"
                     onClick={handleSignOut}
-                    className="inline-flex min-h-11 shrink-0 items-center border-2 border-black px-3 py-1 text-black transition-colors duration-150 ease-out hover:border-[#FF3000] hover:text-[#FF3000]"
+                    className="k-btn shrink-0 px-3 py-1 text-xs"
                   >
                     Sign Out
                   </button>
                 </>
               ) : (
                 <>
-                  <Link href="/login" className="inline-flex min-h-11 shrink-0 items-center text-black underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]">
+                  <Link href="/login" className="k-nav-link inline-flex min-h-11 shrink-0 items-center text-black underline decoration-1 underline-offset-4 transition-colors duration-150 ease-out hover:text-signal">
                     Sign In
                   </Link>
                   <Link
                     href="/register"
-                    className="inline-flex min-h-11 shrink-0 items-center border-2 border-black px-3 py-1 text-black transition-colors duration-150 ease-out hover:border-[#FF3000] hover:text-[#FF3000]"
+                    className="k-btn shrink-0 px-3 py-1 text-xs"
                   >
                     Register
                   </Link>
@@ -119,7 +119,7 @@ export function SiteNav() {
                 onClick={() => setMobileOpen((open) => !open)}
                 aria-label={mobileOpen ? "Close menu" : "Open menu"}
                 aria-expanded={mobileOpen}
-                className="flex h-11 w-11 shrink-0 items-center justify-center border-2 border-black text-black transition-colors duration-150 ease-out hover:border-[#FF3000] hover:text-[#FF3000]"
+                className="flex h-11 w-11 shrink-0 items-center justify-center border border-black text-black transition-colors duration-150 ease-out hover:border-signal hover:text-signal"
               >
                 {mobileOpen ? (
                   <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
@@ -137,8 +137,8 @@ export function SiteNav() {
       </nav>
 
       {!loading && mobileOpen && (
-        <div className="border-t-4 border-black bg-white xl:hidden">
-          <div className="flex flex-col text-xs font-bold uppercase tracking-widest">
+        <div className="border-t border-black bg-white xl:hidden">
+          <div className="k-nav-link flex flex-col text-sm">
             {token ? (
               <>
                 {LOGGED_IN_LINKS.map((link) => (
@@ -146,8 +146,8 @@ export function SiteNav() {
                     key={link.href}
                     href={link.href}
                     onClick={() => setMobileOpen(false)}
-                    className={`border-b-2 border-black px-4 py-4 transition-colors duration-150 ease-out hover:bg-[#F2F2F2] ${
-                      pathname === link.href ? "text-[#FF3000]" : "text-black"
+                    className={`border-b border-black px-4 py-4 transition-colors duration-150 ease-out hover:bg-paper-2 ${
+                      pathname === link.href ? "text-signal" : "text-black"
                     }`}
                   >
                     {link.label}
@@ -156,7 +156,7 @@ export function SiteNav() {
                 <button
                   type="button"
                   onClick={handleSignOut}
-                  className="px-4 py-4 text-left text-black transition-colors duration-150 ease-out hover:bg-[#F2F2F2] hover:text-[#FF3000]"
+                  className="px-4 py-4 text-left text-black transition-colors duration-150 ease-out hover:bg-paper-2 hover:text-signal"
                 >
                   Sign Out
                 </button>
@@ -166,14 +166,14 @@ export function SiteNav() {
                 <Link
                   href="/login"
                   onClick={() => setMobileOpen(false)}
-                  className="border-b-2 border-black px-4 py-4 text-black transition-colors duration-150 ease-out hover:bg-[#F2F2F2] hover:text-[#FF3000]"
+                  className="border-b border-black px-4 py-4 text-black transition-colors duration-150 ease-out hover:bg-paper-2 hover:text-signal"
                 >
                   Sign In
                 </Link>
                 <Link
                   href="/register"
                   onClick={() => setMobileOpen(false)}
-                  className="px-4 py-4 text-black transition-colors duration-150 ease-out hover:bg-[#F2F2F2] hover:text-[#FF3000]"
+                  className="px-4 py-4 text-black transition-colors duration-150 ease-out hover:bg-paper-2 hover:text-signal"
                 >
                   Register
                 </Link>

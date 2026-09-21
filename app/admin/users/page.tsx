@@ -142,36 +142,36 @@ export default function AdminUsersPage() {
 
   return (
     <div>
-      <div className="mb-8 flex items-center justify-between border-b-4 border-black pb-6">
-        <h1 className="text-2xl font-black uppercase tracking-tight text-black">Users</h1>
+      <div className="mb-8 flex items-center justify-between border-b border-console-line pb-6">
+        <h1 className="text-console-text k-display">Users</h1>
         <button
           type="button"
           onClick={() => setShowCreateForm((v) => !v)}
-          className="h-11 border-4 border-black bg-black px-4 text-xs font-bold uppercase tracking-widest text-white transition-colors duration-150 ease-out hover:border-[#FF3000] hover:bg-[#FF3000]"
+          className="h-11 k-btn k-btn-primary"
         >
           {showCreateForm ? "Cancel" : "+ New Account"}
         </button>
       </div>
 
       {showCreateForm && (
-        <form onSubmit={handleCreate} className="mb-8 border-4 border-black p-6">
+        <form onSubmit={handleCreate} className="mb-8 border border-console-line p-6">
           <div className="flex flex-wrap items-end gap-4">
             <label className="flex-1">
-              <span className="mb-1 block text-xs font-bold uppercase tracking-widest text-black">Email</span>
+              <span className="mb-1 block text-console-text k-label">Email</span>
               <input
                 required
                 type="email"
                 value={createEmail}
                 onChange={(e) => setCreateEmail(e.target.value)}
-                className="h-11 w-full border-4 border-black px-3 text-sm text-black"
+                className="h-11 w-full border border-console-line px-3 text-sm text-console-text"
               />
             </label>
             <label>
-              <span className="mb-1 block text-xs font-bold uppercase tracking-widest text-black">Tier</span>
+              <span className="mb-1 block text-console-text k-label">Tier</span>
               <select
                 value={createTier}
                 onChange={(e) => setCreateTier(e.target.value as "basic" | "premium")}
-                className="h-11 border-4 border-black px-3 text-sm text-black"
+                className="h-11 border border-console-line px-3 text-sm text-console-text"
               >
                 <option value="basic">$10 Basic</option>
                 <option value="premium">$50 Premium</option>
@@ -180,27 +180,27 @@ export default function AdminUsersPage() {
             <button
               type="submit"
               disabled={creating}
-              className="h-11 border-4 border-black bg-black px-4 text-xs font-bold uppercase tracking-widest text-white transition-colors duration-150 ease-out hover:border-[#FF3000] hover:bg-[#FF3000] disabled:opacity-50"
+              className="h-11 disabled:opacity-50 k-btn k-btn-primary"
             >
               {creating ? "Creating…" : "Create & Invite"}
             </button>
           </div>
-          <p className="mt-3 text-xs text-black opacity-60">
+          <p className="mt-3 text-xs text-console-text opacity-60">
             Sends an email invite, no password is set here (E-4). The account is active on the
             chosen tier immediately.
           </p>
-          {createError && <p className="mt-2 text-sm text-[#FF3000]">{createError}</p>}
+          {createError && <p className="mt-2 text-sm text-signal">{createError}</p>}
         </form>
       )}
 
-      {loading && <p className="text-sm text-black opacity-60">Loading…</p>}
-      {error && <p className="border-2 border-[#FF3000] p-3 text-sm text-[#FF3000]">{error}</p>}
+      {loading && <p className="text-sm text-console-text opacity-60">Loading…</p>}
+      {error && <p className="border border-signal p-3 text-sm text-signal">{error}</p>}
 
       <div className="grid gap-8 md:grid-cols-2">
         <div className="overflow-x-auto">
-          <table className="w-full border-4 border-black text-left text-sm">
+          <table className="w-full border border-console-line text-left text-sm">
             <thead>
-              <tr className="border-b-4 border-black text-xs font-bold uppercase tracking-widest">
+              <tr className="border-b border-console-line k-label">
                 <th className="p-3">Email</th>
                 <th className="p-3">Tier</th>
                 <th className="p-3">Status</th>
@@ -212,15 +212,15 @@ export default function AdminUsersPage() {
                 <tr
                   key={u.id}
                   onClick={() => openUser(u.id)}
-                  className={`cursor-pointer border-b-2 border-black transition-colors duration-150 ease-out hover:bg-[#F2F2F2] ${
+                  className={`cursor-pointer border-b border-console-line transition-colors duration-150 ease-out hover:bg-paper-2 ${
                     u.isBlocked ? "opacity-50" : ""
                   }`}
                 >
                   <td className="p-3">
                     {u.email}
-                    {u.isBlocked && <span className="ml-2 text-xs font-bold text-[#FF3000]">BLOCKED</span>}
+                    {u.isBlocked && <span className="ml-2 text-xs font-bold text-signal">BLOCKED</span>}
                   </td>
-                  <td className="p-3 uppercase">{u.subscriptionTier}</td>
+                  <td className="p-3 k-label">{u.subscriptionTier}</td>
                   <td className="p-3">{u.subscriptionStatus}</td>
                   <td className="p-3">
                     {u.subscriptionExpiresAt ? new Date(u.subscriptionExpiresAt).toLocaleDateString() : "n/a"}
@@ -232,16 +232,16 @@ export default function AdminUsersPage() {
         </div>
 
         <div>
-          {detailLoading && <p className="text-sm text-black opacity-60">Loading…</p>}
+          {detailLoading && <p className="text-sm text-console-text opacity-60">Loading…</p>}
           {actionMessage && (
-            <p className="mb-4 border-2 border-black p-3 text-sm text-black">{actionMessage}</p>
+            <p className="mb-4 border border-console-line p-3 text-sm text-console-text">{actionMessage}</p>
           )}
           {selected && (
-            <div className="border-4 border-black p-6">
-              <h2 className="mb-1 text-lg font-black uppercase tracking-tight text-black">
+            <div className="border border-console-line p-6">
+              <h2 className="mb-1 text-console-text k-h4">
                 {selected.email}
               </h2>
-              <p className="mb-4 text-xs uppercase tracking-widest text-black opacity-60">
+              <p className="mb-4 text-console-text opacity-60 k-label">
                 {selected.role} · {selected.subscriptionTier} · {selected.subscriptionStatus}
                 {selected.isBlocked && " · BLOCKED"}
               </p>
@@ -249,42 +249,42 @@ export default function AdminUsersPage() {
               <button
                 type="button"
                 onClick={() => toggleBlock(selected)}
-                className={`mb-6 h-11 border-4 px-4 text-xs font-bold uppercase tracking-widest transition-colors duration-150 ease-out ${
+                className={`mb-6 h-11 k-btn ${
                   selected.isBlocked
-                    ? "border-black bg-black text-white hover:border-[#FF3000] hover:bg-[#FF3000]"
-                    : "border-[#FF3000] text-[#FF3000] hover:bg-[#FF3000] hover:text-white"
+                    ? "border-black bg-black text-white hover:border-signal hover:bg-signal"
+                    : "border-signal text-signal hover:bg-signal hover:text-white"
                 }`}
               >
                 {selected.isBlocked ? "Unblock User" : "Block User"}
               </button>
 
               <label className="mb-6 block">
-                <span className="mb-1 block text-xs font-bold uppercase tracking-widest text-black">Tier</span>
+                <span className="mb-1 block text-console-text k-label">Tier</span>
                 <select
                   value={selected.subscriptionTier}
                   onChange={(e) => changeTier(selected, e.target.value as "basic" | "premium")}
-                  className="h-11 w-full border-4 border-black px-3 text-sm text-black"
+                  className="h-11 w-full border border-console-line px-3 text-sm text-console-text"
                 >
                   <option value="basic">$10 Basic</option>
                   <option value="premium">$50 Premium</option>
                 </select>
               </label>
 
-              <h3 className="mb-2 text-xs font-bold uppercase tracking-widest text-black">Usage</h3>
-              <ul className="mb-6 text-sm text-black">
+              <h3 className="mb-2 text-console-text k-label">Usage</h3>
+              <ul className="mb-6 text-sm text-console-text">
                 <li>Assistant generations: {selected.usage.assistantGenerations}</li>
                 <li>Lessons completed: {selected.usage.lessonsCompleted}</li>
               </ul>
 
-              <h3 className="mb-2 text-xs font-bold uppercase tracking-widest text-black">
+              <h3 className="mb-2 text-console-text k-label">
                 Payment History
               </h3>
               {selected.payments.length === 0 ? (
-                <p className="text-sm text-black opacity-60">No payment events.</p>
+                <p className="text-sm text-console-text opacity-60">No payment events.</p>
               ) : (
-                <ul className="space-y-2 text-sm text-black">
+                <ul className="space-y-2 text-sm text-console-text">
                   {selected.payments.map((p) => (
-                    <li key={p.id} className="border-b border-black pb-2">
+                    <li key={p.id} className="border-b border-console-line pb-2">
                       {new Date(p.created_at).toLocaleDateString()}, {p.event_type}, $
                       {p.amount_usd ?? "?"}, {p.tier ?? "?"}, {p.status}
                     </li>
@@ -294,7 +294,7 @@ export default function AdminUsersPage() {
             </div>
           )}
           {!selected && !detailLoading && (
-            <p className="text-sm text-black opacity-60">Select a user to see their detail.</p>
+            <p className="text-sm text-console-text opacity-60">Select a user to see their detail.</p>
           )}
         </div>
       </div>

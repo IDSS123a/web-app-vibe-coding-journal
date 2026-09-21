@@ -50,29 +50,29 @@ export default function AdminPaymentsPage() {
 
   return (
     <div>
-      <div className="mb-8 border-b-4 border-black pb-6">
-        <p className="mb-2 text-xs font-bold uppercase tracking-widest text-[#FF3000]">Revenue</p>
-        <h2 className="text-3xl font-black uppercase tracking-tighter text-black">Payments</h2>
-        <p className="mt-2 text-sm text-black">
+      <div className="mb-8 border-b border-console-line pb-6">
+        <p className="mb-2 text-signal k-label">Revenue</p>
+        <h2 className="text-console-text k-h2">Payments</h2>
+        <p className="mt-2 text-sm text-console-text">
           Every PayPal webhook event, newest first. Subscriptions activate automatically, this
           list is for visibility, not approval.
         </p>
       </div>
 
-      {loading && <p className="text-sm text-black opacity-60">Loading…</p>}
-      {error && <p className="border-2 border-[#FF3000] p-3 text-sm text-[#FF3000]">{error}</p>}
+      {loading && <p className="text-sm text-console-text opacity-60">Loading…</p>}
+      {error && <p className="border border-signal p-3 text-sm text-signal">{error}</p>}
 
       {!loading && !error && events.length === 0 && (
-        <p className="border-4 border-black py-16 text-center text-sm italic text-black opacity-60">
+        <p className="border border-console-line py-16 text-center text-sm italic text-console-text opacity-60">
           No payment events yet.
         </p>
       )}
 
       {events.length > 0 && (
-        <div className="overflow-x-auto border-black md:border-4">
+        <div className="overflow-x-auto border-console-line md:border">
           <table className="w-full min-w-[720px] text-left text-sm">
             <thead>
-              <tr className="border-b-2 border-black text-xs font-bold uppercase tracking-widest text-black">
+              <tr className="border-b border-console-line text-console-text k-label">
                 <th className="p-4">When</th>
                 <th className="p-4">User</th>
                 <th className="p-4">Tier</th>
@@ -82,8 +82,8 @@ export default function AdminPaymentsPage() {
             </thead>
             <tbody>
               {events.map((event) => (
-                <tr key={event.id} className="border-b-2 border-black last:border-b-0">
-                  <td className="p-4 text-black">
+                <tr key={event.id} className="border-b border-console-line last:border-b-0">
+                  <td className="p-4 text-console-text">
                     {new Date(event.created_at).toLocaleString("en-US", {
                       month: "short",
                       day: "numeric",
@@ -91,18 +91,18 @@ export default function AdminPaymentsPage() {
                       minute: "2-digit",
                     })}
                   </td>
-                  <td className="p-4 text-black">{event.user_email ?? event.user_id ?? "n/a"}</td>
-                  <td className="p-4 text-black">{event.tier ?? "n/a"}</td>
-                  <td className="p-4 text-black">
+                  <td className="p-4 text-console-text">{event.user_email ?? event.user_id ?? "n/a"}</td>
+                  <td className="p-4 text-console-text">{event.tier ?? "n/a"}</td>
+                  <td className="p-4 text-console-text">
                     {event.amount_usd != null ? `$${event.amount_usd}` : "n/a"}
                   </td>
                   <td className="p-4">
                     <span
-                      className={`border-2 px-2 py-0.5 text-xs font-bold uppercase tracking-widest ${
+                      className={`py-0.5 k-btn ${
                         event.status === "processed"
                           ? "border-black text-black"
                           : event.status === "ambiguous"
-                            ? "border-[#FF3000] text-[#FF3000]"
+                            ? "border-signal text-signal"
                             : "border-black text-black opacity-50"
                       }`}
                     >

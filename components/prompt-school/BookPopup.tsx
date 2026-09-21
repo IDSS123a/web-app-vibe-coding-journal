@@ -159,7 +159,7 @@ export function BookPopup() {
   const share = Math.max(0, Math.min(100, (remaining / BOOK_POPUP.autoCloseSeconds) * 100));
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4" onClick={(e) => e.target === e.currentTarget && !busy && close()}>
+    <div className="layer-campus fixed inset-0 z-[60] flex items-center justify-center bg-studio-ink/60 p-4" onClick={(e) => e.target === e.currentTarget && !busy && close()}>
       <div
         ref={dialogRef}
         role="dialog"
@@ -167,14 +167,14 @@ export function BookPopup() {
         aria-labelledby="book-popup-title"
         aria-describedby="book-popup-text"
         tabIndex={-1}
-        className="relative max-h-[92dvh] w-full max-w-xl overflow-y-auto border-4 border-black bg-white focus-visible:outline-none"
+        className="k-card relative max-h-[92dvh] w-full max-w-xl overflow-y-auto focus-visible:outline-none"
       >
         <button
           type="button"
           onClick={close}
           disabled={busy}
           aria-label="Close"
-          className="absolute right-0 top-0 flex h-11 w-11 items-center justify-center border-b-4 border-l-4 border-black bg-white text-black transition-colors duration-150 ease-out hover:bg-black hover:text-white focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-[#FF3000] disabled:opacity-40"
+          className="absolute right-0 top-0 flex h-11 w-11 items-center justify-center rounded-bl-xl rounded-tr-[12px] border-b-2 border-l-2 border-studio-ink bg-studio-paper text-studio-ink transition-colors duration-150 ease-out hover:bg-studio-ink hover:text-white focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-signal disabled:opacity-40"
         >
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
             <path d="M1 1L15 15M15 1L1 15" stroke="currentColor" strokeWidth="2" />
@@ -186,7 +186,7 @@ export function BookPopup() {
             type="button"
             onClick={getTheBook}
             aria-label={`Get the book ${BOOK.title} by ${BOOK.author}. Opens the payment page in a new window.`}
-            className={`block w-20 shrink-0 border-4 min-[400px]:w-28 border-black bg-black focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#FF3000] sm:w-36 ${
+            className={`block w-20 shrink-0 overflow-hidden rounded-lg border-2 min-[400px]:w-28 border-studio-ink bg-studio-ink focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-signal sm:w-36 ${
               jumping ? "book-jump" : "transition-transform duration-150 ease-out hover:-translate-y-1"
             }`}
           >
@@ -201,26 +201,26 @@ export function BookPopup() {
           </button>
 
           <div className="min-w-0 flex-1 text-center sm:text-left">
-            <p className="mb-1 text-xs font-bold uppercase tracking-widest text-[#FF3000]">The book behind this School</p>
-            <h2 id="book-popup-title" className="text-xl font-black uppercase leading-tight tracking-tighter text-black sm:text-2xl">
+            <p className="mb-1 text-studio-blueberry k-clabel">The book behind this School</p>
+            <h2 id="book-popup-title" className="text-studio-ink k-h3">
               {BOOK.title}
             </h2>
-            <p className="mt-1 text-xs text-black">
+            <p className="mt-1 text-xs text-studio-ink">
               by {BOOK.author}, {BOOK.subtitle}
             </p>
-            <p id="book-popup-text" className="mt-3 text-sm leading-relaxed text-black">
+            <p id="book-popup-text" className="mt-3 text-sm leading-relaxed text-studio-ink">
               Every chapter of this School is written from this book. Own the complete book: eleven chapters, a glossary, fifteen
               ready-made prompt blueprints, a Markdown manual, a techniques quick reference, further reading and a guide to prompting
               platforms and tools.
             </p>
-            <p className="mt-2 text-xs font-bold uppercase tracking-widest text-black">Tap the book for a small surprise</p>
+            <p className="mt-2 text-studio-ink k-clabel">Tap the book for a small surprise</p>
 
             <div className="mt-4 flex flex-col gap-3 sm:flex-row">
               <button
                 type="button"
                 onClick={getTheBook}
                 disabled={busy}
-                className="inline-flex min-h-11 w-full items-center justify-center border-4 border-black bg-black px-4 py-2 text-xs font-bold uppercase tracking-widest text-white transition-colors duration-150 ease-out hover:border-[#FF3000] hover:bg-[#FF3000] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#FF3000] disabled:opacity-60 sm:w-auto"
+                className="inline-flex min-h-11 w-full items-center justify-center disabled:opacity-60 sm:w-auto k-cbtn k-cbtn-primary"
               >
                 Get the book →
               </button>
@@ -228,32 +228,32 @@ export function BookPopup() {
                 type="button"
                 onClick={close}
                 disabled={busy}
-                className="inline-flex min-h-11 w-full items-center justify-center border-4 border-black bg-white px-4 py-2 text-xs font-bold uppercase tracking-widest text-black transition-colors duration-150 ease-out hover:border-[#FF3000] hover:text-[#FF3000] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#FF3000] disabled:opacity-40 sm:w-auto"
+                className="inline-flex min-h-11 w-full items-center justify-center disabled:opacity-40 sm:w-auto k-cbtn"
               >
                 Not now
               </button>
             </div>
 
             {blocked ? (
-              <p role="status" className="mt-3 text-xs text-black">
+              <p role="status" className="mt-3 text-xs text-studio-ink">
                 Your browser blocked the new window.{" "}
-                <a href={BOOK.payUrl} target="_blank" rel="noopener noreferrer" className="font-bold underline decoration-2 underline-offset-4 hover:text-[#FF3000]">
+                <a href={BOOK.payUrl} target="_blank" rel="noopener noreferrer" className="font-bold underline decoration-1 underline-offset-4 hover:text-signal">
                   Open the book page
                 </a>
               </p>
             ) : (
-              <p className="mt-3 text-xs text-black opacity-70">Opens the payment page on PayPal in a new window.</p>
+              <p className="mt-3 text-xs text-studio-ink opacity-70">Opens the payment page on PayPal in a new window.</p>
             )}
           </div>
         </div>
 
         {!busy && !blocked && (
-          <div className="border-t-4 border-black px-5 py-3 sm:px-6">
-            <p className="text-xs text-black">
+          <div className="border-t border-studio-ink px-5 py-3 sm:px-6">
+            <p className="text-xs text-studio-ink">
               This window closes by itself in <span data-testid="book-popup-remaining">{remaining}</span> s
             </p>
-            <div className="mt-2 h-2 border-2 border-black" aria-hidden="true">
-              <div className="h-full bg-black transition-[width] duration-1000 ease-linear" style={{ width: `${share}%` }} />
+            <div className="mt-2 h-3 overflow-hidden rounded-full border-2 border-studio-ink" aria-hidden="true">
+              <div className="h-full bg-studio-ink transition-[width] duration-1000 ease-linear" style={{ width: `${share}%` }} />
             </div>
           </div>
         )}

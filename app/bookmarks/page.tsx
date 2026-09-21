@@ -51,13 +51,13 @@ export default function BookmarksPage() {
   }
 
   return (
-    <div className="min-h-dvh bg-white px-4 py-12 md:px-12">
+    <div className="k-page">
       <div className="mx-auto max-w-4xl xl:max-w-5xl">
-        <div className="mb-12 border-b-4 border-black pb-8">
-          <p className="mb-2 text-xs font-bold uppercase tracking-widest text-[#FF3000]">
+        <div className="mb-12 border-b border-black pb-8">
+          <p className="mb-2 text-signal k-label">
             Saved
           </p>
-          <h1 className="text-4xl font-black uppercase tracking-tighter text-black">
+          <h1 className="text-black k-display">
             My Bookmarks
           </h1>
           <p className="mt-2 text-sm text-black">Articles you&apos;ve saved</p>
@@ -66,31 +66,31 @@ export default function BookmarksPage() {
         {loading && <p className="text-sm text-black opacity-60">Loading…</p>}
 
         {!loading && !token && (
-          <div className="border-4 border-black py-16 text-center">
+          <div className="border border-black py-16 text-center">
             <p className="mb-4 text-sm text-black">You must be signed in to see your bookmarks.</p>
             <Link
               href="/login"
-              className="inline-flex min-h-11 items-center text-sm font-bold uppercase tracking-widest underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]"
+              className="inline-flex min-h-11 items-center underline decoration-1 underline-offset-4 k-btn"
             >
               Sign In →
             </Link>
           </div>
         )}
 
-        {error && <p className="mb-4 border-2 border-[#FF3000] p-3 text-sm text-[#FF3000]">{error}</p>}
+        {error && <p className="mb-4 border border-signal p-3 text-sm text-signal">{error}</p>}
 
         {!loading && token && bookmarks === null && !error && (
           <p className="text-sm text-black opacity-60">Loading your bookmarks…</p>
         )}
 
         {!loading && token && bookmarks !== null && bookmarks.length === 0 && (
-          <p className="border-4 border-black py-16 text-center text-sm italic text-black opacity-60">
+          <p className="border border-black py-16 text-center text-sm italic text-black opacity-60">
             No bookmarks yet, bookmark an article from the{" "}
-            <Link href="/dashboard" className="font-bold uppercase not-italic underline decoration-2 underline-offset-4 hover:text-[#FF3000]">
+            <Link href="/dashboard" className="not-italic underline decoration-1 underline-offset-4 hover:text-signal k-label">
               dashboard
             </Link>{" "}
             or{" "}
-            <Link href="/archive" className="font-bold uppercase not-italic underline decoration-2 underline-offset-4 hover:text-[#FF3000]">
+            <Link href="/archive" className="not-italic underline decoration-1 underline-offset-4 hover:text-signal k-label">
               archive
             </Link>
             .
@@ -102,21 +102,21 @@ export default function BookmarksPage() {
             {bookmarks.map((b, i) => (
               <div
                 key={b.id}
-                className={`border-4 border-black p-6 md:p-8 ${i > 0 ? "border-t-0" : ""}`}
+                className={`border border-black p-6 md:p-8 ${i > 0 ? "border-t-0" : ""}`}
               >
                 <div className="flex items-start justify-between gap-4">
                   <a
                     href={b.article.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-lg font-black uppercase tracking-tight text-black transition-colors duration-150 ease-out hover:text-[#FF3000]"
+                    className="text-black transition-colors duration-150 ease-out hover:text-signal k-label"
                   >
                     {b.article.title}
                   </a>
                   <button
                     type="button"
                     onClick={() => removeBookmark(b.article_id)}
-                    className="shrink-0 border-2 border-black bg-white px-3 py-1 text-xs font-bold uppercase tracking-widest text-black transition-colors duration-150 ease-out hover:border-[#FF3000] hover:bg-[#FF3000] hover:text-white"
+                    className="shrink-0 k-btn"
                   >
                     Remove
                   </button>
@@ -131,11 +131,11 @@ export default function BookmarksPage() {
           </div>
         )}
 
-        <div className="mt-8 flex justify-center gap-6 text-xs font-bold uppercase tracking-widest text-black">
-          <Link href="/dashboard" className="inline-flex min-h-11 items-center underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]">
+        <div className="mt-8 flex justify-center gap-6 text-black k-label">
+          <Link href="/dashboard" className="inline-flex min-h-11 items-center underline decoration-1 underline-offset-4 transition-colors duration-150 ease-out hover:text-signal">
             ← Dashboard
           </Link>
-          <Link href="/archive" className="inline-flex min-h-11 items-center underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]">
+          <Link href="/archive" className="inline-flex min-h-11 items-center underline decoration-1 underline-offset-4 transition-colors duration-150 ease-out hover:text-signal">
             Archive
           </Link>
         </div>

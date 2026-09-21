@@ -120,18 +120,18 @@ export function PremiumPitch({ feature, audience, token, onUnlocked, unlockedKey
         the promise and the proof share the left column and the offer sits beside them.
       */}
       <div className="grid gap-6 lg:grid-cols-5">
-        <section className="border-4 border-black p-5 sm:p-8 lg:col-span-3 lg:row-start-1">
-          <p className="mb-2 text-xs font-bold uppercase tracking-widest text-[#FF3000]">{copy.eyebrow}</p>
-          <h2 className="text-3xl font-black uppercase leading-[0.95] tracking-tighter text-black sm:text-4xl xl:text-5xl">{copy.headline}</h2>
+        <section className="border border-black p-5 sm:p-8 lg:col-span-3 lg:row-start-1">
+          <p className="mb-2 text-signal k-label">{copy.eyebrow}</p>
+          <h2 className="leading-[0.95] text-black k-h2">{copy.headline}</h2>
           <p className="mt-4 max-w-2xl text-base leading-relaxed text-black">{copy.lead}</p>
         </section>
 
         {/* The offer */}
-        <aside className="border-4 border-[#FF3000] p-5 sm:p-8 lg:col-span-2 lg:col-start-4 lg:row-span-2 lg:row-start-1">
-          <p className="mb-1 text-xs font-bold uppercase tracking-widest text-[#FF3000]">
+        <aside className="border border-signal p-5 sm:p-8 lg:col-span-2 lg:col-start-4 lg:row-span-2 lg:row-start-1">
+          <p className="mb-1 text-signal k-label">
             {audience.isActiveBasic ? "Your upgrade" : "Premium, one year"}
           </p>
-          <p className="text-6xl font-black leading-none tracking-tighter text-black sm:text-7xl">
+          <p className="k-date-read text-black">
             ${price}
           </p>
           {audience.isActiveBasic ? (
@@ -146,13 +146,13 @@ export function PremiumPitch({ feature, audience, token, onUnlocked, unlockedKey
 
           <div className="mt-6">
             {awaiting ? (
-              <p role="status" className="border-2 border-black p-4 text-sm font-bold text-black">
+              <p role="status" className="border border-black p-4 text-sm font-bold text-black">
                 Payment received, unlocking your Premium access. This usually takes a few seconds.
               </p>
             ) : token ? (
               <PayPalCheckout checkout={checkout} token={token} onApproved={() => setAwaiting(true)} />
             ) : (
-              <Link href="/login" className="inline-flex min-h-12 w-full items-center justify-center border-4 border-black bg-black px-6 text-xs font-bold uppercase tracking-widest text-white hover:border-[#FF3000] hover:bg-[#FF3000]">
+              <Link href="/login" className="inline-flex min-h-12 w-full items-center justify-center k-btn k-btn-primary">
                 Sign in to upgrade
               </Link>
             )}
@@ -171,30 +171,30 @@ export function PremiumPitch({ feature, audience, token, onUnlocked, unlockedKey
 
           <Link
             href="/dashboard"
-            className="mt-6 inline-flex min-h-11 items-center text-xs font-bold uppercase tracking-widest text-black underline decoration-2 underline-offset-4 hover:text-[#FF3000]"
+            className="mt-6 inline-flex min-h-11 items-center underline decoration-1 underline-offset-4 k-btn"
           >
             Not now, back to the Daily Report
           </Link>
         </aside>
 
-        <section className="border-4 border-black p-5 sm:p-8 lg:col-span-3 lg:row-start-2">
-          <div className="border-2 border-black bg-[#F2F2F2] p-4 sm:p-5">
-            <h3 className="mb-3 text-xs font-bold uppercase tracking-widest text-black">{copy.peekTitle}</h3>
+        <section className="border border-black p-5 sm:p-8 lg:col-span-3 lg:row-start-2">
+          <div className="border border-black bg-paper-2 p-4 sm:p-5">
+            <h3 className="mb-3 text-black k-label">{copy.peekTitle}</h3>
             <ul className="space-y-2">
               {copy.peek.map((item) => (
                 <li key={item} className="flex gap-3 text-sm text-black">
-                  <span aria-hidden="true" className="mt-0.5 inline-block h-2.5 w-2.5 shrink-0 bg-[#FF3000]" />
+                  <span aria-hidden="true" className="mt-0.5 inline-block h-2.5 w-2.5 shrink-0 bg-signal" />
                   <span>{item}</span>
                 </li>
               ))}
             </ul>
           </div>
 
-          <h3 className="mb-3 mt-8 text-xs font-bold uppercase tracking-widest text-black">Premium includes everything</h3>
+          <h3 className="mb-3 mt-8 text-black k-label">Premium includes everything</h3>
           <ul className="grid gap-x-6 gap-y-2 sm:grid-cols-2">
             {PREMIUM_INCLUDES.map((item) => (
               <li key={item} className="flex gap-3 text-sm text-black">
-                <span aria-hidden="true" className="font-black text-[#FF3000]">
+                <span aria-hidden="true" className="font-black text-signal">
                   ✓
                 </span>
                 <span>{item}</span>

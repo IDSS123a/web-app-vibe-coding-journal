@@ -47,8 +47,7 @@ interface Props {
   test?: { onAnswer: (exerciseId: string, answer: unknown | null) => void; frozen: boolean };
 }
 
-const btn =
-  "inline-flex min-h-11 items-center justify-center border-4 border-black px-4 py-2 text-xs font-bold uppercase tracking-widest transition-colors duration-150 ease-out focus-visible:outline-none";
+const btn = "k-cbtn";
 
 export function ExercisePlayer({ exercise, token, index, total, onChecked, test }: Props) {
   const { applyReward } = useRewards();
@@ -136,17 +135,17 @@ export function ExercisePlayer({ exercise, token, index, total, onChecked, test 
   }, [choice, fill, order, picked, text]);
 
   return (
-    <section className="border-4 border-black p-4 sm:p-6" aria-labelledby={`ex-${exercise.id}`}>
-      <p className="mb-1 text-xs font-bold uppercase tracking-widest text-[#FF3000]">
+    <section className="k-card p-4 sm:p-6" aria-labelledby={`ex-${exercise.id}`}>
+      <p className="mb-1 text-studio-blueberry k-clabel">
         {test ? "Question" : "Exercise"} {index} of {total}: {kindLabel(exercise.kind)}
         {!test && exercise.bestScore !== null && (
-          <span className="ml-2 text-black">Best {Math.round(exercise.bestScore * 100)}%</span>
+          <span className="ml-2 text-studio-ink">Best {Math.round(exercise.bestScore * 100)}%</span>
         )}
       </p>
-      <h2 id={`ex-${exercise.id}`} className="mb-3 text-xl font-black uppercase tracking-tight text-black">
+      <h2 id={`ex-${exercise.id}`} className="mb-3 text-studio-ink k-h4">
         {exercise.title}
       </h2>
-      <p className="mb-5 text-sm leading-relaxed text-black">{exercise.promptText}</p>
+      <p className="mb-5 text-sm leading-relaxed text-studio-ink">{exercise.promptText}</p>
 
       {exercise.kind === "choice" && (
         <ChoiceInput pub={exercise.public as ChoicePublic} value={choice} onChange={setChoice} locked={locked} reveal={result?.reveal} />
@@ -165,7 +164,7 @@ export function ExercisePlayer({ exercise, token, index, total, onChecked, test 
       )}
 
       {error && (
-        <p role="alert" className="mt-4 border-2 border-[#FF3000] p-3 text-sm text-[#FF3000]">
+        <p role="alert" className="mt-4 k-card-sm border-signal p-3 text-sm text-signal">
           {error}
         </p>
       )}
@@ -175,7 +174,7 @@ export function ExercisePlayer({ exercise, token, index, total, onChecked, test 
           type="button"
           onClick={submit}
           disabled={busy || !ready()}
-          className={`${btn} mt-5 w-full bg-black text-white hover:border-[#FF3000] hover:bg-[#FF3000] focus-visible:ring-4 focus-visible:ring-[#FF3000] disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto`}
+          className={`${btn} k-cbtn-primary mt-5 w-full sm:w-auto`}
         >
           {busy ? "Checking…" : "Check answer"}
         </button>
@@ -183,19 +182,19 @@ export function ExercisePlayer({ exercise, token, index, total, onChecked, test 
 
       {result && !test && (
         <div ref={resultRef} className="mt-5 scroll-mt-32" role="status" aria-live="polite">
-          <p className={`mb-3 border-l-8 py-1 pl-3 text-sm font-black uppercase tracking-tight ${result.passed ? "border-black text-black" : "border-[#FF3000] text-[#FF3000]"}`}>
+          <p className={`mb-3 border-l-8 py-1 pl-3 k-clabel ${result.passed ? "border-studio-ink text-studio-ink" : "border-signal text-signal"}`}>
             {result.passed ? "Passed" : "Not yet"}: {Math.round(result.score * 100)}%
             <span className="ml-2 font-bold normal-case tracking-normal">(attempt {result.attempts}, best {Math.round(result.bestScore * 100)}%)</span>
             {(result.reward?.coinsAwarded || result.chapterReward?.coinsAwarded) ? (
-              <span className="ml-2 inline-block border-2 border-black bg-[#D4A017] px-2 py-0.5 text-xs font-black normal-case tracking-normal text-black">
+              <span className="ml-2 inline-block border-2 border-studio-ink bg-studio-lemon px-2 py-0.5 text-xs font-black normal-case tracking-normal text-studio-ink">
                 +{(result.reward?.coinsAwarded ?? 0) + (result.chapterReward?.coinsAwarded ?? 0)} Vibe Coins
               </span>
             ) : null}
           </p>
-          <ul className="mb-4 space-y-2 text-sm text-black">
+          <ul className="mb-4 space-y-2 text-sm text-studio-ink">
             {result.feedback.map((f, i) => (
               <li key={`${f.label}-${i}`} className="flex gap-2">
-                <span aria-hidden="true" className={`font-black ${f.ok ? "" : "text-[#FF3000]"}`}>{f.ok ? "✓" : "✗"}</span>
+                <span aria-hidden="true" className={`font-black ${f.ok ? "" : "text-signal"}`}>{f.ok ? "✓" : "✗"}</span>
                 <span>
                   <span className="sr-only">{f.ok ? "Met: " : "Missed: "}</span>
                   {f.label}
@@ -204,20 +203,20 @@ export function ExercisePlayer({ exercise, token, index, total, onChecked, test 
               </li>
             ))}
           </ul>
-          <div className="mb-4 border-2 border-black bg-[#F2F2F2] p-3 text-sm leading-relaxed text-black">
-            <p className="mb-1 text-xs font-bold uppercase tracking-widest">Why</p>
+          <div className="mb-4 k-card-sm bg-studio-canvas p-3 text-sm leading-relaxed text-studio-ink">
+            <p className="mb-1 k-clabel">Why</p>
             {result.explanation}
           </div>
           {exercise.kind === "repair" && typeof result.reveal.model === "string" && (
             <div className="mb-4">
-              <p className="mb-1 text-xs font-bold uppercase tracking-widest text-black">A strong rewrite</p>
-              <pre className="whitespace-pre-wrap break-words border-2 border-black p-3 font-mono text-xs leading-relaxed text-black">{result.reveal.model}</pre>
+              <p className="mb-1 text-studio-ink k-clabel">A strong rewrite</p>
+              <pre className="whitespace-pre-wrap break-words k-card-sm p-3 font-mono text-xs leading-relaxed text-studio-ink">{result.reveal.model}</pre>
             </div>
           )}
           <button
             type="button"
             onClick={retry}
-            className={`${btn} w-full bg-white text-black hover:border-[#FF3000] hover:text-[#FF3000] focus-visible:ring-4 focus-visible:ring-[#FF3000] sm:w-auto`}
+            className={`${btn} w-full sm:w-auto`}
           >
             Try again
           </button>
@@ -248,13 +247,13 @@ function ChoiceInput({ pub, value, onChange, locked, reveal }: { pub: ChoicePubl
             aria-checked={selected}
             disabled={locked}
             onClick={() => onChange(i)}
-            className={`flex min-h-11 w-full items-start gap-3 border-4 px-3 py-2 text-left text-sm transition-colors duration-150 ease-out focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#FF3000] ${
-              selected ? "border-black bg-black text-white" : "border-black bg-white text-black hover:border-[#FF3000]"
+            className={`flex min-h-11 w-full items-start gap-3 rounded-xl border-2 px-3 py-2 text-left text-[0.8125rem] font-semibold transition-colors duration-150 ease-out focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-signal ${
+              selected ? "border-studio-ink bg-studio-blueberry text-white" : "border-studio-ink bg-studio-paper text-studio-ink hover:bg-studio-lemon"
             } ${locked ? "cursor-default" : ""}`}
           >
             <span aria-hidden="true" className="font-black">{String.fromCharCode(65 + i)}</span>
             <span className="min-w-0 flex-1 break-words">{opt}</span>
-            {isCorrect && <span className="shrink-0 text-xs font-bold uppercase tracking-widest">Correct</span>}
+            {isCorrect && <span className="shrink-0 k-clabel">Correct</span>}
           </button>
         );
       })}
@@ -268,7 +267,7 @@ function FillInput({ pub, values, onChange, locked, reveal }: { pub: FillPublic;
   const parts = splitTemplate(pub.template);
   const blanks = new Map(pub.blanks.map((b) => [b.id, b]));
   return (
-    <div className="whitespace-pre-wrap break-words border-2 border-black p-3 font-mono text-xs leading-loose text-black sm:text-sm">
+    <div className="whitespace-pre-wrap break-words k-card-sm p-3 font-mono text-xs leading-loose text-studio-ink sm:text-sm">
       {parts.map((p, i) => {
         if ("text" in p) return <span key={i}>{p.text}</span>;
         const blank = blanks.get(p.blank);
@@ -282,8 +281,8 @@ function FillInput({ pub, values, onChange, locked, reveal }: { pub: FillPublic;
               value={values[blank.id] ?? ""}
               disabled={locked}
               onChange={(e) => onChange({ ...values, [blank.id]: e.target.value })}
-              className={`mx-1 min-h-11 max-w-full border-4 bg-white px-2 py-1 font-mono text-xs font-bold text-black focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#FF3000] sm:text-sm ${
-                right === null ? "border-black" : right ? "border-black" : "border-[#FF3000]"
+              className={`mx-1 min-h-11 max-w-full rounded-lg border-2 bg-studio-paper px-2 py-1 font-mono text-xs font-bold text-studio-ink focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-signal sm:text-sm ${
+                right === null ? "border-studio-ink" : right ? "border-studio-ink" : "border-signal"
               }`}
             >
               <option value="">Choose…</option>
@@ -292,7 +291,7 @@ function FillInput({ pub, values, onChange, locked, reveal }: { pub: FillPublic;
               ))}
             </select>
             {correct && right === false && (
-              <span className="mr-1 text-xs font-bold text-[#FF3000]">(correct: {correct[blank.id]})</span>
+              <span className="mr-1 text-xs font-bold text-signal">(correct: {correct[blank.id]})</span>
             )}
           </span>
         );
@@ -316,21 +315,21 @@ function OrderInput({ pub, order, onChange, locked, reveal }: { pub: OrderPublic
       {order.map((id, i) => {
         const inPlace = correct ? correct[i] === id : null;
         return (
-          <li key={id} className={`flex items-stretch gap-2 border-4 ${inPlace === false ? "border-[#FF3000]" : "border-black"}`}>
-            <span aria-hidden="true" className="flex w-9 shrink-0 items-center justify-center bg-black text-sm font-black text-white">{i + 1}</span>
-            <span className="min-w-0 flex-1 whitespace-pre-wrap break-words py-2 text-sm text-black">{text.get(id)}</span>
+          <li key={id} className={`flex items-stretch gap-2 overflow-hidden rounded-xl border-2 ${inPlace === false ? "border-signal" : "border-studio-ink"}`}>
+            <span aria-hidden="true" className="flex w-9 shrink-0 items-center justify-center bg-studio-ink text-sm font-black text-white">{i + 1}</span>
+            <span className="min-w-0 flex-1 whitespace-pre-wrap break-words py-2 text-sm text-studio-ink">{text.get(id)}</span>
             {!locked && (
-              <span className="flex shrink-0 flex-col border-l-4 border-black">
-                <button type="button" aria-label={`Move up: ${text.get(id)?.slice(0, 40)}`} disabled={i === 0} onClick={() => move(i, i - 1)} className="flex min-h-11 min-w-11 flex-1 items-center justify-center text-black hover:text-[#FF3000] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-[#FF3000] disabled:opacity-30">▲</button>
-                <button type="button" aria-label={`Move down: ${text.get(id)?.slice(0, 40)}`} disabled={i === order.length - 1} onClick={() => move(i, i + 1)} className="flex min-h-11 min-w-11 flex-1 items-center justify-center border-t-4 border-black text-black hover:text-[#FF3000] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-[#FF3000] disabled:opacity-30">▼</button>
+              <span className="flex shrink-0 flex-col border-l border-studio-ink">
+                <button type="button" aria-label={`Move up: ${text.get(id)?.slice(0, 40)}`} disabled={i === 0} onClick={() => move(i, i - 1)} className="flex min-h-11 min-w-11 flex-1 items-center justify-center text-studio-ink hover:text-signal focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-signal disabled:opacity-30">▲</button>
+                <button type="button" aria-label={`Move down: ${text.get(id)?.slice(0, 40)}`} disabled={i === order.length - 1} onClick={() => move(i, i + 1)} className="flex min-h-11 min-w-11 flex-1 items-center justify-center border-t border-studio-ink text-studio-ink hover:text-signal focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-signal disabled:opacity-30">▼</button>
               </span>
             )}
           </li>
         );
       })}
       {correct && (
-        <li className="list-none pt-2 text-xs text-black">
-          <span className="font-bold uppercase tracking-widest">Correct order: </span>
+        <li className="list-none pt-2 text-xs text-studio-ink">
+          <span className="k-clabel">Correct order: </span>
           {correct.map((id) => (text.get(id) ?? "").slice(0, 28).trim()).join(", ")}
         </li>
       )}
@@ -342,7 +341,7 @@ function SpotInput({ pub, picked, onChange, locked, reveal }: { pub: SpotPublic;
   const flawed = Array.isArray(reveal?.flawed) ? new Set(reveal.flawed as string[]) : null;
   return (
     <div className="space-y-2">
-      <p className="text-xs font-bold uppercase tracking-widest text-black">{pub.pickPrompt ?? "Select every weak line"}</p>
+      <p className="text-studio-ink k-clabel">{pub.pickPrompt ?? "Select every weak line"}</p>
       {pub.segments.map((s) => {
         const on = picked.includes(s.id);
         const wasFlawed = flawed ? flawed.has(s.id) : null;
@@ -353,14 +352,14 @@ function SpotInput({ pub, picked, onChange, locked, reveal }: { pub: SpotPublic;
             aria-pressed={on}
             disabled={locked}
             onClick={() => onChange(on ? picked.filter((p) => p !== s.id) : [...picked, s.id])}
-            className={`flex min-h-11 w-full items-start gap-3 border-4 px-3 py-2 text-left text-sm transition-colors duration-150 ease-out focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#FF3000] ${
-              on ? "border-black bg-black text-white" : "border-black bg-white text-black hover:border-[#FF3000]"
+            className={`flex min-h-11 w-full items-start gap-3 rounded-xl border-2 px-3 py-2 text-left text-[0.8125rem] font-semibold transition-colors duration-150 ease-out focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-signal ${
+              on ? "border-studio-ink bg-studio-blueberry text-white" : "border-studio-ink bg-studio-paper text-studio-ink hover:bg-studio-lemon"
             } ${locked ? "cursor-default" : ""}`}
           >
             <span aria-hidden="true" className="font-black">{on ? "■" : "□"}</span>
             <span className="min-w-0 flex-1 break-words">{s.text}</span>
             {wasFlawed !== null && (
-              <span className={`shrink-0 text-xs font-bold uppercase tracking-widest ${on ? "" : wasFlawed ? "text-[#FF3000]" : ""}`}>
+              <span className={`shrink-0 k-clabel ${on ? "" : wasFlawed ? "text-signal" : ""}`}>
                 {wasFlawed ? (pub.hitLabel ?? "Flawed") : (pub.missLabel ?? "Fine")}
               </span>
             )}
@@ -375,8 +374,8 @@ function RepairInput({ pub, value, onChange, locked }: { pub: RepairPublic; valu
   const uid = useId();
   return (
     <div>
-      {pub.hint && <p className="mb-2 border-l-4 border-[#FF3000] pl-3 text-xs text-black">{pub.hint}</p>}
-      <label htmlFor={`${uid}-repair`} className="mb-1 block text-xs font-bold uppercase tracking-widest text-black">Your rewritten prompt</label>
+      {pub.hint && <p className="mb-2 border-l border-signal pl-3 text-xs text-studio-ink">{pub.hint}</p>}
+      <label htmlFor={`${uid}-repair`} className="mb-1 block text-studio-ink k-clabel">Your rewritten prompt</label>
       <textarea
         id={`${uid}-repair`}
         value={value}
@@ -384,9 +383,9 @@ function RepairInput({ pub, value, onChange, locked }: { pub: RepairPublic; valu
         maxLength={MAX_REPAIR_LENGTH}
         rows={10}
         onChange={(e) => onChange(e.target.value)}
-        className="block min-h-48 w-full resize-y border-4 border-black bg-white p-3 font-mono text-xs leading-relaxed text-black focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#FF3000] sm:text-sm"
+        className="block min-h-48 w-full resize-y k-card p-3 font-mono text-xs leading-relaxed text-studio-ink focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-signal sm:text-sm"
       />
-      <p className="mt-1 text-right text-xs text-black opacity-60">{value.length} / {MAX_REPAIR_LENGTH}</p>
+      <p className="mt-1 text-right text-xs text-studio-ink opacity-60">{value.length} / {MAX_REPAIR_LENGTH}</p>
     </div>
   );
 }

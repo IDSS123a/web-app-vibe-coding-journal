@@ -43,18 +43,18 @@ export function AdminGuard({ children }: { children: ReactNode }) {
   if (loading || state === "checking") {
     return (
       <div className="flex min-h-dvh items-center justify-center">
-        <div className="text-sm font-bold uppercase tracking-widest text-black">Checking access…</div>
+        <div className="text-console-text k-label">Checking access…</div>
       </div>
     );
   }
 
   if (state === "anon") {
     return (
-      <div className="border-4 border-black py-12 text-center">
-        <p className="mb-4 text-sm text-black">You must be signed in as an admin to access this area.</p>
+      <div className="border border-console-line py-12 text-center">
+        <p className="mb-4 text-sm text-console-text">You must be signed in as an admin to access this area.</p>
         <Link
           href="/login"
-          className="text-sm font-bold uppercase tracking-widest text-black underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]"
+          className="text-console-text underline decoration-1 underline-offset-4 transition-colors duration-150 ease-out hover:text-signal k-label"
         >
           Sign In →
         </Link>
@@ -64,12 +64,12 @@ export function AdminGuard({ children }: { children: ReactNode }) {
 
   if (state === "forbidden") {
     return (
-      <div className="border-4 border-black py-12 text-center">
-        <h2 className="mb-2 text-xl font-black uppercase tracking-tight text-black">Not Authorized</h2>
-        <p className="mb-4 text-sm text-black">Your account does not have admin access.</p>
+      <div className="border border-console-line py-12 text-center">
+        <h2 className="mb-2 text-console-text k-h4">Not Authorized</h2>
+        <p className="mb-4 text-sm text-console-text">Your account does not have admin access.</p>
         <Link
           href="/dashboard"
-          className="text-sm font-bold uppercase tracking-widest text-black underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]"
+          className="text-console-text underline decoration-1 underline-offset-4 transition-colors duration-150 ease-out hover:text-signal k-label"
         >
           Back to Dashboard →
         </Link>

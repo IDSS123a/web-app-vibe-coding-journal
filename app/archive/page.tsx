@@ -26,21 +26,21 @@ export default function ArchivePage() {
   const hasMore = data?.hasMore ?? false;
 
   return (
-    <div className="min-h-dvh bg-white px-4 py-12 md:px-12">
+    <div className="k-page layer-edition">
       <div className="mx-auto max-w-4xl xl:max-w-5xl">
-        <div className="mb-12 border-b-4 border-black pb-8">
-          <p className="mb-2 text-xs font-bold uppercase tracking-widest text-[#FF3000]">
+        <div className="mb-12 border-b border-black pb-8">
+          <p className="mb-2 text-signal k-label">
             Record
           </p>
-          <h1 className="text-4xl font-black uppercase tracking-tighter text-black">Archive</h1>
+          <h1 className="text-black k-display">Archive</h1>
           <p className="mt-2 text-sm text-black">Past Daily Reports</p>
         </div>
 
         {loading && <p className="text-sm text-black opacity-60">Loading…</p>}
-        {error && <p className="border-2 border-[#FF3000] p-3 text-sm text-[#FF3000]">{error}</p>}
+        {error && <p className="border border-signal p-3 text-sm text-signal">{error}</p>}
 
         {!loading && !error && reports.length === 0 && (
-          <p className="border-4 border-black py-16 text-center text-sm italic text-black opacity-60">
+          <p className="border border-black py-16 text-center text-sm italic text-black opacity-60">
             No past reports yet.
           </p>
         )}
@@ -51,12 +51,12 @@ export default function ArchivePage() {
               <a
                 key={report.id}
                 href={`/archive/${report.date}`}
-                className={`group block border-4 border-black p-6 transition-colors duration-150 ease-out hover:bg-black ${
+                className={`group block border border-black p-6 transition-colors duration-150 ease-out hover:bg-black ${
                   i > 0 ? "border-t-0" : ""
                 }`}
               >
                 <div className="flex items-center justify-between">
-                  <p className="text-sm font-bold uppercase tracking-wide text-black group-hover:text-white">
+                  <p className="text-black group-hover:text-white k-label">
                     {new Date(report.date).toLocaleDateString("en-US", {
                       weekday: "long",
                       year: "numeric",
@@ -64,7 +64,7 @@ export default function ArchivePage() {
                       day: "numeric",
                     })}
                   </p>
-                  <span className="text-xs text-black group-hover:text-[#F2F2F2]">
+                  <span className="text-xs text-black group-hover:text-paper-2">
                     {report.article_count} articles · {report.reading_time_minutes || "< 1"} min read
                   </span>
                 </div>
@@ -73,12 +73,12 @@ export default function ArchivePage() {
           </div>
         )}
 
-        <div className="mt-8 flex items-center justify-between text-xs font-bold uppercase tracking-widest">
+        <div className="mt-8 flex items-center justify-between k-label">
           {page > 0 ? (
             <button
               type="button"
               onClick={() => setPage((p) => p - 1)}
-              className="text-black underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]"
+              className="text-black underline decoration-1 underline-offset-4 transition-colors duration-150 ease-out hover:text-signal"
             >
               ← Newer
             </button>
@@ -89,18 +89,18 @@ export default function ArchivePage() {
             <button
               type="button"
               onClick={() => setPage((p) => p + 1)}
-              className="text-black underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]"
+              className="text-black underline decoration-1 underline-offset-4 transition-colors duration-150 ease-out hover:text-signal"
             >
               Older →
             </button>
           )}
         </div>
 
-        <div className="mt-8 flex justify-center gap-6 text-xs font-bold uppercase tracking-widest text-black">
-          <Link href="/dashboard" className="inline-flex min-h-11 items-center underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]">
+        <div className="mt-8 flex justify-center gap-6 text-black k-label">
+          <Link href="/dashboard" className="inline-flex min-h-11 items-center underline decoration-1 underline-offset-4 transition-colors duration-150 ease-out hover:text-signal">
             ← Dashboard
           </Link>
-          <Link href="/bookmarks" className="inline-flex min-h-11 items-center underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]">
+          <Link href="/bookmarks" className="inline-flex min-h-11 items-center underline decoration-1 underline-offset-4 transition-colors duration-150 ease-out hover:text-signal">
             My Bookmarks
           </Link>
         </div>

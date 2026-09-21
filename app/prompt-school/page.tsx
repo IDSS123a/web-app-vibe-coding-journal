@@ -81,61 +81,61 @@ function Overview() {
   const chapterTotal = levels.reduce((n, l) => n + l.chapters.length, 0);
 
   return (
-    <div className="min-h-dvh bg-white px-4 py-10 md:px-12 md:py-12">
+    <div className="k-page layer-campus">
       <div className="mx-auto max-w-4xl xl:max-w-5xl">
-        <div className="mb-10 border-b-4 border-black pb-8">
-          <p className="mb-2 text-xs font-bold uppercase tracking-widest text-[#FF3000]">Premium</p>
-          <h1 className="break-words text-4xl font-black uppercase tracking-tighter text-black md:text-5xl">
+        <div className="mb-10 border-b border-studio-ink pb-8">
+          <p className="mb-2 text-studio-blueberry k-clabel">Premium</p>
+          <h1 className="break-words text-studio-ink k-cheading">
             Prompt School - <span lang="grc" className="normal-case">Ἀγορά</span>
           </h1>
-          <p className="mt-3 max-w-2xl text-sm leading-relaxed text-black">
+          <p className="mt-3 max-w-2xl text-sm leading-relaxed text-studio-ink">
             Learn to write prompts that work, from a first clear request to advanced techniques. The course follows the
             book Mastering Prompt Engineering. Every chapter has short lessons and hands-on practice: you complete,
             order, repair and write prompts, and each attempt is checked at once. Finish a chapter&apos;s lessons to open its
             practice, and pass the practice to open the next chapter.
           </p>
           {levels.length > 0 && (
-            <p className="mt-3 text-xs font-bold uppercase tracking-widest text-black">
+            <p className="mt-3 text-studio-ink k-clabel">
               {open === chapterTotal ? `${chapterTotal} chapters, ${planned} lessons` : `${open} of ${chapterTotal} chapters written, about ${planned} lessons planned`}
             </p>
           )}
         </div>
 
-        {loading && <p className="text-sm text-black opacity-60">Loading…</p>}
-        {error && <p role="alert" className="border-2 border-[#FF3000] p-3 text-sm text-[#FF3000]">{error}</p>}
+        {loading && <p className="text-sm text-studio-ink opacity-60">Loading…</p>}
+        {error && <p role="alert" className="k-card-sm border-signal p-3 text-sm text-signal">{error}</p>}
 
         <div className="space-y-14">
           {levels.map((level) => (
             <section key={level.id} aria-labelledby={`level-${level.id}`}>
-              <div className="mb-5 border-b-2 border-black pb-3">
-                <h2 id={`level-${level.id}`} className="text-2xl font-black uppercase tracking-tight text-black">{level.label}</h2>
-                <p className="text-sm text-black">{level.blurb}</p>
+              <div className="mb-5 border-b border-studio-ink pb-3">
+                <h2 id={`level-${level.id}`} className="text-studio-ink k-h3">{level.label}</h2>
+                <p className="text-sm text-studio-ink">{level.blurb}</p>
               </div>
               <ul className="grid gap-4 md:grid-cols-2">
                 {level.chapters.map((c) => (
-                  <li key={c.slug} className={`flex flex-col border-4 border-black p-4 sm:p-5 ${c.open && c.unlocked ? "" : "opacity-60"}`}>
-                    <p className="mb-1 text-xs font-bold uppercase tracking-widest text-[#FF3000]">{c.bookRef}</p>
-                    <h3 className="mb-2 text-lg font-black uppercase leading-tight tracking-tight text-black">{c.title}</h3>
-                    <p className="mb-4 flex-1 text-sm leading-relaxed text-black">{c.summary}</p>
+                  <li key={c.slug} className={`flex flex-col k-card p-4 sm:p-5 ${c.open && c.unlocked ? "" : "opacity-60"}`}>
+                    <p className="mb-1 text-studio-blueberry k-clabel">{c.bookRef}</p>
+                    <h3 className="mb-2 text-studio-ink k-h4">{c.title}</h3>
+                    <p className="mb-4 flex-1 text-sm leading-relaxed text-studio-ink">{c.summary}</p>
                     {c.open && !c.unlocked ? (
-                      <p className="text-xs font-bold uppercase tracking-widest text-black">
+                      <p className="text-studio-ink k-clabel">
                         <span aria-hidden="true">🔒 </span>Locked: complete {c.waitingFor ? `"${c.waitingFor}"` : "the previous chapter"} first
                       </p>
                     ) : c.open ? (
                       <>
-                        <p className="mb-3 text-xs font-bold uppercase tracking-widest text-black">
+                        <p className="mb-3 text-studio-ink k-clabel">
                           {c.lessonsDone} of {c.lessonCount} lessons, {c.exerciseCount} exercises
                           {c.passed ? " · Chapter complete ✓" : c.score > 0 ? ` · ${Math.round(c.score * 100)}%` : ""}
                         </p>
                         <Link
                           href={`/prompt-school/${c.slug}`}
-                          className="inline-flex min-h-11 items-center justify-center border-4 border-black bg-black px-4 py-2 text-xs font-bold uppercase tracking-widest text-white transition-colors duration-150 ease-out hover:border-[#FF3000] hover:bg-[#FF3000] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#FF3000]"
+                          className="inline-flex min-h-11 items-center justify-center k-cbtn k-cbtn-primary"
                         >
                           {c.lessonsDone > 0 || c.score > 0 ? "Continue" : "Start"} →
                         </Link>
                       </>
                     ) : (
-                      <p className="text-xs font-bold uppercase tracking-widest text-black">
+                      <p className="text-studio-ink k-clabel">
                         Coming soon, about {c.plannedLessons} lessons
                       </p>
                     )}
@@ -143,12 +143,12 @@ function Overview() {
                 ))}
               </ul>
               {level.levelTest && level.levelTest.questionCount > 0 && (
-                <div className="mt-5 border-4 border-black p-4 sm:p-5" data-testid={`level-test-${level.id}`}>
-                  <p className="mb-1 text-xs font-bold uppercase tracking-widest text-[#FF3000]">Level test</p>
-                  <h3 className="mb-2 text-lg font-black uppercase leading-tight tracking-tight text-black">
+                <div className="mt-5 k-card p-4 sm:p-5" data-testid={`level-test-${level.id}`}>
+                  <p className="mb-1 text-studio-blueberry k-clabel">Level test</p>
+                  <h3 className="mb-2 text-studio-ink k-h4">
                     {level.label} level test{level.levelTest.passed ? " · Passed ✓" : ""}
                   </h3>
-                  <p className="mb-4 text-sm leading-relaxed text-black">
+                  <p className="mb-4 text-sm leading-relaxed text-studio-ink">
                     {level.levelTest.questionCount} new questions from every chapter of this level, answered in one sitting and
                     graded together. Pass at {Math.round(level.levelTest.passScore * 100)}%.
                     {level.levelTest.attempts > 0 && ` Best so far: ${Math.round(level.levelTest.bestScore * 100)}% in ${level.levelTest.attempts} ${level.levelTest.attempts === 1 ? "attempt" : "attempts"}.`}
@@ -156,12 +156,12 @@ function Overview() {
                   {level.levelTest.unlocked ? (
                     <Link
                       href={`/prompt-school/level-test/${level.id}`}
-                      className="inline-flex min-h-11 items-center justify-center border-4 border-black bg-black px-4 py-2 text-xs font-bold uppercase tracking-widest text-white transition-colors duration-150 ease-out hover:border-[#FF3000] hover:bg-[#FF3000] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#FF3000]"
+                      className="inline-flex min-h-11 items-center justify-center k-cbtn k-cbtn-primary"
                     >
                       {level.levelTest.attempts > 0 ? "Take it again" : "Start the test"} →
                     </Link>
                   ) : (
-                    <p className="text-xs font-bold uppercase tracking-widest text-black">
+                    <p className="text-studio-ink k-clabel">
                       <span aria-hidden="true">🔒 </span>Locked: complete {level.levelTest.remainingChapters.length === 1 ? `"${level.levelTest.remainingChapters[0]}"` : `the ${level.levelTest.remainingChapters.length} remaining chapters of this level`} first
                     </p>
                   )}

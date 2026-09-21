@@ -63,41 +63,41 @@ export default function AdminUniversityPage() {
 
   return (
     <div>
-      <div className="mb-8 border-b-4 border-black pb-6">
-        <p className="mb-2 text-xs font-bold uppercase tracking-widest text-[#FF3000]">Curriculum</p>
-        <h2 className="text-3xl font-black uppercase tracking-tighter text-black">University Review Queue</h2>
-        <p className="mt-2 text-sm text-black">
+      <div className="mb-8 border-b border-console-line pb-6">
+        <p className="mb-2 text-signal k-label">Curriculum</p>
+        <h2 className="text-console-text k-h2">University Review Queue</h2>
+        <p className="mt-2 text-sm text-console-text">
           AI-generated lessons, one per week (specs/vibe-coding-university/PLAN.md). Nothing here reaches a
           subscriber until approved.
         </p>
       </div>
 
-      {actionMsg && <p className="mb-6 border-2 border-black p-3 text-sm text-black">{actionMsg}</p>}
-      {loading && <p className="text-sm text-black opacity-60">Loading…</p>}
-      {error && <p className="border-2 border-[#FF3000] p-3 text-sm text-[#FF3000]">{error}</p>}
+      {actionMsg && <p className="mb-6 border border-console-line p-3 text-sm text-console-text">{actionMsg}</p>}
+      {loading && <p className="text-sm text-console-text opacity-60">Loading…</p>}
+      {error && <p className="border border-signal p-3 text-sm text-signal">{error}</p>}
 
       {!loading && !error && lessons.length === 0 && (
-        <p className="border-4 border-black py-16 text-center text-sm italic text-black opacity-60">
+        <p className="border border-console-line py-16 text-center text-sm italic text-console-text opacity-60">
           No lessons pending review.
         </p>
       )}
 
       <div className="space-y-8">
         {lessons.map((lesson) => (
-          <div key={lesson.id} className="border-4 border-black p-8">
-            <p className="mb-1 text-xs font-bold uppercase tracking-widest text-[#FF3000]">
+          <div key={lesson.id} className="border border-console-line p-8">
+            <p className="mb-1 text-signal k-label">
               {lesson.course_slug} , Supplementary
             </p>
-            <h3 className="text-2xl font-black uppercase tracking-tight text-black">{lesson.title}</h3>
-            <div className="swiss-grid-pattern mt-4 max-h-96 overflow-y-auto border-2 border-black bg-[#F2F2F2] p-4 text-black">
+            <h3 className="text-console-text k-h4">{lesson.title}</h3>
+            <div className="swiss-grid-pattern mt-4 max-h-96 overflow-y-auto border border-console-line bg-paper-2 p-4 text-console-text">
               <MarkdownContent>{lesson.body ?? ""}</MarkdownContent>
             </div>
             {lesson.candidate_terms.length > 0 && (
               <div className="mt-4">
-                <p className="text-xs font-bold uppercase tracking-widest text-[#FF3000]">
+                <p className="text-signal k-label">
                   Proposed Dictionary Terms
                 </p>
-                <ul className="mt-2 space-y-1 text-sm text-black">
+                <ul className="mt-2 space-y-1 text-sm text-console-text">
                   {lesson.candidate_terms.map((t, i) => (
                     <li key={i}>
                       <strong>{t.term}:</strong> {t.definition}
@@ -110,14 +110,14 @@ export default function AdminUniversityPage() {
               <button
                 type="button"
                 onClick={() => review(lesson.id, "published")}
-                className="h-12 border-4 border-black bg-black px-6 text-xs font-bold uppercase tracking-widest text-white transition-colors duration-150 ease-out hover:border-[#FF3000] hover:bg-[#FF3000]"
+                className="h-12 k-btn k-btn-primary"
               >
                 Approve &amp; Publish
               </button>
               <button
                 type="button"
                 onClick={() => review(lesson.id, "stub")}
-                className="h-12 border-4 border-black bg-white px-6 text-xs font-bold uppercase tracking-widest text-black transition-colors duration-150 ease-out hover:border-[#FF3000] hover:text-[#FF3000]"
+                className="h-12 k-btn"
               >
                 Reject
               </button>

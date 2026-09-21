@@ -68,12 +68,12 @@ function LevelTest() {
 
   const allAnswered = questions.length > 0 && questions.every((q) => answers[q.id] !== undefined);
 
-  if (loading) return <p className="p-12 text-center text-sm text-black opacity-60">Loading…</p>;
+  if (loading) return <p className="p-12 text-center text-sm text-studio-ink opacity-60">Loading…</p>;
 
   if (error || (!loading && questions.length === 0)) {
     return (
-      <div className="min-h-dvh bg-white px-4 py-12">
-        <p className="mx-auto max-w-2xl border-2 border-[#FF3000] p-3 text-sm text-[#FF3000]">
+      <div className="k-page layer-campus">
+        <p className="mx-auto max-w-2xl k-card-sm border-signal p-3 text-sm text-signal">
           {error ?? "This level's final test isn't available yet."}
         </p>
       </div>
@@ -81,36 +81,36 @@ function LevelTest() {
   }
 
   return (
-    <div className="min-h-dvh bg-white px-4 py-12 md:px-12">
+    <div className="k-page layer-campus">
       <div className="mx-auto max-w-2xl xl:max-w-3xl">
         <Link
           href="/university"
-          className="inline-flex min-h-11 items-center text-xs font-bold uppercase tracking-widest text-black underline decoration-2 underline-offset-4 transition-colors duration-150 ease-out hover:text-[#FF3000]"
+          className="inline-flex min-h-11 items-center underline decoration-1 underline-offset-4 k-cbtn"
         >
           ← University
         </Link>
-        <p className="mt-6 text-xs font-bold uppercase tracking-widest text-[#FF3000]">
+        <p className="mt-6 text-studio-blueberry k-clabel">
           {params.level} , Final Test
         </p>
-        <h1 className="mt-2 text-3xl font-black uppercase tracking-tighter text-black">
+        <h1 className="mt-2 text-studio-ink k-cheading">
           Level Final Test
         </h1>
-        <p className="mt-2 text-sm text-black">
+        <p className="mt-2 text-sm text-studio-ink">
           Answer all {questions.length} questions. 80% correct to pass this level.
         </p>
 
         <div className="mt-10 space-y-10">
           {questions.map((q, i) => (
             <div key={q.id}>
-              <p className="text-sm font-bold text-black">
+              <p className="text-sm font-bold text-studio-ink">
                 {i + 1}. {q.question}
               </p>
               <div className="mt-3 space-y-2">
                 {q.options.map((option, optIndex) => (
                   <label
                     key={optIndex}
-                    className={`flex cursor-pointer items-center gap-3 border-2 p-3 text-sm text-black transition-colors duration-150 ease-out ${
-                      answers[q.id] === optIndex ? "border-[#FF3000] bg-[#F2F2F2]" : "border-black"
+                    className={`flex cursor-pointer items-center gap-3 k-card-sm p-3 text-sm text-studio-ink transition-colors duration-150 ease-out ${
+                      answers[q.id] === optIndex ? "border-signal bg-studio-canvas" : "border-studio-ink"
                     }`}
                   >
                     <input
@@ -129,11 +129,11 @@ function LevelTest() {
         </div>
 
         {result ? (
-          <div className={`mt-10 border-4 p-6 text-center ${result.passed ? "border-black" : "border-[#FF3000]"}`}>
-            <p className="text-2xl font-black uppercase tracking-tight text-black">
+          <div className={`mt-10 k-card p-6 text-center ${result.passed ? "border-studio-ink" : "border-signal"}`}>
+            <p className="text-studio-ink k-clabel">
               {result.score} / {result.total}
             </p>
-            <p className="mt-2 text-sm text-black">
+            <p className="mt-2 text-sm text-studio-ink">
               {result.passed
                 ? `You've completed the ${params.level} level.`
                 : "Not this time, review the chapters and try again."}
@@ -145,7 +145,7 @@ function LevelTest() {
                   setResult(null);
                   setAnswers({});
                 }}
-                className="mt-6 inline-flex h-12 items-center justify-center border-4 border-black bg-black px-6 text-xs font-bold uppercase tracking-widest text-white transition-colors duration-150 ease-out hover:border-[#FF3000] hover:bg-[#FF3000]"
+                className="mt-6 inline-flex h-12 items-center justify-center k-cbtn k-cbtn-primary"
               >
                 Retry Test
               </button>
@@ -153,7 +153,7 @@ function LevelTest() {
             {result.passed && (
               <Link
                 href="/university"
-                className="mt-6 inline-flex h-12 items-center justify-center border-4 border-black bg-black px-6 text-xs font-bold uppercase tracking-widest text-white transition-colors duration-150 ease-out hover:border-[#FF3000] hover:bg-[#FF3000]"
+                className="mt-6 inline-flex h-12 items-center justify-center k-cbtn k-cbtn-primary"
               >
                 Back to University
               </Link>
@@ -164,7 +164,7 @@ function LevelTest() {
             type="button"
             onClick={submit}
             disabled={!allAnswered || submitting}
-            className="mt-10 h-14 w-full border-4 border-black bg-black text-sm font-bold uppercase tracking-widest text-white transition-colors duration-150 ease-out hover:border-[#FF3000] hover:bg-[#FF3000] disabled:cursor-not-allowed disabled:opacity-50"
+            className="mt-10 h-14 w-full disabled:cursor-not-allowed disabled:opacity-50 k-cbtn k-cbtn-primary"
           >
             {submitting ? "Submitting…" : "Submit Final Test"}
           </button>
