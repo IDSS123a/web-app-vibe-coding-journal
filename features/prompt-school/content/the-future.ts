@@ -172,7 +172,7 @@ Think of the appendices as the indispensable companion volumes in a master craft
 
 Do not treat the appendices as add-ons to glance at once. Use them actively. Refer back to the glossary when a term is unclear. Adapt the blueprints for your own projects. Consult the Markdown manual when structuring complex prompts. Review the techniques table when brainstorming approaches. Check the further reading when you are ready to go deeper. These resources are here to support you as you move from understanding the principles to confidently applying them, refining your skills and truly mastering the art of guiding computational systems effectively, efficiently and responsibly.
 
-The next chapters of this School are those companion volumes: the fifteen blueprints as hands-on workshops, the techniques quick reference, the glossary, and the guides to further reading and to platforms and tools.
+The rest of this School is built from those companion volumes: the fifteen blueprints as hands-on workshops, the techniques quick reference, the glossary, and the guides to further reading and to platforms and tools.
 
 **Try this:** write your own list of the three principles you find hardest to keep, and one habit that would help with each.`,
   },

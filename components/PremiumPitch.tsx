@@ -45,14 +45,14 @@ const FEATURE_COPY: Record<PremiumFeature, { eyebrow: string; headline: string; 
   university: {
     eyebrow: "Vibe-Coding University",
     headline: "Go from first prompt to confident builder, one lesson at a time.",
-    lead: "A complete course for people who build software with AI: 75 lessons in 15 chapters across three levels, with quizzes after every chapter and a test to close each level. New lessons are written from the latest news.",
+    lead: "A complete course for people who build software with AI: 75 lessons in 15 chapters across three levels, with quizzes after every chapter and a test to close each level.",
     peekTitle: "A peek at the curriculum",
     peek: ["The Vibe-Coding Mindset: Judgment Over Typing", "Writing Effective Prompts for Code Generation", "Spotting Common AI Mistakes in Generated Code", "Security, Risk, and Governance for AI-Assisted Development"],
   },
   dictionary: {
     eyebrow: "Vibe-Coding Dictionary",
     headline: "Never get lost in the jargon again.",
-    lead: "More than 2,600 terms in plain language, searchable in a keystroke, grouped by topic and level. It keeps learning: new terms are added automatically when they start appearing across the daily news.",
+    lead: "More than 2,600 terms in plain language, searchable in a keystroke, grouped by topic and level. Every term is written for people who build with AI, not for specialists.",
     peekTitle: "Terms you will look up",
     peek: ["Context engineering", "Model Context Protocol", "Human-in-the-loop", "Prompt injection"],
   },
@@ -60,7 +60,7 @@ const FEATURE_COPY: Record<PremiumFeature, { eyebrow: string; headline: string; 
 
 const PREMIUM_INCLUDES = [
   "Vibe-Coding University: 75 lessons, chapter quizzes and level tests",
-  "Vibe-Coding Dictionary: 2,600+ terms that keep growing",
+  "Vibe-Coding Dictionary: 2,600+ terms in plain language",
   "Vibe-Coding Assistant: prompts written for you",
   "Prompt School: learn to write prompts with hands-on practice",
   "Everything in Basic: Daily Report, Archive and Bookmarks",

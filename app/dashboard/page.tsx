@@ -49,7 +49,7 @@ export default function DashboardPage() {
             Vibe-Coding Journal
           </h1>
           <p className="mt-2 text-sm text-black">
-            Automated daily intelligence digest for vibe-coders
+            Daily intelligence digest for vibe-coders
           </p>
         </div>
 
@@ -71,7 +71,7 @@ export default function DashboardPage() {
           <div data-day={dayKeyOf(report.date)} className="k-box k-daybar p-4 sm:p-8 md:p-12">
             <ReportHeader
               report={report}
-              status={report.review_status === "auto_published" ? "Auto-published" : report.review_status === "manually_approved" ? "Approved" : null}
+              status={report.review_status === "auto_published" || report.review_status === "manually_approved" ? "Published" : null}
             />
 
             {/* Structured, bookmarkable article list when available (migration

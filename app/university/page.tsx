@@ -69,7 +69,7 @@ function CourseList() {
             Vibe-Coding University - <span lang="grc" className="normal-case">Στοά</span>
           </h1>
           <p className="mt-2 text-sm text-studio-ink">
-            25 core lessons per level across 5 chapters. Pass each chapter&apos;s quiz to unlock the
+            25 lessons per level across 5 chapters. Pass each chapter&apos;s quiz to unlock the
             next, then clear the level final test.
           </p>
           <Link
@@ -164,7 +164,7 @@ function CourseList() {
               {course.supplementaryLessons.length > 0 && (
                 <div className="mt-8">
                   <p className="mb-3 text-studio-blueberry k-clabel">
-                    Supplementary
+                    More lessons
                   </p>
                   <ul className="space-y-2">
                     {course.supplementaryLessons.map((lesson) => (

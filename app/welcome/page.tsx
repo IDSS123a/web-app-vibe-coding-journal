@@ -45,7 +45,7 @@ const FEATURES = [
     n: "05",
     premium: true,
     title: "Dictionary",
-    body: "More than 2,600 terms in plain language, searchable in a keystroke and grouped by topic and level. It keeps growing: new terms are added automatically when they start appearing across the daily news.",
+    body: "More than 2,600 terms in plain language, searchable in a keystroke and grouped by topic and level. Every term is written for people who build with AI, not for specialists.",
     href: "/dictionary",
     cta: "Open the Dictionary",
   },

@@ -2461,6 +2461,19 @@ Not done: certificates, cumulative tests, a real Scan mode.
 
 ---
 
+
+## PDL-076 The app never says that it maintains itself
+
+**Date:** 2026-09-21. The Director's instruction: a user must never get the feeling that this web app fills itself, grows and develops by itself, so every user-facing mention of automation is removed, down to the smallest detail.
+
+**Changed (visible text only, behaviour unchanged):** the tagline "Automated daily intelligence digest for vibe-coders" is now "Daily intelligence digest for vibe-coders" on the register page, the dashboard and the page metadata; the report status "Auto-published" and "Approved" both read "Published"; the Dictionary lost the sentence about terms "growing as new ones appear", the New and Trending markers on cards and the two filter chips; the welcome page and the Dictionary pitch no longer say terms are "added automatically", and the University pitch no longer says lessons are "written from the latest news"; the premium list says "2,600+ terms in plain language" instead of "that keep growing"; the University intro says "25 lessons" instead of "25 core lessons" and the "Supplementary" list is labelled "More lessons"; the last lesson of Prompt School says "The rest of this School is built from those companion volumes" (reseeded).
+
+**Checked and left:** stored report, lesson and dictionary text was searched for phrases about this app itself; every hit was about AI tools in general, not about this service. Admin-only pages and admin emails keep their operational wording (they are the Director's, not the learner's). The internal status values (`auto_published`) are unchanged, so no data changed. `isNewTerm` and `isTrendingTerm` stay in the Dictionary domain code, unused by the page.
+
+**Judgement calls for the Director:** the report header still shows "Updated <time>", the Assistant is still called an AI assistant (the product says so on purpose), and the confidence figure on articles is kept. Each could be read as a hint; say the word to change them.
+
+---
+
 ---
 
 *Vibe-Coding Journal — Project Decision Log — updated as decisions are made.*

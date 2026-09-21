@@ -3,8 +3,7 @@
  *
  * Holds about 2,600 terms, so the page is built for finding, not reading top to bottom
  * (specs/knowledge-growth-and-dictionary/): instant search over names, abbreviations and
- * definitions; topic tiles with counts; an A to Z rail; a level filter; "new" and
- * "trending" markers fed by the daily articles; and a default view that leaves the deep
+ * definitions; topic tiles with counts; an A to Z rail; a level filter; and a default view that leaves the deep
  * machine learning and infrastructure vocabulary behind one toggle (P-0). Everything is
  * filtered in the browser from one cached API response, and only 60 cards are drawn at a
  * time so a list of thousands never freezes a phone.
@@ -22,8 +21,6 @@ import {
   EMPTY_FILTERS,
   applyDictionaryFilters,
   facetCounts,
-  isNewTerm,
-  isTrendingTerm,
   type DictionaryFilters,
   type DictionaryLevel,
 } from "@/features/dictionary/domain";
@@ -37,16 +34,12 @@ const chip = (active: boolean) =>
     active ? "border-black bg-black text-white" : "border-black bg-white text-black hover:border-signal hover:text-signal"
   }`;
 
-function TermCard({ term, now, onRelated }: { term: PublicDictionaryTerm; now: Date; onRelated: (name: string) => void }) {
-  const isNew = isNewTerm(term, now);
-  const trending = isTrendingTerm(term, now);
+function TermCard({ term, onRelated }: { term: PublicDictionaryTerm; onRelated: (name: string) => void }) {
   return (
     <article className="border border-black p-4 sm:p-6">
       <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
         <h3 className="break-words text-black k-h4">{term.term}</h3>
         <div className="flex flex-wrap gap-2">
-          {isNew && <span className="bg-signal py-0.5 text-[11px] k-btn">New</span>}
-          {trending && <span className="py-0.5 text-[11px] text-signal k-btn">Trending</span>}
           {term.level && <span className="py-0.5 text-[11px] k-btn">{term.level}</span>}
           {term.tier === "adjacent" && <span className="bg-paper-2 py-0.5 text-[11px] k-btn">Adjacent</span>}
         </div>
@@ -111,11 +104,9 @@ function TermList() {
 
   const unsorted = useMemo(() => terms.filter((t) => !t.category_group).length, [terms]);
   const hiddenAdjacent = useMemo(() => terms.filter((t) => t.tier === "adjacent").length, [terms]);
-  const newCount = useMemo(() => terms.filter((t) => isNewTerm(t, now)).length, [terms, now]);
-  const trendingCount = useMemo(() => terms.filter((t) => isTrendingTerm(t, now)).length, [terms, now]);
 
-  const anyFacet = !!(filters.group || filters.level || filters.letter || filters.query.trim() || filters.onlyNew || filters.onlyTrending);
-  const showTiles = !filters.query.trim() && !filters.group && !filters.onlyNew && !filters.onlyTrending;
+  const anyFacet = !!(filters.group || filters.level || filters.letter || filters.query.trim());
+  const showTiles = !filters.query.trim() && !filters.group;
 
   function goToRelated(name: string) {
     setFilters({ ...EMPTY_FILTERS, includeAdjacent: filters.includeAdjacent, query: name });
@@ -130,7 +121,7 @@ function TermList() {
           <h1 className="text-black k-display">Vibe-Coding Dictionary</h1>
           <p className="mt-2 text-sm text-black">
             Plain-language definitions for the terms you meet in the University and the Daily Digest.
-            {terms.length > 0 && ` ${terms.length.toLocaleString("en-US")} terms, growing as new ones appear in the market.`}
+            {terms.length > 0 && ` ${terms.length.toLocaleString("en-US")} terms in plain language.`}
           </p>
         </div>
 
@@ -166,16 +157,6 @@ function TermList() {
                   {l.label}
                 </button>
               ))}
-              {newCount > 0 && (
-                <button type="button" aria-pressed={filters.onlyNew} onClick={() => set({ onlyNew: !filters.onlyNew })} className={chip(filters.onlyNew)}>
-                  New ({newCount})
-                </button>
-              )}
-              {trendingCount > 0 && (
-                <button type="button" aria-pressed={filters.onlyTrending} onClick={() => set({ onlyTrending: !filters.onlyTrending })} className={chip(filters.onlyTrending)}>
-                  Trending ({trendingCount})
-                </button>
-              )}
             </div>
 
             {hiddenAdjacent > 0 && (
@@ -284,7 +265,7 @@ function TermList() {
             ) : (
               <div className="space-y-3">
                 {results.slice(0, shown).map((term) => (
-                  <TermCard key={term.id} term={term} now={now} onRelated={goToRelated} />
+                  <TermCard key={term.id} term={term} onRelated={goToRelated} />
                 ))}
               </div>
             )}

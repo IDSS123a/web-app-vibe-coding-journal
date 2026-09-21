@@ -12,7 +12,7 @@ export default function RegisterPage() {
           Vibe-Coding Journal
         </h1>
         <p className="mb-8 mt-2 text-sm text-black">
-          Automated daily intelligence digest for vibe-coders
+          Daily intelligence digest for vibe-coders
         </p>
 
         <RegisterForm />
