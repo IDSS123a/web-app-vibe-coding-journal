@@ -229,6 +229,19 @@ export interface GeneratePromptBlueprintOutput {
   nextSteps: string; // markdown
 }
 
+/**
+ * Prompt School live sandbox (PDL-077): runs a learner's own prompt, already put together with the fixed sample input by
+ * features/prompt-school/sandbox.ts, and returns what a model answers. The learner's text is the instruction being
+ * demonstrated, so it is passed through inside a fenced block; the sandbox's own rules sit outside it.
+ */
+export interface RunSandboxPromptInput {
+  assembledPrompt: string;
+}
+
+export interface RunSandboxPromptOutput {
+  reply: string;
+}
+
 export interface AIProvider {
   summarize(input: SummarizeInput): Promise<SummarizeOutput>;
   classify(input: ClassifyInput): Promise<ClassifyOutput>;
@@ -240,6 +253,7 @@ export interface AIProvider {
   generateLesson(input: GenerateLessonInput): Promise<GenerateLessonOutput>;
   generateSupplementaryLesson(input: GenerateSupplementaryLessonInput): Promise<GenerateSupplementaryLessonOutput>;
   generatePromptBlueprint(input: GeneratePromptBlueprintInput): Promise<GeneratePromptBlueprintOutput>;
+  runSandboxPrompt(input: RunSandboxPromptInput): Promise<RunSandboxPromptOutput>;
   // Additional methods will be added as pipeline stages are implemented
 }
 
@@ -334,6 +348,11 @@ class NoOpProvider implements AIProvider {
   // caller can persist and bill against the user's daily cap.
   async generatePromptBlueprint(): Promise<GeneratePromptBlueprintOutput> {
     return { domain: "", scenario: "", goal: "", explanation: "", promptBlueprint: "", mermaidDiagram: "", nextSteps: "" };
+  }
+
+  // Fail-closed: an empty reply is a failed run, never counted against the learner's daily limit.
+  async runSandboxPrompt(): Promise<RunSandboxPromptOutput> {
+    return { reply: "" };
   }
 }
 

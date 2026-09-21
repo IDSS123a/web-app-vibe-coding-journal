@@ -65,7 +65,7 @@ const selectViewport = (v) => wanted.length === 0 ? !v.group : wanted.some((w) =
 const ZOOM = Number(process.env.AUDIT_ZOOM ?? 1);
 const DPR = Number(process.env.AUDIT_DPR ?? 1);
 const REDUCED = process.env.AUDIT_REDUCED === "1";
-const CORE = new Set(["/", "/login", "/dashboard", "/badges", "/archive", "/university", "/dictionary", "/assistant", "/prompt-school", "/prompt-school/level-test/beginner", "/prompt-school/five-pillars", "/prompt-school/five-pillars/practice", "/admin/users", "/admin/review-queue"]);
+const CORE = new Set(["/", "/login", "/dashboard", "/badges", "/archive", "/university", "/dictionary", "/assistant", "/prompt-school", "/prompt-school/level-test/beginner", "/prompt-school/five-pillars", "/prompt-school/five-pillars/practice", "/prompt-school/five-pillars/pillar-4-constraints", "/admin/users", "/admin/review-queue"]);
 
 const admin = createClient(SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } });
 const anon = createClient(SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY, { auth: { persistSession: false } });
@@ -101,6 +101,8 @@ async function dynamicPaths() {
     }
     // The three level tests (every chapter is completed for the audit account below, so they render their questions).
     out.promptSchoolPaths.push("/prompt-school/level-test/beginner", "/prompt-school/level-test/intermediate", "/prompt-school/level-test/advanced");
+    // The live sandbox panel (PDL-077) sits on this lesson.
+    out.promptSchoolPaths.push("/prompt-school/five-pillars/pillar-4-constraints");
   }
   return out;
 }

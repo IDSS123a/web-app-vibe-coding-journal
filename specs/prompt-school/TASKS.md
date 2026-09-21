@@ -27,7 +27,7 @@ Vertical slice (2026-09-20): tasks 1 to 10 done and verified, 11 waits for the D
 - [x] A2e Appendices D, A, E and F (15 lessons, 30 exercises, 157 sections), each read in full from the canon text first; the whole book is covered, 433 of 433 sections (2026-09-20, PDL-070)
 - [x] B Level tests: 37 new questions in three tests, migration 031, one-sitting grading on the server, 80 percent to pass, no reveal after the test, overview cards, probe, smoke and audit extended (2026-09-20, PDL-071)
 - [x] C Capstone workshops: one repair workshop per blueprint, 12 new, graded by rubrics that reward what makes each blueprint work (2026-09-21, PDL-073)
-- [ ] D Live sandbox: learner runs their own prompt on a real model, at most 3 runs a day per user, shares the free AI pool (PDL-058), built last
+- [x] D Live sandbox: own prompt on a fixed sample input inside 6 lessons, 3 runs a day per learner and 30 a day overall from the shared free pool, not graded, no coins, nothing stored but the fact of a run (migration 033, 2026-09-21, PDL-077)
 - [x] E1 Coins through the existing rewards system: lessons, exercises, chapters, level tests, paid by the server, celebrated in the browser (2026-09-21, PDL-072)
 - [x] E2 Badges (12, migration 032, /badges page) and coins for the University's lessons, chapter quizzes and level tests, celebrated by the shared system (2026-09-21, PDL-075)
 
@@ -41,7 +41,7 @@ Everything below is pushed (origin/main at 33f13bf) and live (verified: live smo
 
 Options for the next session, in the order the plan gives them:
 1. (E2 done later the same day, see PDL-075.)
-2. D: live sandbox (the riskiest step). Design questions to settle with the Director first: which model and how it shares the free
+2. (D done later the same day, see PDL-077.) Original notes: live sandbox (the riskiest step). Design questions to settle with the Director first: which model and how it shares the free
    Gemini pool (PDL-021, PDL-058), the 3 runs a day per user limit, what the learner may run (only their own prompt against a
    fixed sample input?), prompt-injection and abuse limits, and how a run is graded (no AI grading is the standing rule).
 3. Director tasks that are not code: repair the manuscript (five holes, four stray drafting notes, old chapter numbers, the bare

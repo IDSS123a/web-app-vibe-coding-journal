@@ -96,6 +96,26 @@ try {
       await page.getByText("Lesson done").first().waitFor({ timeout: 8000 });
       ok("prompt school lesson can be marked done", true);
     });
+    // Live sandbox (PDL-077): one real run on the shared free model. A busy or full AI pool is reported, not counted as a bug.
+    await visit(userCtx, "/prompt-school/five-pillars/pillar-4-constraints", "Try it live", async (page) => {
+      ok("the sandbox panel shows the task, the sample input and 3 runs left", (await page.getByText("3 of 3 runs left today").count()) === 1 && (await page.getByText("The sample input", { exact: true }).count()) === 1);
+      ok("the checklist is not shown before a run", (await page.getByText("Check it yourself").count()) === 0);
+      const panel = page.locator("section", { hasText: "Try it live" });
+      await page.getByRole("button", { name: /Run my prompt/ }).click();
+      const outcome = await Promise.race([
+        page.getByText("What the model answered").first().waitFor({ timeout: 60000 }).then(() => "reply"),
+        panel.getByRole("alert").first().waitFor({ timeout: 60000 }).then(() => "alert"),
+      ]);
+      if (outcome === "reply") {
+        ok("a real run shows the model's answer", true);
+        ok("after a run the self-check list appears", (await page.getByText("Check it yourself").count()) === 1);
+        ok("the run used one of the three", (await page.getByText("2 of 3 runs left today").count()) === 1);
+      } else {
+        const msg = await panel.getByRole("alert").first().innerText();
+        const busy = /busy|capacity/i.test(msg);
+        ok("a failed run is explained and not counted", busy && (await page.getByText("3 of 3 runs left today").count()) === 1, msg.slice(0, 120));
+      }
+    });
     // Mark the remaining lessons through the database, as if they had been read, so the practice opens.
     await finishLessons(admin, tu.id, fpCh);
     await visit(userCtx, "/prompt-school/five-pillars", "Start practice");

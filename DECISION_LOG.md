@@ -2474,6 +2474,21 @@ Not done: certificates, cumulative tests, a real Scan mode.
 
 ---
 
+
+## PDL-077 The live sandbox (phase D)
+
+**Date:** 2026-09-21. Plan phase D, the riskiest step, built after the Director settled the design questions (all three recommended options): (1) the learner runs their OWN prompt against a FIXED sample input, never free text; (2) the sandbox lives inside chosen lessons, 3 runs a day per learner, drawn from the shared free Gemini pool; (3) a run is not graded and pays no coins, the learner compares the answer with a short "check it yourself" list. The standing rules hold: free Gemini only (PDL-021), no AI grading, and the pool ceiling of roughly 100 to 240 requests a day for everything (PDL-058).
+
+**How it works.** Six tasks (`features/prompt-school/content/sandbox-tasks.ts`), each attached to one lesson: a rough customer note (Pillar 2), a two-sentence summary under 40 words (Pillar 4), labelling with few-shot examples, step-by-step reasoning on a refund, summarising an email that contains an injected order (delimiters), and answering only from a passage. The lesson payload carries the task (brief, sample, starter prompt, runs left) but NOT the checklist, which comes back with the result. `POST /api/prompt-school/sandbox/[chapterSlug]/[lessonSlug]` (E-6): Premium and an open chapter required; the learner's text is 10 to 1,200 characters; the sample goes where `{{input}}` is written, or after the prompt; the model call is one Gemini request through the shared provider (`runSandboxPrompt`), capped at about 200 words of reply, and the answer is shown as plain text.
+
+**Limits and abuse.** 3 runs a day per learner and 30 a day for all learners together (the Assistant already holds 30 of the pool; the global cap answers 503, not 429, because it is not the learner's fault). The counting row is written BEFORE the model call and counted again, so two simultaneous requests cannot both slip under the limit; a run that fails (model busy, empty answer) is given back and does not count. Because the input is fixed, the sandbox cannot be a free chatbot: the wrapper (rules outside the fenced learner block, the wrapper's own tag names stripped from the learner's text) tells the model to answer only prompts about the sample and refuse anything else; checked live, an off-topic request (an essay and program code) got the single refusal sentence. That refused run still counts as one of the three. Nothing the learner types is stored: migration 033 (`ps_sandbox_runs`, applied to production, row level security on, default deny) records only user, task and prompt length. `ai_call_log` gets one `ps_sandbox` call per run, so the pool use shows next to the other purposes.
+
+**Verified.** 483 unit tests (17 new: limits, request validation, prompt assembly including the `$&` replacement trap and tag stripping, every task belongs to a real lesson, no dashes, the public task never carries the checklist, the provider keeps the learner block after the rules), lint and typecheck clean, security probe 168 of 168 (anonymous 401, locked chapter 403, refused tiers 403, missing task 404, bad slug 400, bad body 422, the fourth run 429 with no row added and 0 runs left shown in the lesson, all without any real AI request), Chrome smoke test including ONE real run on the free model (answer and self-check list shown, 2 of 3 left), responsive audit of the core pages including the sandbox lesson at all mobile, tablet and desktop presets (0 findings, no tap target under 44 px). Two real runs by hand: a good delimiter prompt returned a faithful one-sentence summary that ignored the injected order.
+
+**Not done, on purpose:** free input, grading or coins for runs, storing prompts or answers, sandbox tasks for the other 12 chapters (one line each in `sandbox-tasks.ts` when wanted; more tasks do not raise the per-learner limit).
+
+---
+
 ---
 
 *Vibe-Coding Journal — Project Decision Log — updated as decisions are made.*

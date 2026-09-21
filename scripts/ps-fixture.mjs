@@ -59,6 +59,7 @@ async function clearPsRewards(admin, userId) {
 
 export async function clearPsProgress(admin, userId) {
   await clearPsRewards(admin, userId);
+  await admin.from("ps_sandbox_runs").delete().eq("user_id", userId);
   await admin.from("ps_level_test_attempts").delete().eq("user_id", userId);
   await admin.from("ps_exercise_results").delete().eq("user_id", userId);
   await admin.from("ps_lesson_progress").delete().eq("user_id", userId);
@@ -69,8 +70,9 @@ export async function psProgressCount(admin, userId) {
   const b = (await admin.from("ps_lesson_progress").select("*", { count: "exact", head: true }).eq("user_id", userId)).count;
   const r = (await admin.from("reward_events").select("*", { count: "exact", head: true }).eq("user_id", userId).in("event_type", PS_REWARD_EVENTS)).count;
   const bdg = (await admin.from("user_badges").select("*", { count: "exact", head: true }).eq("user_id", userId)).count;
+  const sbx = (await admin.from("ps_sandbox_runs").select("*", { count: "exact", head: true }).eq("user_id", userId)).count;
   const c = (await admin.from("ps_level_test_attempts").select("*", { count: "exact", head: true }).eq("user_id", userId)).count;
-  return (a ?? 0) + (b ?? 0) + (c ?? 0) + (r ?? 0) + (bdg ?? 0);
+  return (a ?? 0) + (b ?? 0) + (c ?? 0) + (r ?? 0) + (bdg ?? 0) + (sbx ?? 0);
 }
 
 /** The submission that answers a stored exercise correctly, built from its answer key (service role only). */

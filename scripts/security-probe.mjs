@@ -64,6 +64,7 @@ async function main() {
   check("POST prompt-school exercise check anonymous refused", (await call("POST", "/api/prompt-school/exercises/00000000-0000-0000-0000-000000000000/check", { body: { answer: {} } })) === 401);
   check("POST prompt-school level test anonymous refused", (await call("POST", "/api/prompt-school/level-tests/beginner", { body: { answers: {} } })) === 401);
   check("POST prompt-school lesson complete anonymous refused", (await call("POST", "/api/prompt-school/lessons/five-pillars/pillar-1-context/complete")) === 401);
+  check("POST prompt-school sandbox run anonymous refused", (await call("POST", "/api/prompt-school/sandbox/five-pillars/pillar-4-constraints", { body: { prompt: "Summarise the text." } })) === 401);
   check("POST /api/assistant/generate anonymous refused", (await call("POST", "/api/assistant/generate", { body: {} })) === 401);
   check("POST /api/payments/create-order anonymous refused", (await call("POST", "/api/payments/create-order", { body: { tier: "premium" } })) === 401);
   check("POST /api/admin/users anonymous refused", (await call("POST", "/api/admin/users", { body: { email: "x@example.com", tier: "basic" } })) === 401);
@@ -138,6 +139,7 @@ async function main() {
       check("the first chapter is open for a new learner", (await call("GET", `/api/prompt-school/chapters/${firstCh.slug}`, { token: userToken })) === 200);
       check("a later chapter is locked while the chapter before it is incomplete", (await call("GET", "/api/prompt-school/chapters/five-pillars", { token: userToken })) === 403);
       check("its lessons and grading are locked too", (await call("GET", "/api/prompt-school/lessons/five-pillars/pillar-1-context", { token: userToken })) === 403 && (await call("POST", `/api/prompt-school/exercises/${ex1[0].id}/check`, { token: userToken, body: { answer: { index: 0 } } })) === 403);
+      check("the sandbox of a locked chapter is refused too", (await call("POST", "/api/prompt-school/sandbox/five-pillars/pillar-4-constraints", { token: userToken, body: { prompt: "Summarise the text." } })) === 403);
       await completeChaptersBefore(admin, tu.id, "five-pillars");
       check("it opens once the chapter before it is complete", (await call("GET", "/api/prompt-school/chapters/five-pillars", { token: userToken })) === 200);
 
@@ -150,6 +152,22 @@ async function main() {
       const openChapter = await fetch(`${BASE}/api/prompt-school/chapters/five-pillars`, { headers: { authorization: `Bearer ${userToken}` } });
       const openRaw = await openChapter.text();
       check("once practice is open the exercises are listed without any answer, rubric or explanation", openChapter.status === 200 && JSON.parse(openRaw).exercises.length === fp.exerciseIds.length && !/"answer"|"criteria"|"explanation"|"correct"|"flawed"|"anyOf"|"model"/.test(openRaw));
+      // Live sandbox (PDL-077). No real model run here: everything below is refused before any AI request is made.
+      const sbHeaders = { "content-type": "application/json", authorization: `Bearer ${userToken}` };
+      const sbLesson = await (await fetch(`${BASE}/api/prompt-school/lessons/five-pillars/pillar-4-constraints`, { headers: sbHeaders })).json();
+      const plainLesson = await (await fetch(`${BASE}/api/prompt-school/lessons/five-pillars/pillar-1-context`, { headers: sbHeaders })).json();
+      check("a lesson with a sandbox task carries it, with 3 runs left and no checklist", sbLesson.sandbox?.runsLeft === 3 && sbLesson.sandbox?.dailyCap === 3 && !!sbLesson.sandbox?.task?.sampleInput && !JSON.stringify(sbLesson.sandbox).includes("checklist"));
+      check("a lesson without a task carries no sandbox", plainLesson.sandbox === null);
+      check("sandbox run: a lesson without a task is 404", (await call("POST", "/api/prompt-school/sandbox/five-pillars/pillar-1-context", { token: userToken, body: { prompt: "Summarise the text." } })) === 404);
+      check("sandbox run: a bad slug is 400", (await call("POST", "/api/prompt-school/sandbox/BAD%20SLUG!/x", { token: userToken, body: { prompt: "Summarise the text." } })) === 400);
+      check("sandbox run: a missing body, a tiny prompt and a huge prompt are 422", (await call("POST", "/api/prompt-school/sandbox/five-pillars/pillar-4-constraints", { token: userToken })) === 422 && (await call("POST", "/api/prompt-school/sandbox/five-pillars/pillar-4-constraints", { token: userToken, body: { prompt: "hi" } })) === 422 && (await call("POST", "/api/prompt-school/sandbox/five-pillars/pillar-4-constraints", { token: userToken, body: { prompt: "x".repeat(1300) } })) === 422);
+      await admin.from("ps_sandbox_runs").insert([1, 2, 3].map(() => ({ user_id: tu.id, task_id: "five-pillars/pillar-4-constraints", prompt_chars: 20 })));
+      const sbCapped = await fetch(`${BASE}/api/prompt-school/sandbox/five-pillars/pillar-4-constraints`, { method: "POST", headers: sbHeaders, body: JSON.stringify({ prompt: "Summarise the text below in two sentences." }) });
+      const sbCappedBody = await sbCapped.json();
+      check("sandbox run: the fourth run of the day is 429 with no runs left, and no run row is added", sbCapped.status === 429 && sbCappedBody.runsLeft === 0 && ((await admin.from("ps_sandbox_runs").select("*", { count: "exact", head: true }).eq("user_id", tu.id)).count === 3));
+      const sbLessonCapped = await (await fetch(`${BASE}/api/prompt-school/lessons/five-pillars/pillar-4-constraints`, { headers: sbHeaders })).json();
+      check("the lesson then shows 0 runs left", sbLessonCapped.sandbox?.runsLeft === 0);
+      await admin.from("ps_sandbox_runs").delete().eq("user_id", tu.id);
       check("prompt-school check with a wrong-shaped answer is 400 (once the chapter is open)", (await call("POST", `/api/prompt-school/exercises/${ex1[0].id}/check`, { token: userToken, body: { answer: { text: "x" } } })) === 400);
       check("grading works once the lessons are done", (await call("POST", `/api/prompt-school/exercises/${ex1[0].id}/check`, { token: userToken, body: { answer: { index: 0 } } })) === 200);
 
@@ -263,6 +281,7 @@ async function main() {
       const ps = await call("GET", "/api/prompt-school", { token: t });
       const psCheck = await call("POST", "/api/prompt-school/exercises/00000000-0000-0000-0000-000000000000/check", { token: t, body: { answer: {} } });
       check(`${label}: prompt school`, ps === want.ps, `got ${ps}`);
+      if (want.ps !== 200) check(`${label}: sandbox run refused`, (await call("POST", "/api/prompt-school/sandbox/five-pillars/pillar-4-constraints", { token: t, body: { prompt: "Summarise the text." } })) === 403);
       check(`${label}: prompt school exercise check`, want.ps === 200 ? psCheck === 404 : psCheck === 403, `got ${psCheck}`);
       check(`${label}: assistant gate`, want.assistantGen === "not403" ? gen !== 403 && gen !== 401 : gen === want.assistantGen, `got ${gen}`);
       const upg = await call("POST", "/api/payments/create-upgrade-order", { token: t });

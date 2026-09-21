@@ -33,7 +33,7 @@ const FEATURE_COPY: Record<PremiumFeature, { eyebrow: string; headline: string; 
     headline: "Learn to write prompts that work, by writing them.",
     lead: "A hands-on course built on the book Mastering Prompt Engineering, from your first clear prompt to advanced techniques. You do not only read: you complete, order, repair and write prompts, and every attempt is checked at once with feedback on what to fix.",
     peekTitle: "What you practise",
-    peek: ["The five pillars of every effective prompt", "Repair a vague prompt until it is precise", "Spot the flaw in a broken prompt", "Complete and assemble real prompt templates"],
+    peek: ["The five pillars of every effective prompt", "Repair a vague prompt until it is precise", "Spot the flaw in a broken prompt", "Complete and assemble real prompt templates", "Run your own prompt on a real model and see what it does"],
   },
   assistant: {
     eyebrow: "Vibe-Coding Assistant",

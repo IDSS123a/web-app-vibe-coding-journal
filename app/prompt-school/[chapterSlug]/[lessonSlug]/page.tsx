@@ -12,6 +12,7 @@ import { useRewards, type NewBadge, type ServerReward } from "@/components/rewar
 import { PremiumGuard } from "@/components/PremiumGuard";
 import { MarkdownContent } from "@/components/MarkdownContent";
 import { BookPopup } from "@/components/prompt-school/BookPopup";
+import { SandboxPanel, type SandboxData } from "@/components/prompt-school/SandboxPanel";
 
 interface LessonData {
   chapter: { slug: string; title: string };
@@ -19,6 +20,7 @@ interface LessonData {
   position: { index: number; total: number };
   previous: { slug: string; title: string } | null;
   next: { slug: string; title: string } | null;
+  sandbox: SandboxData | null;
 }
 
 function Lesson() {
@@ -97,6 +99,8 @@ function Lesson() {
             </div>
 
             <MarkdownContent>{data.lesson.body}</MarkdownContent>
+
+            {data.sandbox && <SandboxPanel key={data.sandbox.task.id} chapterSlug={chapterSlug} lessonSlug={lessonSlug} sandbox={data.sandbox} />}
 
             <div className="mt-10 border-t border-studio-ink pt-6">
               {completed ? (

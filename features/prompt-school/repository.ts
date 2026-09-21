@@ -185,3 +185,40 @@ export async function recordLevelTestAttempt(
   const { error } = await db().from("ps_level_test_attempts").insert({ user_id: userId, level, score, passed, results });
   if (error) throw new Error(`Failed to save level test attempt: ${error.message}`);
 }
+
+// ---------- live sandbox (PDL-077, migration 033) ----------
+
+/** UTC midnight, the same day boundary the Assistant's daily cap uses. */
+function startOfTodayUtcIso(): string {
+  const start = new Date();
+  start.setUTCHours(0, 0, 0, 0);
+  return start.toISOString();
+}
+
+export async function countUserSandboxRunsToday(userId: string): Promise<number> {
+  const { count, error } = await db()
+    .from("ps_sandbox_runs")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", userId)
+    .gte("created_at", startOfTodayUtcIso());
+  if (error) throw new Error(`Failed to count sandbox runs: ${error.message}`);
+  return count ?? 0;
+}
+
+export async function countSandboxRunsToday(): Promise<number> {
+  const { count, error } = await db().from("ps_sandbox_runs").select("id", { count: "exact", head: true }).gte("created_at", startOfTodayUtcIso());
+  if (error) throw new Error(`Failed to count sandbox runs: ${error.message}`);
+  return count ?? 0;
+}
+
+/** Only the fact of a run is stored (no prompt text, no reply). Returns the row id so a failed run can be given back. */
+export async function reserveSandboxRun(userId: string, taskId: string, promptChars: number): Promise<string> {
+  const { data, error } = await db().from("ps_sandbox_runs").insert({ user_id: userId, task_id: taskId, prompt_chars: promptChars }).select("id").single();
+  if (error || !data) throw new Error(`Failed to record sandbox run: ${error?.message ?? "no row"}`);
+  return (data as { id: string }).id;
+}
+
+export async function releaseSandboxRun(id: string): Promise<void> {
+  const { error } = await db().from("ps_sandbox_runs").delete().eq("id", id);
+  if (error) console.error(`[PROMPT-SCHOOL] Could not give back sandbox run ${id}: ${error.message}`);
+}
