@@ -2489,6 +2489,25 @@ Not done: certificates, cumulative tests, a real Scan mode.
 
 ---
 
+
+## PDL-078 Screen-filling layout, and deleting Assistant history items
+
+**Date:** 2026-09-21. The Director, with a screenshot of a 1920 px wide screen showing a 770 px column in the middle: why is every screen centred, is it not possible to stretch all content over the whole screen, and was there any reason the earlier instruction was not followed?
+
+**The honest answer, recorded.** There was no technical reason. In PDL-060 the Director asked that every view adapt to the whole screen. That was implemented as a fluid root font size, so the same narrow centred column got bigger instead of wider: a partial reading of the instruction, never checked with her. In PDL-074 (KANON) the fluid root was then replaced by the design spec's fixed type scale and a content cap, the per-page `max-w-4xl xl:max-w-5xl` columns stayed, and the conflict with her earlier instruction was recorded as "superseded" instead of being raised. The narrow column was a readability habit of mine, not a requirement of hers or of the spec's own layout.
+
+**Change.** Page content now runs from gutter to gutter at any width (`k-wide`). Lists and cards became grids that add a column whenever one more fits (`k-cards`, `k-cards-lg`; the University chapters are a `k-board` row where an open chapter sits next to locked ones); long text (lesson bodies, report text) flows in newspaper columns of a readable width, at most three (`k-cols`, `columns: 32rem 3`), with code blocks, tables and quotes kept whole; the Prompt School sandbox panel is two columns on wide screens; the top bar and the admin pages are full width too. Left centred on purpose: sign in, register and set password (a form stretched across 2,560 px is not usable) and pop-ups. Checked in Chrome at 1920 and 2560 px and on a 390 px phone (no horizontal overflow), and the responsive audit over every spec viewport.
+
+**Trade-off to tell the Director.** Text in columns on a page that scrolls means a reader finishes a column, then scrolls back up to the top of the next one. That is the price of using the whole width for prose; if she dislikes it, lesson text can go back to one wide column while everything else stays as it is (one class name per page).
+
+**Assistant history delete.** Each item in History has a Delete button with a second Confirm click (the history is the only copy of a Blueprint). `DELETE /api/assistant/history/[id]` is E-6, owner only (another user's or unknown id is the same 404), and it is a SOFT delete (migration 034, `deleted_at`, applied to production): the daily limits, 5 per learner and 30 overall, which protect the shared free AI pool (PDL-021, PDL-058), are counted from this table, so removing rows would give a free extra generation each time. A deleted row is hidden from the list and from reading, and still counts toward today's limit. The address `/assistant/history` is not a page: History is a tab inside `/assistant`.
+
+**Also.** The Dictionary note "still being sorted into topics" hinted at background work and now says the terms are simply not filed under a topic (PDL-076 spirit).
+
+**Verified.** Security probe 181 of 181 (owner deletes, another user cannot, list and open hide it, deleting twice is 404, the row is kept, refused tiers get 403, anonymous 401), Chrome smoke test (delete asks twice, cancel keeps the item, confirm removes it), screenshots at 390, 1920 and 2560 px.
+
+---
+
 ---
 
 *Vibe-Coding Journal — Project Decision Log — updated as decisions are made.*

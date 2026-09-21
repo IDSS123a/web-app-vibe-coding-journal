@@ -52,7 +52,7 @@ export default function BookmarksPage() {
 
   return (
     <div className="k-page">
-      <div className="mx-auto max-w-4xl xl:max-w-5xl">
+      <div className="k-wide">
         <div className="mb-12 border-b border-black pb-8">
           <p className="mb-2 text-signal k-label">
             Saved
@@ -98,11 +98,11 @@ export default function BookmarksPage() {
         )}
 
         {bookmarks && bookmarks.length > 0 && (
-          <div className="border-black md:border-4">
-            {bookmarks.map((b, i) => (
+          <div className="k-cards-lg">
+            {bookmarks.map((b) => (
               <div
                 key={b.id}
-                className={`border border-black p-6 md:p-8 ${i > 0 ? "border-t-0" : ""}`}
+                className="border border-black p-6 md:p-8"
               >
                 <div className="flex items-start justify-between gap-4">
                   <a

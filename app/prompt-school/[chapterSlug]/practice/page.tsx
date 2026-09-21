@@ -64,7 +64,7 @@ function Practice() {
 
   return (
     <div className="k-page layer-campus">
-      <div className="mx-auto max-w-3xl">
+      <div className="k-wide">
         <Link href={`/prompt-school/${chapterSlug}`} className="mb-6 inline-flex min-h-11 items-center underline decoration-1 underline-offset-4 k-cbtn">
           ← {data?.chapter.title ?? "Chapter"}
         </Link>
@@ -102,7 +102,7 @@ function Practice() {
               </p>
             )}
 
-            <div className="space-y-8">
+            <div className="k-cards-lg">
               {data.exercises.map((ex, i) => (
                 <ExercisePlayer key={ex.id} exercise={{ ...ex, bestScore: best[ex.id] ?? null }} token={token} index={i + 1} total={data.exercises.length} onChecked={onChecked} />
               ))}

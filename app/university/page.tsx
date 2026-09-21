@@ -62,7 +62,7 @@ function CourseList() {
 
   return (
     <div className="k-page layer-campus">
-      <div className="mx-auto max-w-4xl xl:max-w-5xl">
+      <div className="k-wide">
         <div className="mb-12 border-b border-studio-ink pb-8">
           <p className="mb-2 text-studio-blueberry k-clabel">Premium</p>
           <h1 className="break-words text-studio-ink k-cheading">
@@ -110,7 +110,7 @@ function CourseList() {
               </div>
               <p className="mb-6 text-sm text-studio-ink">{course.description}</p>
 
-              <div className="space-y-4">
+              <div className="k-board">
                 {course.chapters.map((chapter) => (
                   <div
                     key={chapter.id}

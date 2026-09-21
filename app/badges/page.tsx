@@ -34,7 +34,7 @@ export default function BadgesPage() {
 
   return (
     <div className="k-page layer-campus">
-      <div className="mx-auto max-w-4xl xl:max-w-5xl">
+      <div className="k-wide">
         <div className="mb-10 border-b border-studio-ink pb-8">
           <p className="mb-2 text-studio-blueberry k-clabel">Recognition</p>
           <h1 className="k-cheading">Badges</h1>
@@ -59,7 +59,7 @@ export default function BadgesPage() {
               return (
                 <section key={g.id} aria-labelledby={`badges-${g.id}`}>
                   <h2 id={`badges-${g.id}`} className="k-h3 mb-4">{g.label}</h2>
-                  <ul className="grid gap-4 sm:grid-cols-2">
+                  <ul className="k-cards">
                     {rows.map((b) => (
                       <li key={b.id} className={`k-card flex flex-col gap-2 p-4 sm:p-5 ${b.earned ? "" : "opacity-60"}`}>
                         <p className="k-clabel">

@@ -53,7 +53,7 @@ function Chapter() {
 
   return (
     <div className="k-page layer-campus">
-      <div className="mx-auto max-w-3xl">
+      <div className="k-wide">
         <Link href="/prompt-school" className="mb-6 inline-flex min-h-11 items-center underline decoration-1 underline-offset-4 k-cbtn">
           ← Prompt School
         </Link>
@@ -75,7 +75,7 @@ function Chapter() {
             <h2 className="mb-3 text-studio-ink k-h4">
               Lessons ({doneCount} of {data.lessons.length} done)
             </h2>
-            <ol className="mb-10 space-y-2">
+            <ol className="mb-10 k-cards">
               {data.lessons.map((l, i) => (
                 <li key={l.slug}>
                   <Link

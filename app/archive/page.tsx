@@ -27,7 +27,7 @@ export default function ArchivePage() {
 
   return (
     <div className="k-page layer-edition">
-      <div className="mx-auto max-w-4xl xl:max-w-5xl">
+      <div className="k-wide">
         <div className="mb-12 border-b border-black pb-8">
           <p className="mb-2 text-signal k-label">
             Record
@@ -46,16 +46,14 @@ export default function ArchivePage() {
         )}
 
         {reports.length > 0 && (
-          <div className="border-black md:border-4">
-            {reports.map((report, i) => (
+          <div className="k-cards">
+            {reports.map((report) => (
               <a
                 key={report.id}
                 href={`/archive/${report.date}`}
-                className={`group block border border-black p-6 transition-colors duration-150 ease-out hover:bg-black ${
-                  i > 0 ? "border-t-0" : ""
-                }`}
+                className="group block border border-black p-6 transition-colors duration-150 ease-out hover:bg-black"
               >
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col gap-1">
                   <p className="text-black group-hover:text-white k-label">
                     {new Date(report.date).toLocaleDateString("en-US", {
                       weekday: "long",

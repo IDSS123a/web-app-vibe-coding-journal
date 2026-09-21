@@ -23,6 +23,51 @@
     margin-inline: auto;
   }
 
+  /*
+   * Screen-filling layout (Director, 2026-09-21, PDL-078): page content runs edge to edge inside the gutters, at any width.
+   * Lists become grids that add a column whenever one more fits, and long text flows in columns of a readable width, so a
+   * wide screen shows more, not the same narrow column in the middle.
+   */
+  .k-wide {
+    width: 100%;
+    max-width: none;
+  }
+  .k-cards {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
+  }
+  .k-cards-lg {
+    display: grid;
+    gap: 1.5rem;
+    align-items: start;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 30rem), 1fr));
+  }
+  /* one row of columns like a board: an open chapter next to locked ones, each column as tall as its own content */
+  .k-board {
+    display: grid;
+    gap: 1.5rem;
+    align-items: start;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr));
+  }
+  .k-cols {
+    columns: 32rem 3;
+    column-gap: 3rem;
+  }
+  .k-cols > h1,
+  .k-cols > h2,
+  .k-cols > h3,
+  .k-cols > h4 {
+    break-after: avoid;
+  }
+  .k-cols > pre,
+  .k-cols > table,
+  .k-cols > blockquote,
+  .k-cols > ul > li,
+  .k-cols > ol > li {
+    break-inside: avoid;
+  }
+
   /* ----- display type (Unbounded) ----- */
   .k-display {
     font-family: var(--font-display);

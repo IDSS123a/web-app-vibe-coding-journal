@@ -82,7 +82,7 @@ function Overview() {
 
   return (
     <div className="k-page layer-campus">
-      <div className="mx-auto max-w-4xl xl:max-w-5xl">
+      <div className="k-wide">
         <div className="mb-10 border-b border-studio-ink pb-8">
           <p className="mb-2 text-studio-blueberry k-clabel">Premium</p>
           <h1 className="break-words text-studio-ink k-cheading">
@@ -111,7 +111,7 @@ function Overview() {
                 <h2 id={`level-${level.id}`} className="text-studio-ink k-h3">{level.label}</h2>
                 <p className="text-sm text-studio-ink">{level.blurb}</p>
               </div>
-              <ul className="grid gap-4 md:grid-cols-2">
+              <ul className="k-cards">
                 {level.chapters.map((c) => (
                   <li key={c.slug} className={`flex flex-col k-card p-4 sm:p-5 ${c.open && c.unlocked ? "" : "opacity-60"}`}>
                     <p className="mb-1 text-studio-blueberry k-clabel">{c.bookRef}</p>

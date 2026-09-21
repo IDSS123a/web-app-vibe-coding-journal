@@ -135,6 +135,7 @@ export async function listUserGenerations(userId: string): Promise<PromptBluepri
     .from("prompt_blueprint_generations")
     .select("id, domain, goal, created_at")
     .eq("user_id", userId)
+    .is("deleted_at", null)
     .order("created_at", { ascending: false });
 
   if (error) {
@@ -165,6 +166,7 @@ export async function getOwnedGeneration(id: string, userId: string): Promise<Pr
     .select()
     .eq("id", id)
     .eq("user_id", userId)
+    .is("deleted_at", null)
     .maybeSingle();
 
   if (error) {
@@ -203,4 +205,28 @@ function mapRow(row: GenerationRow): PromptBlueprintGeneration {
     nextSteps: row.next_steps,
     createdAt: row.created_at,
   };
+}
+
+/**
+ * Hides one of the caller's own generations from history (soft delete, migration 034). The row stays so the daily limits,
+ * which count rows, cannot be dodged by deleting. Returns false when there is nothing to delete (unknown id, someone
+ * else's row, or already deleted), which the route answers with the same 404 in every case.
+ */
+export async function deleteOwnedGeneration(id: string, userId: string): Promise<boolean> {
+  if (!supabaseAdmin) {
+    throw new Error("Admin client not available");
+  }
+
+  const { data, error } = await supabaseAdmin
+    .from("prompt_blueprint_generations")
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("id", id)
+    .eq("user_id", userId)
+    .is("deleted_at", null)
+    .select("id");
+
+  if (error) {
+    throw new Error(`Failed to delete generation: ${error.message}`);
+  }
+  return (data ?? []).length > 0;
 }

@@ -81,7 +81,7 @@ function Lesson() {
 
   return (
     <div className="k-page layer-campus">
-      <article className="mx-auto max-w-3xl text-studio-ink">
+      <article className="k-wide text-studio-ink">
         <Link href={`/prompt-school/${chapterSlug}`} className="mb-6 inline-flex min-h-11 items-center underline decoration-1 underline-offset-4 k-cbtn">
           ← {data?.chapter.title ?? "Chapter"}
         </Link>
@@ -98,7 +98,7 @@ function Lesson() {
               <h1 className="break-words k-cheading">{data.lesson.title}</h1>
             </div>
 
-            <MarkdownContent>{data.lesson.body}</MarkdownContent>
+            <MarkdownContent className="k-cols">{data.lesson.body}</MarkdownContent>
 
             {data.sandbox && <SandboxPanel key={data.sandbox.task.id} chapterSlug={chapterSlug} lessonSlug={lessonSlug} sandbox={data.sandbox} />}
 

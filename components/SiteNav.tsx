@@ -68,7 +68,7 @@ export function SiteNav() {
 
   return (
     <header className="sticky top-0 z-40 border-b border-black bg-white pt-[env(safe-area-inset-top)]">
-      <nav className="mx-auto flex max-w-7xl items-center justify-between px-4 py-2 md:px-12">
+      <nav className="flex w-full items-center justify-between px-4 py-2 md:px-12">
         <Link
           href="/"
           className="flex min-h-11 items-center font-extrabold tracking-[-0.02em] text-black transition-colors duration-150 ease-out hover:text-signal"

@@ -115,7 +115,7 @@ function TermList() {
 
   return (
     <div className="k-page">
-      <div ref={topRef} className="mx-auto max-w-4xl scroll-mt-24 xl:max-w-5xl">
+      <div ref={topRef} className="k-wide scroll-mt-24">
         <div className="mb-8 border-b border-black pb-8">
           <p className="mb-2 text-signal k-label">Premium</p>
           <h1 className="text-black k-display">Vibe-Coding Dictionary</h1>
@@ -174,7 +174,7 @@ function TermList() {
             {showTiles && (
               <section aria-label="Browse by topic" className="mb-8">
                 <h2 className="mb-3 text-signal k-h4">Browse by topic</h2>
-                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="k-cards gap-2">
                   {DICTIONARY_GROUPS.filter((g) => (tileCounts[g.id] ?? 0) > 0).map((g) => (
                     <button
                       key={g.id}
@@ -192,7 +192,7 @@ function TermList() {
                 </div>
                 {unsorted > 0 && (
                   <p className="mt-3 text-xs text-black/70">
-                    {unsorted.toLocaleString("en-US")} more terms are still being sorted into topics. Search and the A to Z list already include them.
+                    {unsorted.toLocaleString("en-US")} more terms are not filed under a topic. Search and the A to Z list include them.
                   </p>
                 )}
               </section>
@@ -263,7 +263,7 @@ function TermList() {
                 {!filters.includeAdjacent && hiddenAdjacent > 0 && filters.query.trim() ? " Try including advanced and adjacent terms." : ""}
               </p>
             ) : (
-              <div className="space-y-3">
+              <div className="k-cards-lg gap-3">
                 {results.slice(0, shown).map((term) => (
                   <TermCard key={term.id} term={term} onRelated={goToRelated} />
                 ))}

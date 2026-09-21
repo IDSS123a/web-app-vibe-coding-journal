@@ -30,7 +30,7 @@ export default function ArchiveDatePage() {
 
   return (
     <div className="k-page layer-edition">
-      <div className="mx-auto max-w-4xl xl:max-w-5xl">
+      <div className="k-wide">
         <div className="mb-8">
           <Link
             href="/archive"
@@ -58,7 +58,7 @@ export default function ArchiveDatePage() {
               <ArticleListWithBookmarks articles={articles} relatedSources={data?.relatedSources ?? {}} />
             ) : (
               <div className="k-box-muted swiss-grid-pattern mt-6 p-6">
-                <MarkdownContent>{report.markdown}</MarkdownContent>
+                <MarkdownContent className="k-cols">{report.markdown}</MarkdownContent>
               </div>
             )}
           </div>

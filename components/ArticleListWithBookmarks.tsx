@@ -63,9 +63,9 @@ function HeadlineIndex({ articles }: { articles: Article[] }) {
       <h2 className="mb-3 text-signal k-h4">
         In this report, {articles.length} articles
       </h2>
-      <ol className="space-y-0">
+      <ol className="k-cols">
         {articles.map((article, i) => (
-          <li key={article.id} className="border-t border-rule first:border-t-0">
+          <li key={article.id} className="break-inside-avoid border-t border-rule">
             <a
               href={`#${articleAnchor(article.id)}`}
               className="k-ui flex min-h-11 items-start gap-3 py-2 font-semibold text-black transition-colors duration-150 ease-out hover:text-signal"
@@ -213,14 +213,14 @@ export function ArticleListWithBookmarks({
     <>
       <HeadlineIndex articles={articles} />
       <MoreBelowCue articles={articles} />
-      <div className="mt-6 space-y-0">
-        {articles.map((article, i) => {
+      <div className="k-cards-lg mt-6">
+        {articles.map((article) => {
           const isBookmarked = bookmarked.has(article.id);
           return (
             <div
               key={article.id}
               id={articleAnchor(article.id)}
-              className={`scroll-mt-20 p-4 sm:p-6 md:p-8 ${i === 0 ? "" : "k-rule"}`}
+              className="scroll-mt-20 border border-rule p-4 sm:p-6 md:p-8"
             >
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
                 <a

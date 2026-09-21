@@ -82,7 +82,7 @@ function ChapterQuiz() {
 
   return (
     <div className="k-page layer-campus">
-      <div className="mx-auto max-w-2xl xl:max-w-3xl">
+      <div className="k-wide">
         <Link
           href="/university"
           className="inline-flex min-h-11 items-center underline decoration-1 underline-offset-4 k-cbtn"
@@ -95,7 +95,7 @@ function ChapterQuiz() {
         </h1>
         <p className="mt-2 text-sm text-studio-ink">Answer all {questions.length} questions. 4 of 5 correct to pass.</p>
 
-        <div className="mt-10 space-y-10">
+        <div className="mt-10 k-cards-lg">
           {questions.map((q, i) => (
             <div key={q.id}>
               <p className="text-sm font-bold text-studio-ink">

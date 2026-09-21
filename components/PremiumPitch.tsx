@@ -113,7 +113,7 @@ export function PremiumPitch({ feature, audience, token, onUnlocked, unlockedKey
   const checkout = audience.isActiveBasic ? ({ kind: "upgrade" } as const) : ({ kind: "tier", tier: "premium" } as const);
 
   return (
-    <div className="mx-auto w-full max-w-6xl">
+    <div className="k-wide">
       {/*
         Three blocks in reading order: the promise, the offer, the proof. On a phone the price and the
         checkout button come right after the headline instead of below two screens of text; from lg up

@@ -12,7 +12,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     <div className="layer-console min-h-dvh">
       {/* Admin Header */}
       <header className="sticky top-0 z-50 border-b border-console-line bg-console-panel">
-        <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
+        <div className="w-full px-4 py-4 sm:px-6 lg:px-8">
           <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
             <h1 className="k-h3 text-console-text">
               Admin
@@ -61,7 +61,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
 
       {/* Main Content — role-gated at the UI level (client session is not
           visible to server middleware); admin API routes re-check independently */}
-      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      <main className="w-full px-4 py-8 sm:px-6 lg:px-8">
         <AdminGuard>{children}</AdminGuard>
       </main>
     </div>

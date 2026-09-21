@@ -160,7 +160,7 @@ export function SubscriptionGuard({ children }: { children: ReactNode }) {
     }
 
     return (
-      <div className="mx-auto w-full max-w-5xl px-4 py-12 text-center sm:py-16">
+      <div className="k-wide px-4 py-12 text-center sm:py-16">
         <p className="mb-2 text-signal k-label">
           Access
         </p>

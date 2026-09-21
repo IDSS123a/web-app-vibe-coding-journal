@@ -74,6 +74,28 @@ try {
     ok("dictionary search finds Context window first", /context window/i.test(first), first);
   });
   await visit(userCtx, "/assistant", "Generate My Prompt");
+  // Assistant history delete (2026-09-21): two clicks, and the item leaves the list. A temporary item is used, no AI run.
+  {
+    const { data: owner } = await admin.from("user_profiles").select("id").eq("email", "user@test.local").single();
+    const { data: made } = await admin.from("prompt_blueprint_generations").insert({ user_id: owner.id, wizard_answers: {}, domain: "smoke-domain", scenario: "s", goal: "smoke goal to delete", explanation: "e", prompt_blueprint: "p", mermaid_diagram: "m", next_steps: "n" }).select("id").single();
+    try {
+      await visit(userCtx, "/assistant", "Generate My Prompt", async (page) => {
+        await page.getByRole("button", { name: "History", exact: true }).click();
+        const item = page.getByText("smoke goal to delete");
+        await item.waitFor({ timeout: 10000 });
+        await page.getByRole("button", { name: /Delete prompt: smoke-domain/ }).click();
+        ok("delete asks for a second click first", (await page.getByRole("button", { name: /Confirm delete/ }).count()) === 1 && (await item.count()) === 1);
+        await page.getByRole("button", { name: /Cancel/ }).click();
+        ok("cancel keeps the item", (await item.count()) === 1 && (await page.getByRole("button", { name: /Confirm delete/ }).count()) === 0);
+        await page.getByRole("button", { name: /Delete prompt: smoke-domain/ }).click();
+        await page.getByRole("button", { name: /Confirm delete/ }).click();
+        await item.waitFor({ state: "detached", timeout: 10000 });
+        ok("confirming removes the item from the history", true);
+      });
+    } finally {
+      await admin.from("prompt_blueprint_generations").delete().eq("id", made.id);
+    }
+  }
 
   // Prompt School: pages, then a real graded attempt, then the test account's progress is removed again.
   {

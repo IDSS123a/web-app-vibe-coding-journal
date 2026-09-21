@@ -120,7 +120,7 @@ function LevelTest() {
 
   return (
     <div className="k-page layer-campus">
-      <div className="mx-auto max-w-3xl">
+      <div className="k-wide">
         <Link href="/prompt-school" className="mb-6 inline-flex min-h-11 items-center underline decoration-1 underline-offset-4 k-cbtn">
           ← Prompt School
         </Link>
@@ -196,7 +196,7 @@ function LevelTest() {
               </div>
             </div>
 
-            <div className="space-y-8">
+            <div className="k-cards-lg">
               {data.exercises.map((ex, i) => (
                 <ExercisePlayer
                   key={`${round}-${ex.id}`}

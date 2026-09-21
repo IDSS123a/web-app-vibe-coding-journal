@@ -70,7 +70,7 @@ const FEATURES = [
 export default function WelcomePage() {
   return (
     <div className="k-page">
-      <div className="mx-auto max-w-3xl xl:max-w-4xl">
+      <div className="k-wide">
         <div className="mb-4 flex justify-center">
           <Mascot size={64} />
         </div>
@@ -84,11 +84,11 @@ export default function WelcomePage() {
           Your subscription is active. Here is what the Journal offers. Features marked Premium need the $50 tier.
         </p>
 
-        <div className="mt-12 border-black md:border-4">
-          {FEATURES.map((feature, i) => (
+        <div className="mt-12 k-cards-lg">
+          {FEATURES.map((feature) => (
             <div
               key={feature.n}
-              className={`border border-black p-8 ${i > 0 ? "border-t-0" : ""}`}
+              className="border border-black p-8"
             >
               <span className="text-signal k-label">
                 {feature.n}

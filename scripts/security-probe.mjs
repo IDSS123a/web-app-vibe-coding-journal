@@ -65,6 +65,7 @@ async function main() {
   check("POST prompt-school level test anonymous refused", (await call("POST", "/api/prompt-school/level-tests/beginner", { body: { answers: {} } })) === 401);
   check("POST prompt-school lesson complete anonymous refused", (await call("POST", "/api/prompt-school/lessons/five-pillars/pillar-1-context/complete")) === 401);
   check("POST prompt-school sandbox run anonymous refused", (await call("POST", "/api/prompt-school/sandbox/five-pillars/pillar-4-constraints", { body: { prompt: "Summarise the text." } })) === 401);
+  check("DELETE assistant history item anonymous refused", (await call("DELETE", "/api/assistant/history/00000000-0000-0000-0000-000000000000")) === 401);
   check("POST /api/assistant/generate anonymous refused", (await call("POST", "/api/assistant/generate", { body: {} })) === 401);
   check("POST /api/payments/create-order anonymous refused", (await call("POST", "/api/payments/create-order", { body: { tier: "premium" } })) === 401);
   check("POST /api/admin/users anonymous refused", (await call("POST", "/api/admin/users", { body: { email: "x@example.com", tier: "basic" } })) === 401);
@@ -111,6 +112,23 @@ async function main() {
   for (const p of ["/api/reports/not-a-date", "/api/reports/2026-13-45", "/api/reports/%27%20OR%201%3D1--", "/api/reports?page=-1", "/api/reports?page=abc", "/api/reports?page=99999999"])
     check(`bad input ${p} handled`, [400, 404, 422].includes(await call("GET", p, { token: userToken })), String(await call("GET", p, { token: userToken })));
   check("assistant generate with junk body is 422", (await call("POST", "/api/assistant/generate", { token: userToken, body: { projectDescription: 1 } })) === 422);
+  // Assistant history delete (2026-09-21): a soft delete, owner only, and the row still counts toward the daily limit.
+  {
+    const { data: owner } = await admin.from("user_profiles").select("id").eq("email", "user@test.local").single();
+    const { data: made } = await admin.from("prompt_blueprint_generations").insert({ user_id: owner.id, wizard_answers: {}, domain: "probe", scenario: "s", goal: "probe goal", explanation: "e", prompt_blueprint: "p", mermaid_diagram: "m", next_steps: "n" }).select("id").single();
+    const url = `/api/assistant/history/${made.id}`;
+    const countRows = async () => (await admin.from("prompt_blueprint_generations").select("*", { count: "exact", head: true }).eq("id", made.id)).count;
+    check("assistant delete: a non-uuid id is 404", (await call("DELETE", "/api/assistant/history/nope", { token: userToken })) === 404);
+    check("assistant delete: another user (the admin) cannot delete someone else's item, it stays", (await call("DELETE", url, { token: adminToken })) === 404 && (await call("GET", url, { token: userToken })) === 200);
+    const listedBefore = await (await fetch(`${BASE}/api/assistant/history`, { headers: { authorization: `Bearer ${userToken}` } })).json();
+    check("assistant delete: the item is in the owner's history first", listedBefore.data?.some((g) => g.id === made.id));
+    check("assistant delete: the owner deletes it", (await call("DELETE", url, { token: userToken })) === 200);
+    const listedAfter = await (await fetch(`${BASE}/api/assistant/history`, { headers: { authorization: `Bearer ${userToken}` } })).json();
+    check("assistant delete: it is gone from the history list and cannot be opened", !listedAfter.data?.some((g) => g.id === made.id) && (await call("GET", url, { token: userToken })) === 404);
+    check("assistant delete: deleting twice is 404", (await call("DELETE", url, { token: userToken })) === 404);
+    check("assistant delete: the row is kept (soft delete), so the daily limit still counts it", (await countRows()) === 1);
+    await admin.from("prompt_blueprint_generations").delete().eq("id", made.id);
+  }
   // Prompt School: input handling, and answers never leave the server before an attempt.
   {
     check("prompt-school bad chapter slug is 400", (await call("GET", "/api/prompt-school/chapters/BAD%20SLUG!", { token: userToken })) === 400);
@@ -281,6 +299,7 @@ async function main() {
       const ps = await call("GET", "/api/prompt-school", { token: t });
       const psCheck = await call("POST", "/api/prompt-school/exercises/00000000-0000-0000-0000-000000000000/check", { token: t, body: { answer: {} } });
       check(`${label}: prompt school`, ps === want.ps, `got ${ps}`);
+      if (want.ps !== 200) check(`${label}: assistant delete refused`, (await call("DELETE", "/api/assistant/history/00000000-0000-0000-0000-000000000000", { token: t })) === 403);
       if (want.ps !== 200) check(`${label}: sandbox run refused`, (await call("POST", "/api/prompt-school/sandbox/five-pillars/pillar-4-constraints", { token: t, body: { prompt: "Summarise the text." } })) === 403);
       check(`${label}: prompt school exercise check`, want.ps === 200 ? psCheck === 404 : psCheck === 403, `got ${psCheck}`);
       check(`${label}: assistant gate`, want.assistantGen === "not403" ? gen !== 403 && gen !== 401 : gen === want.assistantGen, `got ${gen}`);

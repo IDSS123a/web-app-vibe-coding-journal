@@ -176,6 +176,9 @@ function Wizard() {
   const [history, setHistory] = useState<GenerationSummary[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyError, setHistoryError] = useState<string | null>(null);
+  // Two-step delete: the first click asks, the second one deletes (history is the only copy of a Blueprint).
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   function loadHistory() {
     if (!token) return;
@@ -192,6 +195,23 @@ function Wizard() {
     if (view === "history") loadHistory();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view, token]);
+
+  async function deleteHistoryItem(id: string) {
+    if (!token) return;
+    setDeletingId(id);
+    setHistoryError(null);
+    try {
+      const res = await fetch(`/api/assistant/history/${id}`, { method: "DELETE", headers: { authorization: `Bearer ${token}` } });
+      // 404 means it is already gone (deleted in another tab), which is what the learner wanted.
+      if (!res.ok && res.status !== 404) throw new Error(`HTTP ${res.status}`);
+      setHistory((h) => h.filter((item) => item.id !== id));
+      setConfirmDeleteId(null);
+    } catch {
+      setHistoryError("Failed to delete this prompt. Please try again.");
+    } finally {
+      setDeletingId(null);
+    }
+  }
 
   function openHistoryItem(id: string) {
     if (!token) return;
@@ -302,22 +322,51 @@ function Wizard() {
             {historyLoading && <p className="text-sm text-black opacity-60">Loading…</p>}
             {historyError && <p className="border border-signal p-3 text-sm text-signal">{historyError}</p>}
             {!historyLoading && !historyError && history.length === 0 && (
-              <p className="text-sm text-black opacity-60">No prompts generated yet.</p>
+              <p className="text-sm text-black opacity-60">No prompts in your history.</p>
             )}
             <ul className="space-y-3">
               {history.map((item) => (
-                <li key={item.id}>
+                <li key={item.id} className="flex flex-col gap-2 sm:flex-row sm:items-stretch">
                   <button
                     type="button"
                     onClick={() => openHistoryItem(item.id)}
-                    className="block w-full border border-black p-4 text-left transition-colors duration-150 ease-out hover:border-signal"
+                    className="block min-w-0 flex-1 border border-black p-4 text-left transition-colors duration-150 ease-out hover:border-signal"
                   >
                     <p className="text-signal k-label">{item.domain}</p>
-                    <p className="mt-1 text-sm text-black">{item.goal}</p>
+                    <p className="mt-1 break-words text-sm text-black">{item.goal}</p>
                     <p className="mt-2 text-xs text-black opacity-50">
                       {new Date(item.createdAt).toLocaleString()}
                     </p>
                   </button>
+                  {confirmDeleteId === item.id ? (
+                    <div className="flex gap-2 sm:flex-col">
+                      <button
+                        type="button"
+                        onClick={() => deleteHistoryItem(item.id)}
+                        disabled={deletingId === item.id}
+                        className="inline-flex min-h-11 flex-1 items-center justify-center border border-signal bg-signal px-4 text-white disabled:opacity-50 k-label"
+                      >
+                        {deletingId === item.id ? "Deleting…" : "Confirm delete"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setConfirmDeleteId(null)}
+                        disabled={deletingId === item.id}
+                        className="inline-flex min-h-11 flex-1 items-center justify-center border border-black px-4 text-black transition-colors duration-150 ease-out hover:bg-paper-2 k-label"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setConfirmDeleteId(item.id)}
+                      aria-label={`Delete prompt: ${item.domain}`}
+                      className="inline-flex min-h-11 items-center justify-center border border-black px-4 text-black transition-colors duration-150 ease-out hover:border-signal hover:text-signal k-label"
+                    >
+                      Delete
+                    </button>
+                  )}
                 </li>
               ))}
             </ul>

@@ -39,7 +39,7 @@ export default function DashboardPage() {
   return (
     <div className="k-page layer-edition">
       {report && <DailyReportOpenTracker reportId={report.id} />}
-      <div className="mx-auto max-w-4xl xl:max-w-5xl">
+      <div className="k-wide">
         {/* Header */}
         <div className="mb-12 border-b border-black pb-8">
           <p className="mb-2 text-signal k-label">
@@ -81,7 +81,7 @@ export default function DashboardPage() {
               <ArticleListWithBookmarks articles={articles} relatedSources={data?.relatedSources ?? {}} />
             ) : (
               <div className="k-box-muted swiss-grid-pattern mt-6 p-6">
-                <MarkdownContent>{report.markdown}</MarkdownContent>
+                <MarkdownContent className="k-cols">{report.markdown}</MarkdownContent>
               </div>
             )}
 

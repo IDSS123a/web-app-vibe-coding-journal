@@ -76,7 +76,7 @@ function LessonReader() {
 
   return (
     <div className="k-page layer-campus">
-      <div className="mx-auto max-w-2xl xl:max-w-3xl">
+      <div className="k-wide">
         <Link
           href="/university"
           className="inline-flex min-h-11 items-center underline decoration-1 underline-offset-4 k-cbtn"
@@ -89,7 +89,7 @@ function LessonReader() {
         <h1 className="mt-2 text-studio-ink k-cheading">
           {data.lesson.title}
         </h1>
-        <MarkdownContent className="mt-8">{data.lesson.body ?? ""}</MarkdownContent>
+        <MarkdownContent className="k-cols mt-8">{data.lesson.body ?? ""}</MarkdownContent>
 
         <button
           type="button"
