@@ -30,3 +30,21 @@ Vertical slice (2026-09-20): tasks 1 to 10 done and verified, 11 waits for the D
 - [ ] D Live sandbox: learner runs their own prompt on a real model, at most 3 runs a day per user, shares the free AI pool (PDL-058), built last
 - [x] E1 Coins through the existing rewards system: lessons, exercises, chapters, level tests, paid by the server, celebrated in the browser (2026-09-21, PDL-072)
 - [ ] E2 Badges, and coins for the University's learning steps too
+
+## State at the end of 2026-09-21 and what comes next
+
+Everything below is pushed (origin/main at 33f13bf) and live (verified: live smoke test and security probe 149 of 149).
+
+- Prompt School: 18 chapters, 101 lessons, 433 of 433 book sections, level tests, a workshop for every blueprint, coins.
+- KANON visual system on the whole app (PDL-074). Real-device check on iOS Safari is still open (only Chrome was available).
+- Migration 031 is applied. Retroactive coins for progress made before PDL-072: the Director said not needed (script exists, not run).
+
+Options for the next session, in the order the plan gives them:
+1. E2: badges (a small set, awarded by the server like the coins) and the same coins for the University's lessons, chapter quizzes and
+   level tests. The rewards system, `awardPromptSchool` and `applyReward` are the pattern to reuse. Ask first which badges.
+2. D: live sandbox (the riskiest step). Design questions to settle with the Director first: which model and how it shares the free
+   Gemini pool (PDL-021, PDL-058), the 3 runs a day per user limit, what the learner may run (only their own prompt against a
+   fixed sample input?), prompt-injection and abuse limits, and how a run is graded (no AI grading is the standing rule).
+3. Director tasks that are not code: repair the manuscript (five holes, four stray drafting notes, old chapter numbers, the bare
+   "Note:" at the end; see PDL-068, PDL-070 and memory book-canon-docx), and look at the new design on a real iPhone and Android phone.
+4. Not started, only mentioned: a real Scan mode (KANON Console layer for the Daily Report), a certificate, cumulative tests.
