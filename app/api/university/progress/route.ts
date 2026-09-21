@@ -8,6 +8,8 @@ import { getVerifiedUser } from "@/lib/auth/verify-token";
 import { canAccessUniversity } from "@/lib/permissions";
 import { evaluateSubscriptionAccess } from "@/features/onboarding/domain";
 import { markLessonCompleteInputSchema } from "@/lib/validation/schemas";
+import { awardLearningStep } from "@/features/rewards/learning";
+import { grantNewBadges } from "@/features/badges/award";
 import { markLessonComplete, getPublishedLessonsForCourse } from "@/features/university/repository";
 import { computeCourseStatus } from "@/features/university/domain";
 import { supabaseAdmin } from "@/lib/db/client";
@@ -62,8 +64,12 @@ export async function POST(request: NextRequest) {
         });
     }
 
+    // Coins and the first-lesson badge (PDL-075): once per lesson, paid here on the server.
+    const reward = await awardLearningStep(user.sub, "uni_lesson_complete", parsed.data.lesson_id);
+    const badges = await grantNewBadges(user.sub, ["first-lesson"]);
+
     // 5. RETURN
-    return NextResponse.json({ progress: { ...progress, status } });
+    return NextResponse.json({ progress: { ...progress, status }, reward, badges });
   } catch (err) {
     const errorMsg = err instanceof Error ? err.message : String(err);
     console.error(`[UNIVERSITY] Error updating progress: ${errorMsg}`);

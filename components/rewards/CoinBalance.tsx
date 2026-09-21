@@ -110,6 +110,9 @@ export function CoinBalance({ variant = "full" }: { variant?: "full" | "compact"
             <span className="text-ink-soft">Current Streak</span>
             <span>{state.currentStreak} day{state.currentStreak === 1 ? "" : "s"}</span>
           </div>
+          <a href="/badges" className="mt-2 block border-t border-rule pt-2 underline decoration-1 underline-offset-4 hover:text-signal">
+            My badges →
+          </a>
         </div>
       )}
     </div>

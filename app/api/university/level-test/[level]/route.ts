@@ -12,6 +12,9 @@ import { canAccessUniversity } from "@/lib/permissions";
 import { evaluateSubscriptionAccess } from "@/features/onboarding/domain";
 import { getLevelTestQuestions, submitLevelTestAttempt } from "@/features/university/repository";
 import { submitLevelTestInputSchema } from "@/lib/validation/schemas";
+import { awardLearningStep } from "@/features/rewards/learning";
+import { grantNewBadges } from "@/features/badges/award";
+import { universityLevelBadge } from "@/features/badges/domain";
 
 const LEVELS = ["beginner", "intermediate", "expert"] as const;
 type Level = (typeof LEVELS)[number];
@@ -75,7 +78,11 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     }
 
     const result = await submitLevelTestAttempt(auth.user.sub, level, parsed.data.answers);
-    return NextResponse.json(result);
+
+    // 150 coins the first time a level test is passed, and the level's badge (PDL-075).
+    const reward = result.passed ? await awardLearningStep(auth.user.sub, "uni_level_test_pass", level) : null;
+    const badges = result.passed ? await grantNewBadges(auth.user.sub, [universityLevelBadge(level)]) : [];
+    return NextResponse.json({ ...result, reward, badges });
   } catch (err) {
     const errorMsg = err instanceof Error ? err.message : String(err);
     console.error(`[UNIVERSITY] Error submitting level test: ${errorMsg}`);

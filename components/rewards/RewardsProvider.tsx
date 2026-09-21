@@ -32,6 +32,7 @@ export interface RewardState {
 }
 
 interface AwardApiResult {
+  badges?: NewBadge[];
   awarded: boolean;
   coinsAwarded: number;
   leveledUp: boolean;
@@ -45,7 +46,14 @@ interface CelebrationState {
   coins?: number;
 }
 
-/** What a trusted server route reports after it paid coins itself (Prompt School, PDL-072). */
+/** A badge that was just earned (PDL-075); the server sends only the new ones. */
+export interface NewBadge {
+  id: string;
+  title: string;
+  description: string;
+}
+
+/** What a trusted server route reports after it paid coins itself (Prompt School PDL-072, University PDL-075). */
 export interface ServerReward {
   event: string;
   coinsAwarded: number;
@@ -62,13 +70,21 @@ interface RewardsContextValue {
    * Shows the celebration for coins that a server route already paid: updates the balance, then a toast for a
    * small payout, an overlay for a completed chapter, a passed level test or a new level. Null entries are ignored.
    */
-  applyReward: (rewards: Array<ServerReward | null | undefined>) => void;
+  applyReward: (rewards: Array<ServerReward | null | undefined>, badges?: NewBadge[] | null) => void;
   award: (eventType: RewardEventType, dedupeKey: string | null) => Promise<void>;
   /** Confetti only, for a delight moment that pays no coins (a repeat click on the book). */
   sparkle: () => void;
 }
 
 const RewardsContext = createContext<RewardsContextValue | null>(null);
+
+function badgeCelebration(badges: NewBadge[], coins: number): CelebrationState {
+  return {
+    title: badges.length === 1 ? `Badge: ${badges[0]!.title}` : `${badges.length} new badges`,
+    subtitle: badges.map((b) => b.description).join(" "),
+    coins: coins || undefined,
+  };
+}
 
 export function RewardsProvider({ children }: { children: ReactNode }) {
   const { token, loading } = useSession();
@@ -112,30 +128,34 @@ export function RewardsProvider({ children }: { children: ReactNode }) {
 
         setState(result.newState);
 
+        // The book and the streak milestones keep their own celebration; a badge that came with them is added to its text.
+        const earned = result.badges ?? [];
+        const withBadges = (c: CelebrationState): CelebrationState =>
+          earned.length > 0 ? { ...c, subtitle: `${c.subtitle} New badge: ${earned.map((b) => b.title).join(", ")}.` } : c;
         if (eventType === "book_discovery") {
           setConfettiActive(true);
           // The bonus can carry the reader over a level threshold; that news must not be lost behind the book message.
-          setCelebration({
+          setCelebration(withBadges({
             title: result.leveledUp ? `Level ${result.newState.level}` : "You found the book",
             subtitle: result.leveledUp
               ? "You found the book behind this School, and the bonus took you to a new level."
               : "Mastering Prompt Engineering is the book behind this School. Here is a bonus for finding it.",
             coins: result.coinsAwarded || undefined,
-          });
+          }));
         } else if (result.leveledUp) {
           setConfettiActive(true);
-          setCelebration({
+          setCelebration(withBadges({
             title: `Level ${result.newState.level}`,
             subtitle: "Excellent progress. You've reached a new level.",
             coins: result.coinsAwarded || undefined,
-          });
+          }));
         } else if (result.streakMilestoneHit) {
           setConfettiActive(true);
-          setCelebration({
+          setCelebration(withBadges({
             title: `${result.streakMilestoneHit}-Day Streak`,
             subtitle: "Excellent progress. Keep up the pace.",
             coins: result.coinsAwarded || undefined,
-          });
+          }));
         } else if (result.coinsAwarded > 0) {
           setToastCoins(result.coinsAwarded);
         }
@@ -150,22 +170,28 @@ export function RewardsProvider({ children }: { children: ReactNode }) {
 
   const sparkle = useCallback(() => setConfettiActive(true), []);
 
-  const applyReward = useCallback((rewards: Array<ServerReward | null | undefined>) => {
+  const applyReward = useCallback((rewards: Array<ServerReward | null | undefined>, badges?: NewBadge[] | null) => {
     const paid = rewards.filter((r): r is ServerReward => Boolean(r) && (r as ServerReward).coinsAwarded > 0);
-    if (paid.length === 0) return;
-    const last = paid[paid.length - 1]!;
+    const newBadges = badges ?? [];
+    if (paid.length === 0 && newBadges.length === 0) return;
     const coins = paid.reduce((n, r) => n + r.coinsAwarded, 0);
-    setState({ coinBalance: last.coinBalance, currentStreak: last.currentStreak, longestStreak: last.longestStreak, level: last.level });
+    const last = paid[paid.length - 1];
+    if (last) setState({ coinBalance: last.coinBalance, currentStreak: last.currentStreak, longestStreak: last.longestStreak, level: last.level });
     const has = (event: string) => paid.some((r) => r.event === event);
-    if (paid.some((r) => r.leveledUp)) {
+    if (newBadges.length > 0) {
+      // A new badge is the most specific news, so it takes the celebration; a level-up that came with it is added to the text.
       setConfettiActive(true);
-      setCelebration({ title: `Level ${last.level}`, subtitle: "Excellent progress. You've reached a new level.", coins });
-    } else if (has("ps_level_test_pass")) {
+      const c = badgeCelebration(newBadges, coins);
+      setCelebration(last?.leveledUp ? { ...c, subtitle: `${c.subtitle} You also reached level ${last.level}.` } : c);
+    } else if (paid.some((r) => r.leveledUp)) {
+      setConfettiActive(true);
+      setCelebration({ title: `Level ${last!.level}`, subtitle: "Excellent progress. You've reached a new level.", coins });
+    } else if (has("ps_level_test_pass") || has("uni_level_test_pass")) {
       setConfettiActive(true);
       setCelebration({ title: "Level test passed", subtitle: "You passed the whole level. Well done.", coins });
-    } else if (has("ps_chapter_complete")) {
+    } else if (has("ps_chapter_complete") || has("uni_chapter_quiz_pass")) {
       setConfettiActive(true);
-      setCelebration({ title: "Chapter complete", subtitle: "You passed the practice of this chapter. The next chapter is open.", coins });
+      setCelebration({ title: "Chapter complete", subtitle: "You passed this chapter. The next chapter is open.", coins });
     } else {
       setToastCoins(coins);
     }

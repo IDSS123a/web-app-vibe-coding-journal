@@ -8,6 +8,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { useSession } from "@/lib/auth/use-session";
+import { useRewards, type NewBadge, type ServerReward } from "@/components/rewards/RewardsProvider";
 import { PremiumGuard } from "@/components/PremiumGuard";
 import { MarkdownContent } from "@/components/MarkdownContent";
 import type { Course, Lesson } from "@/lib/validation/schemas";
@@ -20,6 +21,7 @@ function LessonReader() {
   const [error, setError] = useState<string | null>(null);
   const [completing, setCompleting] = useState(false);
   const [completed, setCompleted] = useState(false);
+  const { applyReward } = useRewards();
 
   useEffect(() => {
     if (sessionLoading || !token) return;
@@ -48,7 +50,9 @@ function LessonReader() {
         body: JSON.stringify({ course_id: data.course.id, lesson_id: data.lesson.id }),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const body = (await res.json().catch(() => ({}))) as { reward?: ServerReward | null; badges?: NewBadge[] };
       setCompleted(true);
+      applyReward([body.reward], body.badges);
     } catch {
       setError("Failed to mark this lesson complete.");
     } finally {

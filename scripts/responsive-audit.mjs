@@ -65,7 +65,7 @@ const selectViewport = (v) => wanted.length === 0 ? !v.group : wanted.some((w) =
 const ZOOM = Number(process.env.AUDIT_ZOOM ?? 1);
 const DPR = Number(process.env.AUDIT_DPR ?? 1);
 const REDUCED = process.env.AUDIT_REDUCED === "1";
-const CORE = new Set(["/", "/login", "/dashboard", "/archive", "/university", "/dictionary", "/assistant", "/prompt-school", "/prompt-school/level-test/beginner", "/prompt-school/five-pillars", "/prompt-school/five-pillars/practice", "/admin/users", "/admin/review-queue"]);
+const CORE = new Set(["/", "/login", "/dashboard", "/badges", "/archive", "/university", "/dictionary", "/assistant", "/prompt-school", "/prompt-school/level-test/beginner", "/prompt-school/five-pillars", "/prompt-school/five-pillars/practice", "/admin/users", "/admin/review-queue"]);
 
 const admin = createClient(SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } });
 const anon = createClient(SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY, { auth: { persistSession: false } });
@@ -220,6 +220,7 @@ async function main() {
     dyn.lessonPath && { path: dyn.lessonPath, who: "user" },
     dyn.chapterId && { path: `/university/chapters/${dyn.chapterId}/quiz`, who: "user" },
     { path: "/university/level-test/beginner", who: "user" },
+    { path: "/badges", who: "user" },
     { path: "/dictionary", who: "user" },
     { path: "/assistant", who: "user" },
     dyn.promptSchool && { path: "/prompt-school", who: "user" },

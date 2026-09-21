@@ -12,6 +12,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getVerifiedUser } from "@/lib/auth/verify-token";
 import { awardCoinsInputSchema } from "@/lib/validation/schemas";
 import { awardCoins } from "@/features/rewards/repository";
+import { grantNewBadges } from "@/features/badges/award";
+import { streakBadge } from "@/features/badges/domain";
 
 export async function POST(request: NextRequest) {
   try {
@@ -33,8 +35,14 @@ export async function POST(request: NextRequest) {
     // 4. EXECUTE
     const result = await awardCoins(user.sub, parsed.data.eventType, parsed.data.dedupeKey ?? null);
 
+    // Badges (PDL-075): the book, and the 7 and 30 day streaks.
+    const badges = await grantNewBadges(user.sub, [
+      result.awarded && parsed.data.eventType === "book_discovery" ? "book-finder" : null,
+      result.awarded ? streakBadge(result.streakMilestoneHit) : null,
+    ]);
+
     // 5. RETURN
-    return NextResponse.json(result);
+    return NextResponse.json({ ...result, badges });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     console.error(`[REWARDS] award failed: ${message}`);

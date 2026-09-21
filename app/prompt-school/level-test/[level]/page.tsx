@@ -11,7 +11,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { useSession } from "@/lib/auth/use-session";
-import { useRewards, type ServerReward } from "@/components/rewards/RewardsProvider";
+import { useRewards, type NewBadge, type ServerReward } from "@/components/rewards/RewardsProvider";
 import { PremiumGuard } from "@/components/PremiumGuard";
 import { ExercisePlayer, type PublicExercise } from "@/components/prompt-school/ExercisePlayer";
 import { BookPopup } from "@/components/prompt-school/BookPopup";
@@ -27,6 +27,7 @@ interface TestData {
 
 interface TestResult {
   reward?: ServerReward | null;
+  badges?: NewBadge[];
   score: number;
   passed: boolean;
   passScore: number;
@@ -96,7 +97,7 @@ function LevelTest() {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const graded = (await res.json()) as TestResult;
       setResult(graded);
-      applyReward([graded.reward]);
+      applyReward([graded.reward], graded.badges);
       window.scrollTo({ top: 0 });
     } catch {
       setError("Could not grade the test. Your answers are still here, please try again.");

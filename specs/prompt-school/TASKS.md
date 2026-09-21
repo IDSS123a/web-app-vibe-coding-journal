@@ -29,7 +29,7 @@ Vertical slice (2026-09-20): tasks 1 to 10 done and verified, 11 waits for the D
 - [x] C Capstone workshops: one repair workshop per blueprint, 12 new, graded by rubrics that reward what makes each blueprint work (2026-09-21, PDL-073)
 - [ ] D Live sandbox: learner runs their own prompt on a real model, at most 3 runs a day per user, shares the free AI pool (PDL-058), built last
 - [x] E1 Coins through the existing rewards system: lessons, exercises, chapters, level tests, paid by the server, celebrated in the browser (2026-09-21, PDL-072)
-- [ ] E2 Badges, and coins for the University's learning steps too
+- [x] E2 Badges (12, migration 032, /badges page) and coins for the University's lessons, chapter quizzes and level tests, celebrated by the shared system (2026-09-21, PDL-075)
 
 ## State at the end of 2026-09-21 and what comes next
 
@@ -40,8 +40,7 @@ Everything below is pushed (origin/main at 33f13bf) and live (verified: live smo
 - Migration 031 is applied. Retroactive coins for progress made before PDL-072: the Director said not needed (script exists, not run).
 
 Options for the next session, in the order the plan gives them:
-1. E2: badges (a small set, awarded by the server like the coins) and the same coins for the University's lessons, chapter quizzes and
-   level tests. The rewards system, `awardPromptSchool` and `applyReward` are the pattern to reuse. Ask first which badges.
+1. (E2 done later the same day, see PDL-075.)
 2. D: live sandbox (the riskiest step). Design questions to settle with the Director first: which model and how it shares the free
    Gemini pool (PDL-021, PDL-058), the 3 runs a day per user limit, what the learner may run (only their own prompt against a
    fixed sample input?), prompt-injection and abuse limits, and how a run is graded (no AI grading is the standing rule).

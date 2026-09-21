@@ -12,6 +12,8 @@ import { canAccessUniversity } from "@/lib/permissions";
 import { evaluateSubscriptionAccess } from "@/features/onboarding/domain";
 import { getQuizQuestionsForChapter, submitChapterQuizAttempt } from "@/features/university/repository";
 import { submitChapterQuizInputSchema } from "@/lib/validation/schemas";
+import { awardLearningStep } from "@/features/rewards/learning";
+import { grantNewBadges } from "@/features/badges/award";
 
 async function authorize(request: NextRequest) {
   const user = await getVerifiedUser(request.headers.get("authorization"));
@@ -68,7 +70,11 @@ export async function POST(
 
     const result = await submitChapterQuizAttempt(auth.user.sub, chapterId, parsed.data.answers);
 
-    return NextResponse.json(result);
+    // 30 coins the first time a chapter quiz is passed, and the first-chapter badge (PDL-075).
+    const reward = result.passed ? await awardLearningStep(auth.user.sub, "uni_chapter_quiz_pass", chapterId) : null;
+    const badges = result.passed ? await grantNewBadges(auth.user.sub, ["first-chapter"]) : [];
+
+    return NextResponse.json({ ...result, reward, badges });
   } catch (err) {
     const errorMsg = err instanceof Error ? err.message : String(err);
     console.error(`[UNIVERSITY] Error submitting chapter quiz: ${errorMsg}`);

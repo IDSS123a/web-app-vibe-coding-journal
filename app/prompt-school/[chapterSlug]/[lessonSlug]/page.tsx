@@ -8,7 +8,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { useSession } from "@/lib/auth/use-session";
-import { useRewards, type ServerReward } from "@/components/rewards/RewardsProvider";
+import { useRewards, type NewBadge, type ServerReward } from "@/components/rewards/RewardsProvider";
 import { PremiumGuard } from "@/components/PremiumGuard";
 import { MarkdownContent } from "@/components/MarkdownContent";
 import { BookPopup } from "@/components/prompt-school/BookPopup";
@@ -64,9 +64,9 @@ function Lesson() {
         headers: { authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const body = (await res.json().catch(() => ({}))) as { reward?: ServerReward | null };
+      const body = (await res.json().catch(() => ({}))) as { reward?: ServerReward | null; badges?: NewBadge[] };
       setCompleted(true);
-      applyReward([body.reward]);
+      applyReward([body.reward], body.badges);
     } catch {
       setError("Failed to save your progress.");
     } finally {

@@ -12,8 +12,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { useSession } from "@/lib/auth/use-session";
 import { PremiumGuard } from "@/components/PremiumGuard";
-import { CelebrationOverlay } from "@/components/rewards/CelebrationOverlay";
-import { ConfettiSystem } from "@/components/rewards/ConfettiSystem";
+import { useRewards, type NewBadge, type ServerReward } from "@/components/rewards/RewardsProvider";
 import type { QuizQuestionPublic } from "@/lib/validation/schemas";
 
 function ChapterQuiz() {
@@ -25,8 +24,7 @@ function ChapterQuiz() {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<{ score: number; passed: boolean } | null>(null);
-  const [confettiActive, setConfettiActive] = useState(false);
-  const [celebrationDismissed, setCelebrationDismissed] = useState(false);
+  const { applyReward, sparkle } = useRewards();
 
   useEffect(() => {
     if (sessionLoading || !token) return;
@@ -56,9 +54,13 @@ function ChapterQuiz() {
         body: JSON.stringify({ answers: payload }),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data: { score: number; passed: boolean } = await res.json();
-      setResult(data);
-      if (data.passed) setConfettiActive(true);
+      const data: { score: number; passed: boolean; reward?: ServerReward | null; badges?: NewBadge[] } = await res.json();
+      setResult({ score: data.score, passed: data.passed });
+      // Coins and badges are paid by the server (PDL-075); a repeat pass pays nothing and just sparkles.
+      if (data.passed) {
+        if ((data.reward?.coinsAwarded ?? 0) > 0 || (data.badges?.length ?? 0) > 0) applyReward([data.reward], data.badges);
+        else sparkle();
+      }
     } catch {
       setError("Failed to submit the quiz.");
     } finally {
@@ -162,15 +164,6 @@ function ChapterQuiz() {
           </button>
         )}
       </div>
-      <ConfettiSystem active={confettiActive} onDone={() => setConfettiActive(false)} />
-      {result?.passed && !celebrationDismissed && (
-        <CelebrationOverlay
-          open={true}
-          title="Chapter Passed"
-          subtitle="Excellent progress. The next chapter is unlocked."
-          onDismiss={() => setCelebrationDismissed(true)}
-        />
-      )}
     </div>
   );
 }

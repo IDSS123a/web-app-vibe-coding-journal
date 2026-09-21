@@ -9,9 +9,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { requirePromptSchoolUser } from "@/features/prompt-school/access";
 import { gradeExercise } from "@/features/prompt-school/domain";
-import { getChapterState } from "@/features/prompt-school/progress";
+import { getChapterState, getChapterStates } from "@/features/prompt-school/progress";
 import { getExerciseForGrading, recordAttempt } from "@/features/prompt-school/repository";
 import { awardPromptSchool } from "@/features/prompt-school/rewards";
+import { grantNewBadges } from "@/features/badges/award";
 
 const idSchema = z.string().uuid();
 const bodySchema = z.object({ answer: z.unknown() });
@@ -39,12 +40,19 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const saved = await recordAttempt(auth.user.sub, found.exercise.id, result.score, body.data.answer);
 
     const reward = result.passed ? await awardPromptSchool(auth.user.sub, "ps_exercise_pass", found.exercise.id) : null;
-    const after = await getChapterState(auth.user.sub, found.chapter.slug);
+    const allStates = await getChapterStates(auth.user.sub);
+    const after = allStates.find((s) => s.chapter.slug === found.chapter.slug);
     const chapterReward = after?.completed ? await awardPromptSchool(auth.user.sub, "ps_chapter_complete", found.chapter.slug) : null;
+    // Badges (PDL-075): the first completed chapter, and finishing the whole course.
+    const badges = await grantNewBadges(auth.user.sub, [
+      after?.completed ? "first-chapter" : null,
+      allStates.length > 0 && allStates.every((s) => s.completed) ? "ps-graduate" : null,
+    ]);
 
     return NextResponse.json({
       reward,
       chapterReward,
+      badges,
       chapterComplete: Boolean(after?.completed),
       score: result.score,
       passed: result.passed,

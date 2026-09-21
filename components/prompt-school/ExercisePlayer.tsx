@@ -9,7 +9,7 @@
  */
 
 import { useEffect, useId, useRef, useState } from "react";
-import { useRewards, type ServerReward } from "@/components/rewards/RewardsProvider";
+import { useRewards, type NewBadge, type ServerReward } from "@/components/rewards/RewardsProvider";
 import { MAX_REPAIR_LENGTH, splitTemplate, type ChoicePublic, type ExerciseKind, type FillPublic, type OrderPublic, type RepairPublic, type SpotPublic } from "@/features/prompt-school/domain";
 
 export interface PublicExercise {
@@ -32,6 +32,8 @@ interface CheckResult {
   /** Coins paid by the server for this attempt (PDL-072); null when nothing was paid. */
   reward?: ServerReward | null;
   chapterReward?: ServerReward | null;
+  /** Badges earned by this attempt (PDL-075). */
+  badges?: NewBadge[];
 }
 
 interface Props {
@@ -108,7 +110,7 @@ export function ExercisePlayer({ exercise, token, index, total, onChecked, test 
       const data = (await res.json()) as CheckResult;
       setResult(data);
       onChecked(exercise.id, data.bestScore);
-      applyReward([data.reward, data.chapterReward]);
+      applyReward([data.reward, data.chapterReward], data.badges);
     } catch {
       setError("Could not check your answer. Please try again.");
     } finally {

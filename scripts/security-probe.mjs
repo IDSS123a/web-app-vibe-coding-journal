@@ -48,7 +48,7 @@ const FORGED = `${b64({ alg: "HS256", typ: "JWT" })}.${b64({ sub: "00000000-0000
 const PROTECTED_GET = [
   "/api/me/../dictionary", "/api/dictionary", "/api/reports/latest", "/api/reports", "/api/reports/2026-09-19", "/api/bookmarks",
   "/api/assistant/history", "/api/university/courses", "/api/university/progress", "/api/rewards/state",
-  "/api/prompt-school", "/api/prompt-school/level-tests/beginner", "/api/prompt-school/chapters/five-pillars", "/api/prompt-school/lessons/five-pillars/pillar-1-context",
+  "/api/prompt-school", "/api/badges", "/api/prompt-school/level-tests/beginner", "/api/prompt-school/chapters/five-pillars", "/api/prompt-school/lessons/five-pillars/pillar-1-context",
   "/api/admin/users", "/api/admin/payments", "/api/admin/reports", "/api/admin/university", "/api/admin/hold-gate-calibration", "/api/admin/assistant-usage",
 ];
 const ADMIN_ONLY_GET = ["/api/admin/users", "/api/admin/payments", "/api/admin/reports", "/api/admin/university", "/api/admin/hold-gate-calibration", "/api/admin/assistant-usage"];
@@ -163,6 +163,24 @@ async function main() {
       const passedFirst = await (await fetch(`${BASE}/api/prompt-school/exercises/${ex1[0].id}/check`, { method: "POST", headers: { "content-type": "application/json", authorization: `Bearer ${userToken}` }, body: JSON.stringify(passBody) })).json();
       const passedAgain = await (await fetch(`${BASE}/api/prompt-school/exercises/${ex1[0].id}/check`, { method: "POST", headers: { "content-type": "application/json", authorization: `Bearer ${userToken}` }, body: JSON.stringify(passBody) })).json();
       check("passing an exercise pays 5 coins the first time only", passedFirst.reward?.coinsAwarded === 5 && passedAgain.reward === null);
+
+      // Badges (PDL-075): granted once by the same routes, readable by their owner only.
+      const lessonDone = await (await fetch(`${BASE}/api/prompt-school/lessons/five-pillars/pillar-1-context/complete`, { method: "POST", headers: { authorization: `Bearer ${userToken}` } })).json();
+      const lessonAgain = await (await fetch(`${BASE}/api/prompt-school/lessons/five-pillars/pillar-1-context/complete`, { method: "POST", headers: { authorization: `Bearer ${userToken}` } })).json();
+      check("finishing a lesson pays 5 coins and grants the first-lesson badge once", lessonDone.reward?.coinsAwarded === 5 && lessonDone.badges?.some((b) => b.id === "first-lesson") && lessonAgain.reward === null && lessonAgain.badges?.length === 0);
+      const badgeList = await (await fetch(`${BASE}/api/badges`, { headers: { authorization: `Bearer ${userToken}` } })).json();
+      check("the badge list shows the earned badge and lists every badge", badgeList.data?.badges?.length >= 12 && badgeList.data.badges.find((b) => b.id === "first-lesson")?.earned === true && badgeList.data.earnedCount === badgeList.data.badges.filter((b) => b.earned).length);
+
+      // University coins (PDL-075): the first completion of a lesson pays 5, a repeat pays nothing.
+      const { data: uniLessons } = await admin.from("lessons").select("id, course_id").eq("status", "published").limit(1);
+      if (uniLessons?.length) {
+        const uni = uniLessons[0];
+        const uniBody = JSON.stringify({ course_id: uni.course_id, lesson_id: uni.id });
+        const uniOne = await (await fetch(`${BASE}/api/university/progress`, { method: "POST", headers: { "content-type": "application/json", authorization: `Bearer ${userToken}` }, body: uniBody })).json();
+        const uniTwo = await (await fetch(`${BASE}/api/university/progress`, { method: "POST", headers: { "content-type": "application/json", authorization: `Bearer ${userToken}` }, body: uniBody })).json();
+        check("a University lesson pays 5 coins the first time and nothing on a repeat", uniOne.reward?.coinsAwarded === 5 && uniTwo.reward === null);
+        await admin.from("course_progress").delete().eq("user_id", tu.id).eq("course_id", uni.course_id);
+      }
       const { count: exEvents } = await admin.from("reward_events").select("*", { count: "exact", head: true }).eq("user_id", tu.id).eq("event_type", "ps_exercise_pass");
       check("exactly one exercise reward event is recorded", exEvents === 1, String(exEvents));
 
@@ -187,6 +205,7 @@ async function main() {
       const goodBody = goodRes.status === 200 ? await goodRes.json() : {};
       check("the correct answers pass the beginner test with a full score, and both attempts are counted", goodRes.status === 200 && goodBody.score === 1 && goodBody.passed === true && goodBody.attempts === 2);
       check("passing a level test pays 150 coins", goodBody.reward?.coinsAwarded === 150);
+      check("passing the beginner level test grants its badge", goodBody.badges?.some((b) => b.id === "ps-beginner"));
       const wrongOnes = Object.fromEntries(ltRows.map((r) => [r.id, r.kind === "choice" ? { index: (r.answer.correct + 1) % 4 } : correctSubmission(r)]));
       const wrongRes = await fetch(`${BASE}/api/prompt-school/level-tests/beginner`, { method: "POST", headers: { "content-type": "application/json", authorization: `Bearer ${userToken}` }, body: JSON.stringify({ answers: wrongOnes }) });
       const wrongBody = wrongRes.status === 200 ? await wrongRes.json() : {};

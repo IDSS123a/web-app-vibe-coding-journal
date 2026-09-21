@@ -2443,6 +2443,24 @@ Still open in phase E: badges, and the same coins for the University.
 **Validation done.** The audit now has the spec's matrix. Core pages (home, login, dashboard, archive, University, Dictionary, Assistant, Prompt School overview, chapter, practice and level test, admin users and review queue) on all 31 spec viewports: 403 page-by-viewport checks, first run 1 finding (the Daily Report date, 24px too wide at 320px, fixed by a width-following mobile date size and word-wrap; a story link and the login inputs had also dropped under 44px with the spec's 1.55 line height and were fixed), rerun 0 findings. Also clean: browser zoom 125% and 200% at 1280x720, pixel ratio 3 at 390x844, reduced motion with pixel ratio 2 at 844x390, plus the earlier 12 viewports on all pages. Measured on every page: h1 in Unbounded, editorial text in Source Serif 4, metadata in Geist Mono, nothing rounded or shadowed outside Campus, no text under 10px, no horizontal overflow, 44px touch targets. 459 unit tests, lint, typecheck, build, security probe 149/149 and the Chrome end-to-end smoke test all pass.
 - Safari, Firefox, iOS and Android Chrome could not be run here (Chrome through Playwright only); their behaviour is reasoned from the CSS used (safe-area insets, dvh with a vh fallback, no reliance on `window.innerWidth`), not observed.
 
+
+## PDL-075 Badges, and coins for the University (phase E2)
+
+**Date:** 2026-09-21. Plan phase E2 (after the KANON redesign, the Director's "Nastavljamo"): recognition badges, and the same server-paid coins for the University's learning steps that Prompt School got in PDL-072. The Director was not asked which badges: a small default set was chosen so the work could proceed, and it is one line per badge in `features/badges/domain.ts` to change.
+
+**University coins** (`features/rewards/domain.ts`, paid by the server routes through the shared `features/rewards/learning.ts`, once each through the reward dedupe key, refused by the public award endpoint): 5 per lesson finished, 30 per chapter quiz passed the first time, 150 per level test passed the first time. The University adds about 1,300 coins (75 lessons, 15 quizzes, 3 tests); with Prompt School the whole learning side is about 4,000 coins, level 8 or 9 of 10.
+
+**Badges** (12, awarded once, never pay coins, recognition only): first lesson, first chapter (a passed Prompt School chapter practice or a University chapter quiz), the three Prompt School level tests (Prompter, Prompt engineer, Prompt architect), Prompt School graduate (every chapter complete), the three University level tests (Vibe-coder, Builder, Expert), seven and thirty day streaks, and the book finder. Storage is migration 032 (`user_badges`, primary key user and badge, row level security on, no policies, applied to production). The catalogue is in code; the table only records who earned what and when. The grant is idempotent (an upsert that ignores duplicates returns only the truly new rows) and never breaks the learning action if it fails.
+- Granted in the same server routes that record the step: Prompt School lesson, exercise check (chapter completion, course completion) and level test; University progress, chapter quiz and level test; and the existing award endpoint for the book and the streak milestones.
+- `GET /api/badges` returns the catalogue with the caller's earned badges; the page `/badges` (Campus layer) shows them earned or locked; the coin balance menu links to it.
+- In the browser one system celebrates everything: a new badge takes the celebration (a level-up that came with it is added to the text), a completed chapter or a passed level test gets the confetti overlay, small payouts a toast. The University quiz and level-test pages no longer run their own separate overlay; a repeat pass, which pays nothing, just sparkles. The book and streak celebrations keep their own text and mention a badge that came with them.
+
+**Verified.** 466 unit tests (badge catalogue and University payouts are tested), lint and typecheck clean, security probe 154 of 154 (anonymous refused on `/api/badges`; a lesson pays 5 and grants the first-lesson badge once; the list shows it; a University lesson pays 5 once; passing the beginner level test grants its badge), Chrome end-to-end smoke test including the new page, responsive audit on the core pages at 320, 390 and 1440 px (0 findings). Test tooling removes the badges and University coins a test run earns.
+
+Not done: certificates, cumulative tests, a real Scan mode.
+
+---
+
 ---
 
 *Vibe-Coding Journal — Project Decision Log — updated as decisions are made.*

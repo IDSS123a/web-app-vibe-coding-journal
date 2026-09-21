@@ -40,11 +40,13 @@ export async function finishLessons(admin, userId, chapter) {
   await admin.from("ps_lesson_progress").upsert(chapter.lessonIds.map((id) => ({ user_id: userId, lesson_id: id })), { onConflict: "user_id,lesson_id", ignoreDuplicates: true });
 }
 
-const PS_REWARD_EVENTS = ["ps_lesson_complete", "ps_exercise_pass", "ps_chapter_complete", "ps_level_test_pass"];
+const PS_REWARD_EVENTS = ["ps_lesson_complete", "ps_exercise_pass", "ps_chapter_complete", "ps_level_test_pass", "uni_lesson_complete", "uni_chapter_quiz_pass", "uni_level_test_pass"];
 const LEVEL_THRESHOLDS = [0, 100, 300, 600, 1000, 1500, 2200, 3000, 4000, 5200];
 
 /** Takes back the coins the Prompt School routes paid to a test account (and the events that record them). */
 async function clearPsRewards(admin, userId) {
+  // Badges earned through the learning routes (PDL-075) belong to the same test run.
+  await admin.from("user_badges").delete().eq("user_id", userId);
   const { data: events } = await admin.from("reward_events").select("id, coins_awarded").eq("user_id", userId).in("event_type", PS_REWARD_EVENTS);
   if (!events || events.length === 0) return;
   const paid = events.reduce((n, e) => n + e.coins_awarded, 0);
@@ -66,8 +68,9 @@ export async function psProgressCount(admin, userId) {
   const a = (await admin.from("ps_exercise_results").select("*", { count: "exact", head: true }).eq("user_id", userId)).count;
   const b = (await admin.from("ps_lesson_progress").select("*", { count: "exact", head: true }).eq("user_id", userId)).count;
   const r = (await admin.from("reward_events").select("*", { count: "exact", head: true }).eq("user_id", userId).in("event_type", PS_REWARD_EVENTS)).count;
+  const bdg = (await admin.from("user_badges").select("*", { count: "exact", head: true }).eq("user_id", userId)).count;
   const c = (await admin.from("ps_level_test_attempts").select("*", { count: "exact", head: true }).eq("user_id", userId)).count;
-  return (a ?? 0) + (b ?? 0) + (c ?? 0) + (r ?? 0);
+  return (a ?? 0) + (b ?? 0) + (c ?? 0) + (r ?? 0) + (bdg ?? 0);
 }
 
 /** The submission that answers a stored exercise correctly, built from its answer key (service role only). */

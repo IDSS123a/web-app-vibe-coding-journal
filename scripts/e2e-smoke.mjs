@@ -233,6 +233,9 @@ try {
     await clearPsProgress(admin, tu.id);
     ok("prompt school test progress removed again", (await psProgressCount(admin, tu.id)) === 0);
   }
+  await visit(userCtx, "/badges", "earned", async (page) => {
+    ok("the badges page lists the badges", (await page.locator("li").count()) >= 12);
+  });
   await visit(userCtx, "/welcome", "Dashboard");
 
   // Bookmark round trip on the dashboard

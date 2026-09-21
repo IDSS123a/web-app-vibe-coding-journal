@@ -16,7 +16,11 @@ export type RewardEventType =
   | "ps_lesson_complete"
   | "ps_exercise_pass"
   | "ps_chapter_complete"
-  | "ps_level_test_pass";
+  | "ps_level_test_pass"
+  // University learning (2026-09-21, PDL-075). Server-paid like the Prompt School ones.
+  | "uni_lesson_complete"
+  | "uni_chapter_quiz_pass"
+  | "uni_level_test_pass";
 
 /**
  * Coin amounts per event, centralized here (P-5-style documented
@@ -39,10 +43,22 @@ export const COIN_AWARDS: Record<RewardEventType, number> = {
   ps_exercise_pass: 5,
   ps_chapter_complete: 50,
   ps_level_test_pass: 150,
+  // University (PDL-075): 75 lessons, 15 chapter quizzes and 3 level tests add up to about 1,300 coins.
+  uni_lesson_complete: 5,
+  uni_chapter_quiz_pass: 30,
+  uni_level_test_pass: 150,
 };
 
 /** Events that only a trusted server route may pay (the public award endpoint refuses them). */
-export const SERVER_ONLY_REWARD_EVENTS: readonly RewardEventType[] = ["ps_lesson_complete", "ps_exercise_pass", "ps_chapter_complete", "ps_level_test_pass"];
+export const SERVER_ONLY_REWARD_EVENTS: readonly RewardEventType[] = [
+  "ps_lesson_complete",
+  "ps_exercise_pass",
+  "ps_chapter_complete",
+  "ps_level_test_pass",
+  "uni_lesson_complete",
+  "uni_chapter_quiz_pass",
+  "uni_level_test_pass",
+];
 
 /**
  * Level thresholds: total coins ever earned (== coin_balance, since

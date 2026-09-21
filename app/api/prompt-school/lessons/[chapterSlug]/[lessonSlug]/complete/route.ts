@@ -8,6 +8,7 @@ import { requirePromptSchoolUser } from "@/features/prompt-school/access";
 import { getChapterState } from "@/features/prompt-school/progress";
 import { getLessonsForChapter, markLessonDone } from "@/features/prompt-school/repository";
 import { awardPromptSchool } from "@/features/prompt-school/rewards";
+import { grantNewBadges } from "@/features/badges/award";
 
 const slugSchema = z.string().regex(/^[a-z0-9-]{1,80}$/);
 
@@ -29,7 +30,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
     await markLessonDone(auth.user.sub, lesson.id);
     const reward = await awardPromptSchool(auth.user.sub, "ps_lesson_complete", lesson.id);
-    return NextResponse.json({ completed: true, reward });
+    const badges = await grantNewBadges(auth.user.sub, ["first-lesson"]);
+    return NextResponse.json({ completed: true, reward, badges });
   } catch (err) {
     console.error(`[PROMPT-SCHOOL] Error completing lesson: ${err instanceof Error ? err.message : String(err)}`);
     return NextResponse.json({ error: "Failed to save progress" }, { status: 500 });
