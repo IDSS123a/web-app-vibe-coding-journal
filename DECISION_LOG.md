@@ -2572,6 +2572,17 @@ Not done: certificates, cumulative tests, a real Scan mode.
 
 ---
 
+
+## PDL-084 Welcome splash screen: off-centre heading, uneven tiles
+
+**Date:** 2026-09-22. Director's report from a real screenshot at a wide screen: the "Welcome to Vibe-Coding Journal" heading was not centred, and the feature tiles had different heights.
+
+**Cause and fix.** `/welcome` is the only page in the app with a centred `k-display` heading; that class caps its width at 16 characters but never centres the box itself, only the text inside it, so once PDL-078 made pages full width the box sat flush left while the text inside it looked centred, a mismatch invisible at the old narrow width. `mx-auto` on the heading fixes it (checked at 320, 390, 1024, 1920 and 2560 px: dead centre every time). The tiles used `align-items: start` (shared with several other grids, kept there since those want each item's own natural height); the welcome grid alone now adds `items-stretch` so cards in the same row share a height, with the button pinned to the bottom of each card.
+
+**Verified.** Chrome smoke test, no horizontal overflow at 390 px.
+
+---
+
 ---
 
 *Vibe-Coding Journal — Project Decision Log — updated as decisions are made.*

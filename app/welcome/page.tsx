@@ -77,18 +77,18 @@ export default function WelcomePage() {
         <p className="text-center text-signal k-label">
           You&apos;re In
         </p>
-        <h1 className="mt-2 text-center text-black k-display">
+        <h1 className="mx-auto mt-2 text-center text-black k-display">
           Welcome to Vibe-Coding Journal
         </h1>
         <p className="mx-auto mt-4 max-w-xl text-center text-sm text-black">
           Your subscription is active. Here is what the Journal offers. Features marked Premium need the $50 tier.
         </p>
 
-        <div className="mt-12 k-cards-lg">
+        <div className="mt-12 k-cards-lg items-stretch">
           {FEATURES.map((feature) => (
             <div
               key={feature.n}
-              className="border border-black p-8"
+              className="flex flex-col border border-black p-8"
             >
               <span className="text-signal k-label">
                 {feature.n}
@@ -97,7 +97,7 @@ export default function WelcomePage() {
               <h2 className="mt-2 text-black k-h2">
                 {feature.title}
               </h2>
-              <p className="mt-3 text-sm leading-relaxed text-black">{feature.body}</p>
+              <p className="mt-3 flex-1 text-sm leading-relaxed text-black">{feature.body}</p>
               <a
                 href={feature.href}
                 className="mt-5 inline-flex h-12 items-center justify-center k-btn k-btn-primary"
