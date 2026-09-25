@@ -86,18 +86,22 @@ export type CreateSourceInput = z.infer<typeof createSourceSchema>;
 export const SOURCE_HEALTH_CONFIG = {
   MAX_FAILURES: 3, // Auto-disable after 3 consecutive failures
   EXPECTED_CADENCE_HOURS: 24, // Warn if last_polled > 24 hours ago
-  // Used TWICE per source now (checkSourceReachability's HEAD check, and
-  // -- since 2026-09-13 -- parseFeed's actual GET, see
-  // features/sources/actions.ts) plus a 1.5s inter-source delay
-  // (INTER_SOURCE_DELAY_MS, same file). With 14 sources as of this
-  // date, the worst case (every source timing out on both checks) is
-  // 14 * (2*HTTP_TIMEOUT_MS + 1.5s) -- at the previous 10s this was
-  // ~301s, uncomfortably at/over Vercel's function duration budget for
-  // a single cron invocation. Lowered to keep that worst case
-  // comfortably under it (14 * 11.5s = 161s) -- 5s is still generous
-  // for a real feed host; the sources actually configured today all
-  // respond in well under 1s in normal operation.
-  HTTP_TIMEOUT_MS: 8000,
+  // Used TWICE per source (checkSourceReachability's HEAD check, and
+  // parseFeed's actual GET, see features/sources/actions.ts), inside
+  // SOURCE_PROCESSING_BUDGET_MS's own outer ceiling on the whole
+  // per-source operation (same file). 5s is still generous for a real
+  // feed host; the sources actually configured respond in well under
+  // 1s in normal operation. This was 8000 until 2026-09-25 (PDL-087) --
+  // a stale value this comment's own math never matched: at 8000 the
+  // worst case per source (2*HTTP_TIMEOUT_MS, before even the outer
+  // per-source ceiling or the inter-source delay) is 16s, and with
+  // sources grown from 14 to 30 (2026-09-19, PDL-059) the batched
+  // worst case for collection alone (POLL_CONCURRENCY, same file) grew
+  // past two and a half minutes -- found live as the reason the Daily
+  // Report stopped being generated at all: Vercel's ~300s function
+  // budget rarely had enough left afterwards for the enrichment phase
+  // that actually turns a scored article into a reportable one.
+  HTTP_TIMEOUT_MS: 5000,
 };
 
 export interface SourceHealthStatus {

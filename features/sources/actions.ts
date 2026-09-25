@@ -74,7 +74,15 @@ const POLL_CONCURRENCY = 4;
 // blocking further progress. A future, more surgical fix would thread
 // real cancellation through every Supabase call individually; this is
 // the fast, safe stopgap for an active outage.
-const SOURCE_PROCESSING_BUDGET_MS = 20000;
+//
+// Lowered from 20000 on 2026-09-25 (PDL-087, Director's choice): must stay comfortably above the two sequential
+// HTTP_TIMEOUT_MS legs it wraps (features/sources/domain.ts, 2*5000 = 10s) plus room for the DB writes, so this
+// is not a free-standing number -- change HTTP_TIMEOUT_MS first if this ever needs to move further. With
+// POLL_CONCURRENCY sources running at a time, the worst case for the whole collection phase (every one of the
+// now 30 sources hanging on everything) is ceil(30/4) * (SOURCE_PROCESSING_BUDGET_MS + INTER_SOURCE_DELAY_MS),
+// about 104s -- down from up to 168s at the old ceiling, and comfortably clear of Vercel's ~300s function
+// budget, leaving real time for the enrichment phase after it (see PDL-087: this is why summaries had stopped).
+const SOURCE_PROCESSING_BUDGET_MS = 12000;
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));

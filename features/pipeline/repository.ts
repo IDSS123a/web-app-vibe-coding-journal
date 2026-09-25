@@ -165,7 +165,15 @@ export async function getArticlesNeedingRelevance(limit: number): Promise<Articl
 
 /**
  * Queue 2: relevant (score at or above the P-0 threshold) but not finished, meaning no
- * confidence score yet, best first. These are the candidates for summaries.
+ * summary yet, best first. These are the candidates for summaries.
+ *
+ * Checks `summary`, not `confidence_score` (changed 2026-09-25, PDL-087, found live: the
+ * two are written in the same try block in features/pipeline/enrichment.ts, confidence
+ * first with no AI call so it can never itself fail, then the AI summarize() call -- if
+ * that one call fails (quota, a timeout, anything), confidence_score is already committed
+ * and this queue, keyed on it, would never offer the article again. 71 articles were stuck
+ * that way, permanently: scored, confident, and silently never summarized. Confidence
+ * alone means nothing to a reader; only a summary makes an article reportable.
  */
 export async function getRelevantUnfinishedArticles(limit: number): Promise<Article[]> {
   if (!supabaseAdmin) {
@@ -175,7 +183,7 @@ export async function getRelevantUnfinishedArticles(limit: number): Promise<Arti
     .from("articles")
     .select("*")
     .is("duplicate_of", null)
-    .is("confidence_score", null)
+    .is("summary", null)
     .gte("relevance_score", 60)
     .order("relevance_score", { ascending: false })
     .order("published_at", { ascending: false })
