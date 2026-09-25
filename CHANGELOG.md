@@ -6,8 +6,14 @@ reconstructed here retroactively — this file covers from its own start
 date forward). One entry per user-visible or operationally significant
 change, newest first.
 
+## 2026-09-25
+
+- **Fixed two broken Dictionary terms, and why approving a lesson could create more (PDL-086).** "Auto-Invocation" and "Skill Listing" now have a topic, a level and a link back to the lesson that proposed them. Approving a University lesson with new terms now files them the same way every other new term is filed, instead of silently skipping that step.
+
 ## 2026-09-22
 
+- **The fixed corner credit line removed (PDL-085).** The small "Prompt Hero Studio™" badge that used to sit in the bottom-right corner of every page is gone. The same studio name and contact e-mail are already in the footer at the bottom of every page, next to the Terms, Privacy, Refund and Subscription links.
+- **Fixed the welcome page (PDL-084).** After a payment the "Welcome to Vibe-Coding Journal" heading is properly centred, and the feature tiles in a row now share the same height.
 - **Admin panel checked end to end, and the sign-in heading fixed (PDL-083).** Changing a user's tier now shows its confirmation, admins have an Admin link back into their panel, the dark admin pages no longer have unreadable text, there is an AI usage page, and the heading of the sign-in and register cards no longer breaks inside a word on wide screens.
 - **Ready for launch (PDL-079 to PDL-082).** The site is prepared for its own address, real PayPal payments and the law: Terms of Use, Privacy Policy, Refund Policy, Subscription and renewal, and a cookie notice; a page where you can download all your data or delete your account; Forgot password; a free-trial banner and a renewal banner; and protection against paying twice. New: certificates of completion you can print or save as a PDF and anyone can verify, a Try it live sandbox task in every Prompt School chapter, and Scan mode for the Daily Report.
 

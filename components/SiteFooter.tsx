@@ -1,6 +1,7 @@
 /**
- * The footer of every page (PDL-079): the legal pages, and the studio behind the product. The fixed credit line in the corner
- * (SiteCredit) stays; this is the part a reader, a customer or a regulator looks for at the bottom of a page.
+ * The footer of every page (PDL-079, PDL-085): the legal pages, and the studio behind the product. This is the part a
+ * reader, a customer or a regulator looks for at the bottom of a page; the separate fixed corner credit line (SiteCredit)
+ * was removed once this footer already covered the same disclosure.
  */
 import Link from "next/link";
 import { LEGAL_PAGES } from "@/features/legal/content";

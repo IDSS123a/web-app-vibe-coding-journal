@@ -2583,6 +2583,30 @@ Not done: certificates, cumulative tests, a real Scan mode.
 
 ---
 
+## PDL-085 The fixed corner credit line removed (amends PDL-039)
+
+**Date:** 2026-09-22. The Director: now that the legal pages (`/refunds`, `/cookies`, `/subscription`, and `/terms`, `/privacy` alongside them, PDL-079) establish who stands behind the product, remove the whole fixed bottom-right corner inscription ("Prompt Hero Studio™", the e-mail and the logo).
+
+**Change.** `components/SiteCredit.tsx` (the small fixed badge on every page, including `/admin`, added 2026-09-15 by PDL-039) is deleted, and its one use in `app/layout.tsx` removed. The public-identity disclosure P-15 requires does not disappear: `components/SiteFooter.tsx` (PDL-079) already prints the same brand name and e-mail, with the legal pages, at the bottom of every non-admin page, so nothing was left undisclosed. `CONSTITUTION.md` P-15 updated to describe this as the current mechanism; the PDL-039 entry above stays as the historical record of why the corner line existed.
+
+**Not changed:** the legal footer itself, the admin pages (which never had a footer to begin with, only the corner badge, now also gone from them), and the mascot icon used elsewhere in the app (rewards, welcome page) — only the standalone credit badge and its own copy of the favicon.
+
+**Verified.** Typecheck and lint clean; grepped the whole app for any remaining `SiteCredit` import (none).
+
+---
+
+## PDL-086 Two broken public dictionary terms, and why they could never self-heal
+
+**Date:** 2026-09-25. Found while verifying PDL-085 (`npm run check:integrity` failed for the first time all session): two terms in the live public Dictionary, `Auto-Invocation` and `Skill Listing`, had no slug, no topic, no level and no tier, and were already being served by `/api/dictionary` to every Premium subscriber. The Director: fix those two terms.
+
+**Root cause.** `addTerm()` (`features/dictionary/repository.ts`), called by `POST /api/admin/university/[lessonId]/review` the moment an admin approves a University lesson that proposed new terms, wrote only `term`, `definition` and `source_lesson_id` -- nothing else. Two columns this left at their table default turned out to matter: `slug` has no default at all (stays null forever, nothing ever backfills it) and `classified` defaults to `true` (`migration 027`), so a term inserted this way looks, to the hourly classification backlog (`classifyPendingTerms`, which only ever looks at `classified = false`), exactly like a term that was already filed under a topic -- it is silently skipped forever instead of being queued. The Director approved this specific lesson on 2026-09-21 (confirmed: `reviewed_by` is her own admin account); the two broken rows date from that exact moment.
+
+**Fix.** `addTerm()` now inserts a complete row: a unique slug (`slugify()` plus a real collision check, since `dictionary_terms.slug` carries a partial unique index once non-null, migration 025, unlike the code comment's old claim), `origin: "lesson"`, `status: "published"`, empty `aliases`/`related_terms`, and, critically, `classified: false` -- so a newly approved term now lands in the exact same queue as a freshly discovered or imported one and is filed under a topic within the hour, no new mechanism needed. Idempotency is now checked explicitly (a duplicate term is a genuine no-op) rather than relying on the upsert's `onConflict` alone.
+
+**The two existing rows** were repaired directly: given a unique slug, then classified with the same `classifyTerms()` AI call the pipeline itself uses (`Auto-Invocation` -> agents/intermediate/core, `Skill Listing` -> prompts-context/intermediate/core). Checked the rest of the Dictionary for the same silent failure (`classified = true` with no `category_group`): none found: these two were the only casualties.
+
+**Verified.** `npm run check:integrity` passes again. A direct call to the fixed `addTerm()` produces a complete row and stays idempotent on a second call (checked live, then deleted). Security probe gained a permanent end-to-end check (218 of 218 now, two of them new): a throwaway lesson with a proposed term, approved through the real route, must publish a complete, still-unclassified dictionary row; everything it creates is deleted again. Admin walkthrough and Chrome smoke test both still pass in full.
+
 ---
 
 *Vibe-Coding Journal — Project Decision Log — updated as decisions are made.*

@@ -187,6 +187,28 @@ async function main() {
     }
   }
 
+  // Approving a University lesson with proposed dictionary terms (PDL-086): found live, two published terms with no slug and
+  // no topic, invisible to the classification backlog because it only looks at classified = false, and this table defaults
+  // classified to true. A throwaway course-less lesson, approved through the real route, then everything removed again.
+  {
+    const { data: course } = await admin.from("courses").select("id").eq("slug", "beginner").single();
+    const term = `Probe dictionary term ${Date.now()}`;
+    const { data: lesson, error: le } = await admin
+      .from("lessons")
+      .insert({ course_id: course.id, slug: `probe-${Date.now()}`, title: "Probe lesson (deleted by the probe)", order_index: 9999, is_core: false, status: "pending_review", body: "Probe body.", candidate_terms: [{ term, definition: "A throwaway definition, deleted by the probe." }] })
+      .select("id")
+      .single();
+    if (le) throw le;
+    try {
+      check("approving a lesson with a proposed term publishes it with a slug, queued for classification", (await call("POST", `/api/admin/university/${lesson.id}/review`, { token: adminToken, body: { decision: "published" } })) === 200);
+      const { data: row } = await admin.from("dictionary_terms").select("slug, origin, status, classified").eq("term", term).maybeSingle();
+      check("the new term is complete: a slug, origin lesson, published, and not yet classified", row?.slug != null && row.slug !== "" && row.origin === "lesson" && row.status === "published" && row.classified === false);
+    } finally {
+      await admin.from("dictionary_terms").delete().eq("term", term);
+      await admin.from("lessons").delete().eq("id", lesson.id);
+    }
+  }
+
   // Your data and deleting your account (GDPR, PDL-079).
   {
     const exp = await fetch(`${BASE}/api/account/export`, { headers: { authorization: `Bearer ${userToken}` } });

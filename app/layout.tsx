@@ -2,7 +2,6 @@ import type { Metadata, Viewport } from "next";
 import { Figtree, Geist_Mono, Inter, Source_Serif_4, Unbounded } from "next/font/google";
 import "./globals.css";
 import { SiteNav } from "@/components/SiteNav";
-import { SiteCredit } from "@/components/SiteCredit";
 import { SiteFooter } from "@/components/SiteFooter";
 import { HideOnAdmin } from "@/components/HideOnAdmin";
 import { CookieNotice } from "@/components/legal/CookieNotice";
@@ -36,8 +35,8 @@ export const metadata: Metadata = {
   // apple-icon.png, favicon.ico), which Next links into <head> automatically.
   // Until 2026-09-19 only public/favicon.png existed -- a 640x640 / 107 KB image
   // nothing in <head> pointed at -- so browsers asked for /favicon.ico, got a 404
-  // and showed no tab icon (D1). public/favicon.png stays: the Mascot and
-  // SiteCredit components render it in-page.
+  // and showed no tab icon (D1). public/favicon.png stays: the Mascot component
+  // renders it in-page.
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -50,7 +49,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <HideOnAdmin>
             <SiteFooter />
           </HideOnAdmin>
-          <SiteCredit />
           <CookieNotice />
         </RewardsProvider>
       </body>

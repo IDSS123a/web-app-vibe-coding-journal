@@ -493,13 +493,18 @@ this project is not done until:
   without explicit instruction.
 - **Contact channel:** a Contact form on the site delivers to
   `ai-hero-studio@outlook.com`. No separate support alias.
-- **Developer credit (2026-09-15, PDL-039 — amends the earlier "no
-  public display of the admin email" clause):** `ai-hero-studio@outlook.com`
-  is now shown publicly, alongside the brand name, in a small credit
-  line fixed to the bottom-right corner of every page (`components/
-  SiteCredit.tsx`, rendered site-wide including `/admin`) — this
-  supersedes the prior blanket "no public display" rule, which stands
-  only for any OTHER admin-facing address, not this one.
+- **Developer credit (2026-09-15, PDL-039 — amended 2026-09-22, PDL-085):**
+  `ai-hero-studio@outlook.com` is shown publicly, alongside the brand
+  name — the earlier "no public display of the admin email" clause
+  stands only for any OTHER admin-facing address, not this one. Until
+  2026-09-22 this ran as its own small credit line fixed to the
+  bottom-right corner of every page (`components/SiteCredit.tsx`,
+  including `/admin`). The Director had that corner line removed once
+  the legal footer (`components/SiteFooter.tsx`, PDL-079: Terms,
+  Privacy, Refund and Subscription pages, plus the studio name and
+  this same e-mail) already carried the same disclosure at the bottom
+  of every non-admin page — a second, fixed copy was redundant.
+  `SiteCredit.tsx` was deleted; the footer is the current mechanism.
 
 ---
 
