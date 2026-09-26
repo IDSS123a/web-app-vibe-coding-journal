@@ -20,6 +20,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/db/client";
+import { fetchMe } from "@/lib/auth/fetch-me";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -48,8 +49,7 @@ export default function LoginPage() {
     let isAdmin = false;
     try {
       if (accessToken) {
-        const res = await fetch("/api/me", { headers: { authorization: `Bearer ${accessToken}` } });
-        const me = await res.json();
+        const me = await fetchMe(accessToken);
         isAdmin = Boolean(me.isAdmin);
       }
     } catch {

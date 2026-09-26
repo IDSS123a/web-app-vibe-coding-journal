@@ -22,6 +22,7 @@ import Link from "next/link";
 import { useEffect, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "@/lib/auth/use-session";
+import { fetchMe } from "@/lib/auth/fetch-me";
 import { PayPalCheckout } from "@/components/PayPalCheckout";
 import { PaymentAssurance } from "@/components/PaymentAssurance";
 import { BASIC_PRICE_USD, PREMIUM_PRICE_USD, centsPerDay } from "@/lib/pricing";
@@ -44,8 +45,7 @@ export function SubscriptionGuard({ children }: { children: ReactNode }) {
   function checkAccess() {
     if (!token) return;
     let active = true;
-    fetch("/api/me", { headers: { authorization: `Bearer ${token}` } })
-      .then((r) => r.json())
+    fetchMe(token)
       .then((d: MeResponse) => {
         if (!active) return;
         setAccessReason(d.accessReason);
@@ -77,8 +77,7 @@ export function SubscriptionGuard({ children }: { children: ReactNode }) {
     let attempts = 0;
     const interval = setInterval(() => {
       attempts += 1;
-      fetch("/api/me", { headers: { authorization: `Bearer ${token}` } })
-        .then((r) => r.json())
+      fetchMe(token)
         .then((d: MeResponse) => {
           if (d.hasAccess) {
             setAccessReason(d.accessReason);

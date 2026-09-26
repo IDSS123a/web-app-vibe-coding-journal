@@ -22,6 +22,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { useSession } from "@/lib/auth/use-session";
+import { fetchMe } from "@/lib/auth/fetch-me";
 import { PremiumPitch, type PremiumFeature } from "@/components/PremiumPitch";
 
 type GuardState = "checking" | "anon" | "blocked" | "accountBlocked" | "ok";
@@ -59,8 +60,7 @@ export function PremiumGuard({ children, accessKey = "hasUniversityAccess", feat
       return;
     }
     let active = true;
-    fetch("/api/me", { headers: { authorization: `Bearer ${token}` } })
-      .then((r) => r.json())
+    fetchMe(token)
       .then((d: MeResponse) => {
         if (!active) return;
         // A real admin block gets its own message: "Premium required" would be misleading

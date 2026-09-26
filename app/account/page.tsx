@@ -10,6 +10,7 @@ import Link from "next/link";
 import { useEffect, useState, type FormEvent } from "react";
 import { supabase } from "@/lib/db/client";
 import { useSession } from "@/lib/auth/use-session";
+import { fetchMe } from "@/lib/auth/fetch-me";
 import { ACCOUNT_DELETE_CONFIRMATION } from "@/features/account/domain";
 
 interface Me {
@@ -31,8 +32,7 @@ export default function AccountPage() {
   useEffect(() => {
     if (loading || !token) return;
     let active = true;
-    fetch("/api/me", { headers: { authorization: `Bearer ${token}` } })
-      .then((r) => r.json())
+    fetchMe(token)
       .then((d: Me) => {
         if (active) setMe(d);
       })

@@ -9,6 +9,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useSession } from "@/lib/auth/use-session";
+import { fetchMe } from "@/lib/auth/fetch-me";
 import { REFUND_DAYS } from "@/features/legal/content";
 
 export function usePayPalMode(): "sandbox" | "live" {
@@ -17,8 +18,7 @@ export function usePayPalMode(): "sandbox" | "live" {
   useEffect(() => {
     if (loading || !token) return;
     let active = true;
-    fetch("/api/me", { headers: { authorization: `Bearer ${token}` } })
-      .then((r) => r.json())
+    fetchMe(token)
       .then((d: { paypalMode?: "sandbox" | "live" }) => {
         if (active && d.paypalMode) setMode(d.paypalMode);
       })

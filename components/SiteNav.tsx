@@ -34,6 +34,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { useSession } from "@/lib/auth/use-session";
+import { fetchMe } from "@/lib/auth/fetch-me";
 import { supabase } from "@/lib/db/client";
 import { CoinBalance } from "@/components/rewards/CoinBalance";
 
@@ -61,8 +62,7 @@ export function SiteNav() {
       return;
     }
     let active = true;
-    fetch("/api/me", { headers: { authorization: `Bearer ${token}` } })
-      .then((r) => r.json())
+    fetchMe(token)
       .then((d: { isAdmin?: boolean }) => {
         if (active) setIsAdmin(Boolean(d.isAdmin));
       })

@@ -9,6 +9,7 @@
 
 import { useEffect, useState } from "react";
 import { useSession } from "@/lib/auth/use-session";
+import { fetchMe } from "@/lib/auth/fetch-me";
 import { PayPalCheckout } from "@/components/PayPalCheckout";
 import { BASIC_PRICE_USD, PREMIUM_PRICE_USD } from "@/lib/pricing";
 import { RENEWAL_WINDOW_DAYS } from "@/features/payments/domain";
@@ -31,8 +32,7 @@ export function RenewalBanner() {
   useEffect(() => {
     if (loading || !token) return;
     let active = true;
-    fetch("/api/me", { headers: { authorization: `Bearer ${token}` } })
-      .then((r) => r.json())
+    fetchMe(token)
       .then((d: Me) => {
         if (active) setMe(d);
       })
@@ -51,8 +51,7 @@ export function RenewalBanner() {
     let attempts = 0;
     const interval = setInterval(() => {
       attempts += 1;
-      fetch("/api/me", { headers: { authorization: `Bearer ${token}` } })
-        .then((r) => r.json())
+      fetchMe(token)
         .then((d: Me) => {
           if (d.subscriptionExpiresAt && new Date(d.subscriptionExpiresAt).getTime() > endsAt.getTime()) {
             setRenewed(true);

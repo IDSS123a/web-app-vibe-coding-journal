@@ -13,6 +13,7 @@
 import Link from "next/link";
 import { useEffect, useState, type ReactNode } from "react";
 import { useSession } from "@/lib/auth/use-session";
+import { fetchMe } from "@/lib/auth/fetch-me";
 
 type GuardState = "checking" | "admin" | "anon" | "forbidden";
 
@@ -27,8 +28,7 @@ export function AdminGuard({ children }: { children: ReactNode }) {
       return;
     }
     let active = true;
-    fetch("/api/me", { headers: { authorization: `Bearer ${token}` } })
-      .then((r) => r.json())
+    fetchMe(token)
       .then((d) => {
         if (active) setState(d.isAdmin ? "admin" : "forbidden");
       })

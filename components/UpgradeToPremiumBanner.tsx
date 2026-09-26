@@ -16,6 +16,7 @@
 
 import { useEffect, useState } from "react";
 import { useSession } from "@/lib/auth/use-session";
+import { fetchMe } from "@/lib/auth/fetch-me";
 import { PayPalCheckout } from "@/components/PayPalCheckout";
 import { PREMIUM_PRICE_USD, UPGRADE_PRICE_USD } from "@/lib/pricing";
 
@@ -34,8 +35,7 @@ export function UpgradeToPremiumBanner() {
   useEffect(() => {
     if (loading || !token) return;
     let active = true;
-    fetch("/api/me", { headers: { authorization: `Bearer ${token}` } })
-      .then((r) => r.json())
+    fetchMe(token)
       .then((d: MeResponse) => {
         if (active) setEligible(d.hasAccess && d.subscriptionTier === "basic" && d.subscriptionStatus === "active");
       })
@@ -50,8 +50,7 @@ export function UpgradeToPremiumBanner() {
     let attempts = 0;
     const interval = setInterval(() => {
       attempts += 1;
-      fetch("/api/me", { headers: { authorization: `Bearer ${token}` } })
-        .then((r) => r.json())
+      fetchMe(token)
         .then((d: MeResponse) => {
           if (d.subscriptionTier === "premium") {
             setUpgraded(true);

@@ -17,6 +17,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { fetchMe, type MeResponse } from "@/lib/auth/fetch-me";
 import { PayPalCheckout } from "@/components/PayPalCheckout";
 import { PaymentAssurance } from "@/components/PaymentAssurance";
 import { BASIC_PRICE_USD, PREMIUM_PRICE_USD, UPGRADE_PRICE_USD, centsPerDay, perMonthUsd } from "@/lib/pricing";
@@ -87,9 +88,8 @@ export function PremiumPitch({ feature, audience, token, onUnlocked, unlockedKey
     let attempts = 0;
     const interval = setInterval(() => {
       attempts += 1;
-      fetch("/api/me", { headers: { authorization: `Bearer ${token}` } })
-        .then((r) => r.json())
-        .then((d: Record<string, unknown>) => {
+      fetchMe(token)
+        .then((d: MeResponse) => {
           if (d[unlockedKey] === true) {
             clearInterval(interval);
             onUnlocked();

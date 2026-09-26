@@ -9,6 +9,7 @@
 
 import { useEffect, useState } from "react";
 import { useSession } from "@/lib/auth/use-session";
+import { fetchMe } from "@/lib/auth/fetch-me";
 import { PayPalCheckout } from "@/components/PayPalCheckout";
 import { PaymentAssurance } from "@/components/PaymentAssurance";
 import { BASIC_PRICE_USD, PREMIUM_PRICE_USD } from "@/lib/pricing";
@@ -31,8 +32,7 @@ export function TrialBanner() {
   useEffect(() => {
     if (loading || !token) return;
     let active = true;
-    fetch("/api/me", { headers: { authorization: `Bearer ${token}` } })
-      .then((r) => r.json())
+    fetchMe(token)
       .then((d: Me) => {
         if (active) setMe(d);
       })
@@ -47,8 +47,7 @@ export function TrialBanner() {
     let attempts = 0;
     const interval = setInterval(() => {
       attempts += 1;
-      fetch("/api/me", { headers: { authorization: `Bearer ${token}` } })
-        .then((r) => r.json())
+      fetchMe(token)
         .then((d: Me) => {
           if (d.subscriptionStatus === "active") {
             setDone(true);

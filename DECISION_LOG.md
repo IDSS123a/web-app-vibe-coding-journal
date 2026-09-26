@@ -2678,4 +2678,20 @@ A third real attempt delivered successfully (landed in spam, expected for a doma
 
 ---
 
+## PDL-091 Archive and Dictionary felt slow: two real, separate causes
+
+**Date:** 2026-09-26. The Director: `/archive` and the Dictionary feel extremely slow to load, check all URLs.
+
+**Measured live** (Performance API, real requests, both as the admin account): `/archive` took about 2.1s before content appeared; `/dictionary` about 4.6s. Two distinct, unrelated causes, both real:
+
+**1. `/api/dictionary` alone took 3.2s server-side for 236KB.** `getAllTerms()` (`features/dictionary/repository.ts`) pages through the roughly 2,600 published terms in blocks of 1,000 (PostgREST's own per-request cap) -- but the paging loop awaited each block before requesting the next, three sequential round trips where one would do. Fixed: a cheap `count`-only request up front, then every page requested with `Promise.all` instead of a sequential loop. Behaviour and the existing 5-minute warm-instance cache are unchanged; only how the uncached path fills that cache is different.
+
+**2. Every page independently re-checks `/api/me`, once per component that needs it.** `/archive` has two: `SiteNav` (every page, admin-link check) and `SubscriptionGuard` (the paywall). `/dictionary` also has two: `SiteNav` and `PremiumGuard`. Measured: both calls start together and each independently costs 0.7 to 1.2s server-side (`getVerifiedUser`'s two sequential Supabase round trips, `lib/auth/verify-token.ts`) -- genuinely wasted, not overlap-for-free, since the *page's own* data fetch (`/api/reports`, `/api/dictionary`) does not start until both finish. The same pattern exists in eleven components in total (`SiteNav`, `AdminGuard`, `SubscriptionGuard`, `PremiumGuard`, `TrialBanner`, `RenewalBanner`, `UpgradeToPremiumBanner`, `PremiumPitch`, `PaymentAssurance`, the login page, the account page), several of which also legitimately *poll* `/api/me` every 2s after a payment to detect webhook activation -- so the fix could not simply be "fetch once, cache forever."
+
+**Fix.** A new `lib/auth/fetchMe(token)` (`lib/auth/fetch-me.ts`) de-duplicates only *concurrent, in-flight* requests for the same token -- two components mounting in the same tick get the one real request and its one answer; a call made after the in-flight one has already resolved (a poll two seconds later, a different page) still fires fresh. All eleven call sites now use it instead of their own inline `fetch("/api/me", ...)`; none of their own polling intervals, timeouts or business logic changed.
+
+**Verified.** Typecheck and the full suite (519 tests) pass. Confirmed live, locally, signed in as the admin account: `/archive` and `/dictionary` each now make exactly one `/api/me` request (was two on both), both pages render their real content with no console errors.
+
+---
+
 *Vibe-Coding Journal — Project Decision Log — updated as decisions are made.*
