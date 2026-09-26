@@ -2627,4 +2627,26 @@ Not done: certificates, cumulative tests, a real Scan mode.
 
 ---
 
+## PDL-088 Gemini key count silently capped at 8
+
+**Date:** 2026-09-25. Same evening as PDL-087: the triggered production run had confirmed the collection-time fix worked (23.8s, down from up to 245s) but still produced zero new summaries, because of a separate, live Gemini quota-exhaustion problem (503s, one key's model unavailable, another rate-limited at the free tier's 20 requests/day/key/model ceiling). The Director added `GEMINI_API_KEY_9` and `GEMINI_API_KEY_10` to `.env.local` to relieve it.
+
+**Found while checking the addition would actually take effect.** `loadApiKeys()` (`lib/ai/gemini-provider.ts`) looped `for (let i = 1; i <= 8; i++)` -- a number hardcoded since PDL-012 (Sprint 06, when 8 was in fact the whole set), never revisited when the set could grow. Keys 9 and 10 would have been silently invisible to the provider, both locally and once added to Vercel: no error, no warning, just never rotated to.
+
+**Fix.** Bound raised to 30 -- generous headroom over any key count added so far, and cheap (an empty env lookup per unused index past the real set). The key-rotation test's own environment cleanup (`gemini-provider.test.ts`) was widened to match, so a real `GEMINI_API_KEY_9`+ left in a developer's shell can't leak into an unrelated test's key count.
+
+**Still needed, not done here:** the two new keys exist only in the local `.env.local` -- production reads Vercel's own Production environment variables, a separate store (confirmed repeatedly this project, e.g. the RESEND_API_KEY divergence found the same day in PDL-087). They will not help the live site's quota until the Director adds `GEMINI_API_KEY_9` and `GEMINI_API_KEY_10` in Vercel (Project Settings -> Environment Variables -> Production) and a redeploy picks them up.
+
+**Verified.** Typecheck and the Gemini provider's 17 unit tests pass.
+
+---
+
+## PDL-089 "More lessons" job kept, decided (resolves the PDL-083 open question)
+
+**Date:** 2026-09-26. PDL-083 found that `/api/cron/university-generate` proposes one supplementary University lesson a week, an admin must approve it before it reaches anyone, and left whether to keep it as the Director's call. Her decision: keep it. Her reasoning, in her own words: the job is genuinely useful, does not conflict with PDL-076 (never let the app feel like it grows itself) because nothing in the product ever says "automated process," "AI-generated," or anything like it near a lesson or the "More lessons" list -- a learner only ever sees a new lesson appear, which reads as positive, not as the app visibly filling itself. Checked before accepting the reasoning: grepped `app/university` for any AI/automation disclosure text near a lesson -- none exists, confirming the premise.
+
+**No change made.** The job, the admin approval gate, and the "More lessons" list all stay exactly as PDL-083 described them.
+
+---
+
 *Vibe-Coding Journal — Project Decision Log — updated as decisions are made.*

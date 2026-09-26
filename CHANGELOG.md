@@ -8,6 +8,7 @@ change, newest first.
 
 ## 2026-09-25
 
+- **Fixed a hardcoded limit that would have silently ignored new Gemini keys (PDL-088).** The AI provider only ever looked for up to 8 keys; it now looks for up to 30, so keys added to relieve daily quota limits actually get used.
 - **Fixed why the Daily Report had stopped (PDL-087).** No new report had been generated in three days: collecting from 30 sources could take long enough that summarising never got its turn before time ran out. Sources now wait less before being skipped, and an article that got scored but never summarised is no longer permanently skipped.
 - **Fixed two broken Dictionary terms, and why approving a lesson could create more (PDL-086).** "Auto-Invocation" and "Skill Listing" now have a topic, a level and a link back to the lesson that proposed them. Approving a University lesson with new terms now files them the same way every other new term is filed, instead of silently skipping that step.
 

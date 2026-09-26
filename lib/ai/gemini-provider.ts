@@ -168,21 +168,29 @@ export class GeminiUnavailableError extends Error {
 
 /**
  * PDL-012 simplification (Sprint 06, 2026-07-18): there is exactly one
- * Gemini key set (GEMINI_API_KEY_1..8), used for both local/preview work
- * and production, by explicit Director decision — PDL-012 states plainly
- * "one set for now, pending a separate non-ToS-risk production AI
+ * Gemini key set (GEMINI_API_KEY_1, _2, ...), used for both local/preview
+ * work and production, by explicit Director decision — PDL-012 states
+ * plainly "one set for now, pending a separate non-ToS-risk production AI
  * strategy." A VERCEL_ENV-based dev/prod branch (with a `_DEV_` name and
  * symmetric fallback) briefly existed here and was deliberately removed:
  * with only one real set, the branch was complexity with no corresponding
  * need, and a `_DEV_`-named secret sitting in the Vercel Production
  * dashboard reads as a mistake to anyone who looks (Director, future ACA,
  * future collaborator) even though it wasn't one. No functional behavior
- * changes: the previous fallback logic always resolved to this same 8-key
- * set anyway, since only one set was ever actually populated.
+ * changes: the previous fallback logic always resolved to this same
+ * key set anyway, since only one set was ever actually populated.
+ *
+ * The scan bound (2026-09-25, PDL-088): was hardcoded to 8, silently
+ * ignoring GEMINI_API_KEY_9 and _10 the Director added to relieve the
+ * 2026-09-15/09-24 quota-exhaustion pattern (20 requests/day/key/model on
+ * the free tier). Raised to 30 -- comfortably above any key count added
+ * so far, cheap to scan (an empty env lookup per missing index), and it
+ * stops at the first genuinely undefined key anyway since keys are added
+ * densely from _1 up.
  */
 function loadApiKeys(): string[] {
   const keys: string[] = [];
-  for (let i = 1; i <= 8; i++) {
+  for (let i = 1; i <= 30; i++) {
     const key = process.env[`GEMINI_API_KEY_${i}`];
     if (key) keys.push(key);
   }

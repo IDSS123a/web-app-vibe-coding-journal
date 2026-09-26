@@ -18,7 +18,7 @@ beforeEach(() => {
   process.env.GEMINI_API_KEY_1 = "key-one";
   process.env.GEMINI_API_KEY_2 = "key-two";
   process.env.GEMINI_API_KEY_3 = "key-three";
-  for (let i = 4; i <= 8; i++) delete process.env[`GEMINI_API_KEY_${i}`];
+  for (let i = 4; i <= 30; i++) delete process.env[`GEMINI_API_KEY_${i}`];
   process.env.GEMINI_FALLBACK_MODELS = ""; // the rotation tests below are about keys, one model
   fetchMock = vi.fn();
   vi.stubGlobal("fetch", fetchMock);
