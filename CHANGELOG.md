@@ -6,6 +6,11 @@ reconstructed here retroactively — this file covers from its own start
 date forward). One entry per user-visible or operationally significant
 change, newest first.
 
+## 2026-09-26
+
+- **Fixed the real reason the Daily Report and University lesson generation were stuck, even with 10 Gemini keys (PDL-090).** When one key took too long to answer, the app used to give up completely instead of trying the next key. Now it moves on, the same way it already did for a key that was simply out of quota.
+- **Fixed password reset e-mails not arriving (PDL-090, configuration only, no code change).** Two separate problems in the mail server settings: an outdated key, then a sender address on a domain that was never verified for sending. Confirmed live: the e-mail now arrives and the link works.
+
 ## 2026-09-25
 
 - **Fixed a hardcoded limit that would have silently ignored new Gemini keys (PDL-088).** The AI provider only ever looked for up to 8 keys; it now looks for up to 30, so keys added to relieve daily quota limits actually get used.

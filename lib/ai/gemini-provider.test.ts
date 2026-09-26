@@ -83,6 +83,57 @@ describe("GeminiProvider key rotation", () => {
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
+  it("a per-key timeout rotates to the next key instead of failing the whole call (PDL-090)", async () => {
+    vi.useFakeTimers();
+    try {
+      fetchMock
+        .mockImplementationOnce(
+          (_url: string, opts: { signal: AbortSignal }) =>
+            new Promise((_resolve, reject) => {
+              opts.signal.addEventListener("abort", () => reject(new Error("aborted")));
+            }),
+        )
+        .mockResolvedValueOnce(res(200, OK_BODY));
+
+      const p = await provider();
+      const resultPromise = p.assessRelevance({ title: "t", summary: "s" });
+      await vi.advanceTimersByTimeAsync(25000);
+      const out = await resultPromise;
+
+      expect(out.relevanceScore).toBe(80);
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+      expect(urlOf(0)).toContain("key=key-one");
+      expect(urlOf(1)).toContain("key=key-two");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("timeouts on every key report unavailability, not quota/suspension (PDL-090)", async () => {
+    vi.useFakeTimers();
+    try {
+      fetchMock.mockImplementation(
+        (_url: string, opts: { signal: AbortSignal }) =>
+          new Promise((_resolve, reject) => {
+            opts.signal.addEventListener("abort", () => reject(new Error("aborted")));
+          }),
+      );
+
+      const p = await provider();
+      const resultPromise = p.assessRelevance({ title: "t", summary: "s" });
+      const assertion = expect(resultPromise).rejects.toMatchObject({ name: "GeminiUnavailableError" });
+      // One 25s timeout per key, three keys, sequential -- advance once per key
+      // so each key's own setTimeout fires before the next key is even tried.
+      await vi.advanceTimersByTimeAsync(25000);
+      await vi.advanceTimersByTimeAsync(25000);
+      await vi.advanceTimersByTimeAsync(25000);
+      await assertion;
+      expect(fetchMock).toHaveBeenCalledTimes(3); // all 3 keys tried, not just the first
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("a mix of one 503 and quota errors on the rest still reports quota exhaustion", async () => {
     fetchMock
       .mockResolvedValueOnce(err(503, "UNAVAILABLE"))

@@ -413,9 +413,31 @@ async function callGeminiJSONForModel(
         });
       } catch {
         if (controller.signal.aborted) {
-          throw new GeminiUnavailableError(`Gemini request timed out after ${timeoutMs}ms`);
+          // PDL-090 (found live 2026-09-26, the daily report still not
+          // generating with 10 keys configured): this used to throw
+          // immediately, ending the whole call on the FIRST key that took too
+          // long -- never trying any of the remaining keys, however many were
+          // configured. A timeout says nothing about the other keys' health
+          // (unlike a genuine network error, see below); rotate exactly like
+          // a classified failure, so one slow key can no longer block the
+          // other nine.
+          const nextIndex = i + 1;
+          if (nextIndex < keys.length) {
+            console.warn(`[GEMINI] key ${i + 1} timed out after ${timeoutMs}ms, trying key ${nextIndex + 1}`);
+            continue;
+          }
+          console.warn(`[GEMINI] key ${i + 1} timed out after ${timeoutMs}ms, no more keys configured`);
+          if (!sawAuthOrSuspended && !sawModelUnavailable && !sawRateLimit && !sawOverloaded) {
+            throw new GeminiUnavailableError(`Gemini did not respond within ${timeoutMs}ms on any of the ${keys.length} key(s)`);
+          }
+          throw new GeminiKeysExhaustedError(
+            keys.length,
+            sawAuthOrSuspended ? "suspected_suspension" : sawModelUnavailable ? "model_deprecated" : "quota",
+          );
         }
-        // Network-level failure — not a per-key issue, don't rotate keys, fail this call.
+        // A genuine network-level failure (DNS, connection refused, TLS) happens
+        // before any key-specific response and isn't a per-key issue, so
+        // rotating keys can't help — fail this call immediately.
         throw new Error("Gemini request failed (network error)");
       }
 
