@@ -127,6 +127,18 @@ export async function runEnrichment(options: EnrichmentOptions): Promise<Enrichm
 
   const canSpend = () => options.maxAiCalls === undefined || result.aiCalls < options.maxAiCalls;
 
+  // Stage 1 (relevance scoring) must not be allowed to consume the ENTIRE deadline when
+  // its own backlog is large -- found live 2026-09-26: a multi-day outage left hundreds
+  // of unscored articles queued, and stage 1 alone filled every single run's whole time
+  // budget on its own, leaving stage 2 (summaries -- the only stage that actually
+  // produces a reportable article) zero time, run after run, with the report staying
+  // empty no matter how many runs went by. Reserve roughly half of whatever time is left
+  // when this run starts for stage 2; stage 1 still gets the rest, which in the normal
+  // small-backlog case is nearly the whole budget anyway, since stage 1 finishes well
+  // before its own half runs out and stage 2 (using the real, unreserved deadlineAt
+  // below) picks up whatever stage 1 didn't spend.
+  const stage1DeadlineAt = Date.now() + (options.deadlineAt - Date.now()) / 2;
+
   try {
     // Two queues, so a pile of relevant-but-not-yet-summarised articles can never crowd out
     // the articles that still have no relevance score at all:
@@ -165,7 +177,7 @@ export async function runEnrichment(options: EnrichmentOptions): Promise<Enrichm
 
     let consecutiveBatchFailures = 0;
     for (let i = 0; i < forAi.length; i += ASSESS_RELEVANCE_BATCH_SIZE) {
-      if (Date.now() > options.deadlineAt - BATCH_SAFETY_MS || !canSpend()) {
+      if (Date.now() > stage1DeadlineAt - BATCH_SAFETY_MS || !canSpend()) {
         result.stoppedForBudget = true;
         break;
       }

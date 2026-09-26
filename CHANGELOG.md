@@ -9,6 +9,7 @@ change, newest first.
 ## 2026-09-26
 
 - **Fixed the real reason the Daily Report and University lesson generation were stuck, even with 10 Gemini keys (PDL-090).** When one key took too long to answer, the app used to give up completely instead of trying the next key. Now it moves on, the same way it already did for a key that was simply out of quota.
+- **Fixed a second cause of the same stuck report (PDL-090).** With hundreds of articles backed up waiting for a relevance score, scoring them used the entire time budget every run, so summarising (the step that actually makes a report possible) never got a turn. Summarising now always gets roughly half the time, whatever the backlog's size.
 - **Fixed password reset e-mails not arriving (PDL-090, configuration only, no code change).** Two separate problems in the mail server settings: an outdated key, then a sender address on a domain that was never verified for sending. Confirmed live: the e-mail now arrives and the link works.
 
 ## 2026-09-25
