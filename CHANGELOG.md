@@ -6,6 +6,12 @@ reconstructed here retroactively — this file covers from its own start
 date forward). One entry per user-visible or operationally significant
 change, newest first.
 
+## 2026-10-02
+
+- **Every page asked twice who you are; now once (PDL-092).** The coin counter was silently re-checking your identity from scratch instead of reusing the same check the navigation bar had just made. Pages should feel noticeably faster.
+- **Reddit sources retired.** Reddit blocks requests from our server; dropped rather than worked around with a paid proxy.
+- **The book pop-up now appears every minute of reading instead of every five.**
+
 ## 2026-09-26
 
 - **Fixed the real reason the Daily Report and University lesson generation were stuck, even with 10 Gemini keys (PDL-090).** When one key took too long to answer, the app used to give up completely instead of trying the next key. Now it moves on, the same way it already did for a key that was simply out of quota.

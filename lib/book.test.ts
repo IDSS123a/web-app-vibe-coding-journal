@@ -7,10 +7,10 @@ describe("book pop-up clock", () => {
     expect(advanceBookPopupClock(10, false, false)).toBe(10);
     expect(advanceBookPopupClock(10, true, true)).toBe(10);
   });
-  it("is due after exactly five minutes", () => {
-    expect(BOOK_POPUP.intervalSeconds).toBe(300);
-    expect(isBookPopupDue(299)).toBe(false);
-    expect(isBookPopupDue(300)).toBe(true);
+  it("is due after exactly one minute", () => {
+    expect(BOOK_POPUP.intervalSeconds).toBe(60);
+    expect(isBookPopupDue(59)).toBe(false);
+    expect(isBookPopupDue(60)).toBe(true);
   });
   it("closes by itself after 20 seconds", () => {
     expect(BOOK_POPUP.autoCloseSeconds).toBe(20);

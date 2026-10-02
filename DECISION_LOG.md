@@ -2694,4 +2694,22 @@ A third real attempt delivered successfully (landed in spam, expected for a doma
 
 ---
 
+## PDL-092 Three quick, Director-approved fixes: Reddit retired, book pop-up interval, /api/me + rewards/state merged
+
+**Date:** 2026-10-02. Director approved, in order, the recommendations of the 2026-10-02 performance investigation and the six-step feasibility study.
+
+**Reddit retired (no code change).** The 3 Reddit sources (r/artificial, r/ChatGPTCoding, r/LocalLLaMA) are set `enabled = false` with `retry_after` cleared, permanently -- not the usual cooldown-then-retry cycle. Confirmed live (2026-10-02) that Reddit blocks Vercel's cloud IP ranges specifically (403/429) while answering normally from a residential IP; this is not a timeout/config problem the collector can fix, so the Director chose to drop these sources rather than add a paid proxy or build an OAuth integration for three low-volume feeds.
+
+**Book pop-up interval, 5 minutes to 1 minute.** `lib/book.ts`, `BOOK_POPUP.intervalSeconds` 300 to 60. The Director accepted the UX tradeoff flagged in the feasibility study (interrupts active reading roughly five times more often).
+
+**`/api/me` and `GET /api/rewards/state` merged into one request.** Found live (2026-10-02): CoinBalance (rendered on every page via `RewardsProvider`) called its own `/api/rewards/state`, which ran `getVerifiedUser()` a second, fully independent time -- a second pair of Supabase round trips to re-answer the exact identity question `/api/me` (also called on every page, by `SiteNav`) had just answered. Measured live across six pages the same day: 1.5s to 6.5s total load time, with `/api/me` alone ranging 700ms to 4200ms for an identical call -- consistent with (not yet confirmed; needs the Director's Supabase dashboard) the Vercel function region (`iad1`, confirmed via the `X-Vercel-Id` response header) not matching the database's region.
+
+**Fix:** `/api/me` now also returns `rewardState` (the same `getRewardState()` call `/api/rewards/state` used to make, wrapped in its own try/catch so a reward-query failure can never break the actual access decision the rest of the response carries). `RewardsProvider`'s initial-load effect reads `rewardState` off the shared, already-deduplicated `fetchMe()` call (PDL-091) instead of firing a second independent request. `GET /api/rewards/state` itself is deleted -- `RewardsProvider.tsx` was its only caller.
+
+**Verified.** Typecheck and the full suite (519 tests, one updated for the new 60s interval) pass. Confirmed locally, signed in as the admin account: `/api/rewards/state` no longer appears in the network log at all on `/dashboard`; the reward state (coins, level, streak) still renders correctly in `CoinBalance`.
+
+**Not yet fixed, flagged for the next pass:** `/dashboard` specifically still shows `/api/me` called twice (not concurrently -- the second call starts only once the first has already resolved, so PDL-091's in-flight de-duplication correctly does not merge them, because they never actually overlap). The specific component responsible (most likely one of `TrialBanner` / `RenewalBanner` / `UpgradeToPremiumBanner`) was not pinned down this pass. Region alignment between Vercel and Supabase also remains unconfirmed, pending the Director checking her Supabase project's region setting.
+
+---
+
 *Vibe-Coding Journal — Project Decision Log — updated as decisions are made.*

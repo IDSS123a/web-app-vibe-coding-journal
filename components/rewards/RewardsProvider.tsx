@@ -19,6 +19,7 @@
 
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from "react";
 import { useSession } from "@/lib/auth/use-session";
+import { fetchMe } from "@/lib/auth/fetch-me";
 import type { RewardEventType } from "@/features/rewards/domain";
 import { CoinToast } from "./CoinToast";
 import { CelebrationOverlay } from "./CelebrationOverlay";
@@ -95,14 +96,15 @@ export function RewardsProvider({ children }: { children: ReactNode }) {
 
   // Load current state once a session exists -- so CoinBalance has
   // something real to show on first paint, not just after this
-  // session's first award() call.
+  // session's first award() call. Reads /api/me's own rewardState field
+  // (2026-10-02) instead of a separate GET /api/rewards/state call, which
+  // used to re-verify the caller from scratch a second time on every page.
   useEffect(() => {
     if (loading || !token) return;
     let active = true;
-    fetch("/api/rewards/state", { headers: { authorization: `Bearer ${token}` } })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d: { state?: RewardState } | null) => {
-        if (active && d?.state) setState(d.state);
+    fetchMe(token)
+      .then((d) => {
+        if (active && d.rewardState) setState(d.rewardState);
       })
       .catch(() => {
         // Reward display is a delight layer -- a failed initial fetch

@@ -8,6 +8,17 @@
  * here, server-side, so the client never re-implements the business
  * logic — it only acts on `hasAccess`. Always 200; the body tells the UI
  * what to render. Never leaks anything beyond the caller's own state.
+ *
+ * Also returns `rewardState` (2026-10-02, performance pass): CoinBalance
+ * used to call its own GET /api/rewards/state, which re-ran getVerifiedUser()
+ * from scratch -- a second, fully independent pair of Supabase round trips to
+ * answer an identity question /api/me had already just answered. Every page
+ * renders both the nav (which calls /api/me) and CoinBalance (rewards/state),
+ * so this doubled the real "who is this" cost on every single page load.
+ * Folding one extra reward-state query into this request removes that whole
+ * second round trip entirely. GET /api/rewards/state is retired
+ * (features/rewards/repository.ts's getRewardState is unchanged, only where
+ * it's called from has moved here).
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -15,6 +26,7 @@ import { getVerifiedUser } from "@/lib/auth/verify-token";
 import { isBillingExempt, canAccessUniversity, canAccessPromptAssistant, canAccessPromptSchool } from "@/lib/permissions";
 import { evaluateSubscriptionAccess } from "@/features/onboarding/domain";
 import { resolvePayPalMode } from "@/lib/payments/paypal-mode";
+import { getRewardState, type RewardState } from "@/features/rewards/repository";
 
 export async function GET(request: NextRequest) {
   const user = await getVerifiedUser(request.headers.get("authorization"));
@@ -32,9 +44,19 @@ export async function GET(request: NextRequest) {
         subscriptionTier: null,
         subscriptionStatus: null,
         isBlocked: false,
+        rewardState: null,
       },
       { status: 200 },
     );
+  }
+
+  // Reward display is a delight layer (CoinBalance's own existing framing) --
+  // its query failing must never take down /api/me's actual access decision.
+  let rewardState: RewardState | null = null;
+  try {
+    rewardState = await getRewardState(user.sub);
+  } catch (err) {
+    console.error(`[ME] reward state fetch failed: ${err instanceof Error ? err.message : String(err)}`);
   }
 
   const exempt = isBillingExempt({ role: user.role });
@@ -89,6 +111,7 @@ export async function GET(request: NextRequest) {
       // When the free trial ends, for the trial banner on the dashboard.
       trialEndsAt: user.trialEndsAt,
       isBlocked: user.isBlocked,
+      rewardState,
     },
     { status: 200 },
   );

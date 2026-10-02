@@ -17,13 +17,14 @@ export const BOOK = {
 } as const;
 
 /**
- * The book pop-up on the Prompt School pages (Director, 2026-09-20): it appears every 5 minutes of active reading
- * time as a modal window the reader can close or answer with "Get the book", and closes by itself after 20
- * seconds if nothing is clicked. The clock counts only seconds in which the page is visible and no pop-up is
+ * The book pop-up on the Prompt School pages (Director, 2026-09-20; interval shortened
+ * 2026-10-02): it appears every minute of active reading time as a modal window the reader
+ * can close or answer with "Get the book", and closes by itself after 20 seconds if nothing
+ * is clicked. The clock counts only seconds in which the page is visible and no pop-up is
  * open, and is kept in sessionStorage so that moving between School pages does not restart it.
  */
 export const BOOK_POPUP = {
-  intervalSeconds: 300,
+  intervalSeconds: 60,
   autoCloseSeconds: 20,
   storageKey: "ps-book-popup",
 } as const;

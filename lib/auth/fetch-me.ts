@@ -19,6 +19,13 @@
  * that genuinely overlap in time are merged.
  */
 
+export interface MeRewardState {
+  coinBalance: number;
+  currentStreak: number;
+  longestStreak: number;
+  level: number;
+}
+
 export interface MeResponse {
   authenticated: boolean;
   isAdmin: boolean;
@@ -34,6 +41,8 @@ export interface MeResponse {
   trialEndsAt: string | null;
   subscriptionExpiresAt: string | null;
   paypalMode?: "sandbox" | "live";
+  /** CoinBalance's initial state (2026-10-02) -- null only if the caller is unauthenticated or the reward query itself failed. */
+  rewardState: MeRewardState | null;
 }
 
 let inFlight: { token: string; promise: Promise<MeResponse> } | null = null;
