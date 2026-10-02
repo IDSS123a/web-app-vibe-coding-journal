@@ -2724,4 +2724,20 @@ A third real attempt delivered successfully (landed in spam, expected for a doma
 
 ---
 
+## PDL-094 Top Tools to Try: a new tier-split rubric, built on the Dictionary's own discovery/promotion cycle
+
+**Date:** 2026-10-02. Director-approved, step 3 of the six-step feasibility study ("Za #3/#4: nova zasebna 'Tools' tabela (kao Dictionary) -- SLAZEM SE - URADI"), harmonized into the existing self-growth system per the Director's explicit requirement rather than built as a parallel bolt-on.
+
+**What it is.** A new `tools` table, discovered and promoted by the exact same rule the Dictionary already proved: a tool noticed by the AI in a relevant article becomes a `tool_candidate`, and is only promoted to a published, user-visible tool once it has been mentioned in 3+ distinct articles from 2+ independent sources inside a 14-day window (`features/tools/discovery.ts`, `PROMOTION_MIN_MENTIONS`/`PROMOTION_MIN_SOURCES`/`PROMOTION_WINDOW_DAYS` -- identical constants to the Dictionary's own). One article naming a tool once is never enough to publish it.
+
+**Tier split, not a single gate.** Unlike University/Dictionary (Premium-only), the Director's stated business model splits this rubric itself: Basic ($10/year) reads the paid-tools section, Premium ($50/year) reads both sections. `lib/permissions.ts` gets two new one-line wrappers, `canAccessPaidTools` (same bar as `canReadPaidContent`) and `canAccessFreeTools` (same bar as `canAccessUniversity`'s premium-tier check) -- `GET /api/tools` filters the returned list itself rather than an all-or-nothing 403, and the `/tools` page renders the free-tools section as an inline Premium upsell (`PremiumPitch`, extended with a `tools` feature and a `hasFreeToolsAccess` unlock key) when the viewer lacks it, instead of hiding it outright.
+
+**Where it plugs into the pipeline.** One AI discovery call per hourly backlog run, drawing from the SAME shared `BACKLOG_DAILY_AI_CALL_BUDGET` the Dictionary's own discovery step already shares with it, not an addition to the budget (`app/api/cron/daily-digest/route.ts`, `MAX_TOOL_DISCOVERY_CALLS_PER_RUN = 1`, run last in the chain after enrichment, Dictionary classification, and Dictionary discovery have each taken their share). `features/tools/run-learning.ts` mirrors `features/dictionary/run-learning.ts` minus its "mentions of already-known tools" stage -- not asked for, and a published tool does not need a trending-freshness signal the way Dictionary vocabulary does.
+
+**New files:** `supabase/migrations/038_tools.sql` (tables `tools`, `tool_candidates`, plus `articles.tools_extracted_at`, no RLS select policy by design -- same discipline migration 022 established for `dictionary_terms`, service role only); `features/tools/{domain,discovery,repository,run-learning}.ts`; `lib/ai/ai-provider.ts` + `gemini-provider.ts` gain `extractTools`; `app/api/tools/route.ts`; `app/tools/page.tsx`; a `Tools` link in `SiteNav.tsx`.
+
+**Verified.** Typecheck and the full suite (532 tests, 7 new for `features/tools/discovery.ts`'s candidate-naming, promotion-rule and observation-merge logic, 2 new for the tier split in `lib/permissions.test.ts`) pass. Live verification (the discovery cron actually promoting a real tool, the `/tools` page rendering both sections per tier) is pending the Director applying `038_tools.sql` in her Supabase SQL Editor -- the Management API and the connected Supabase MCP tool are both confirmed unusable for this project (wrong account/401), so this migration could not be applied directly, same as every migration since that was first found.
+
+---
+
 *Vibe-Coding Journal — Project Decision Log — updated as decisions are made.*

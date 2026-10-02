@@ -4,6 +4,8 @@ import {
   canAccessAdminPanel,
   canApproveReports,
   canRejectReports,
+  canAccessFreeTools,
+  canAccessPaidTools,
   canAccessPromptAssistant,
   canAccessPromptSchool,
   canAccessUniversity,
@@ -92,20 +94,24 @@ describe("access levels: no payment -> nothing, Basic -> daily content, Premium 
     expect(canReadPaidContent({ role: "admin", hasActiveAccess: false })).toBe(true);
   });
 
-  it("Basic ($10) with active access reads daily content but NOT University or the Assistant", () => {
+  it("Basic ($10) with active access reads daily content and the paid-tools section, but NOT University, the Assistant, or the free-tools section", () => {
     const basic = { ...active, subscriptionTier: "basic" as const };
     expect(canReadPaidContent(basic)).toBe(true);
     expect(canAccessUniversity(basic)).toBe(false);
     expect(canAccessPromptAssistant(basic)).toBe(false);
     expect(canAccessPromptSchool(basic)).toBe(false);
+    expect(canAccessPaidTools(basic)).toBe(true);
+    expect(canAccessFreeTools(basic)).toBe(false);
   });
 
-  it("Premium ($50) with active access reads everything", () => {
+  it("Premium ($50) with active access reads everything, including both Tools sections", () => {
     const premium = { ...active, subscriptionTier: "premium" as const };
     expect(canReadPaidContent(premium)).toBe(true);
     expect(canAccessUniversity(premium)).toBe(true);
     expect(canAccessPromptAssistant(premium)).toBe(true);
     expect(canAccessPromptSchool(premium)).toBe(true);
+    expect(canAccessPaidTools(premium)).toBe(true);
+    expect(canAccessFreeTools(premium)).toBe(true);
   });
 
   it("Premium tier WITHOUT active access (lapsed) gets nothing at any level", () => {
@@ -114,6 +120,12 @@ describe("access levels: no payment -> nothing, Basic -> daily content, Premium 
     expect(canAccessUniversity(lapsed)).toBe(false);
     expect(canAccessPromptAssistant(lapsed)).toBe(false);
     expect(canAccessPromptSchool(lapsed)).toBe(false);
+    expect(canAccessPaidTools(lapsed)).toBe(false);
+    expect(canAccessFreeTools(lapsed)).toBe(false);
+  });
+
+  it("canAccessPaidTools: an admin is always allowed (billing-exempt, P-14)", () => {
+    expect(canAccessPaidTools({ role: "admin", hasActiveAccess: false })).toBe(true);
   });
 });
 

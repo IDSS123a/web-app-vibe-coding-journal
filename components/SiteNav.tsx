@@ -44,6 +44,7 @@ const LOGGED_IN_LINKS = [
   { href: "/bookmarks", label: "Bookmarks" },
   { href: "/university", label: "University" },
   { href: "/dictionary", label: "Dictionary" },
+  { href: "/tools", label: "Tools" },
   { href: "/assistant", label: "Assistant" },
   { href: "/prompt-school", label: "Prompt School" },
 ];

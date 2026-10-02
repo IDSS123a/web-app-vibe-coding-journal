@@ -62,6 +62,8 @@ import type {
   ClassifyTermsOutput,
   ExtractTermsInput,
   ExtractTermsOutput,
+  ExtractToolsInput,
+  ExtractToolsOutput,
   GenerateLessonInput,
   GenerateLessonOutput,
   GenerateSupplementaryLessonInput,
@@ -602,6 +604,7 @@ const BATCH_FETCH_TIMEOUT_MS = 60000;
 // budget, finishReason MAX_TOKENS, 2026-09-19); a smaller batch AND a larger budget.
 const CLASSIFY_TERMS_MAX_OUTPUT_TOKENS = 16384;
 const EXTRACT_TERMS_MAX_OUTPUT_TOKENS = 8192;
+const EXTRACT_TOOLS_MAX_OUTPUT_TOKENS = 8192;
 
 export class GeminiProvider implements AIProvider {
   private keys: string[];
@@ -871,6 +874,55 @@ Return ONLY a JSON object: { "terms": [ { "term": string (the name people use), 
       terms.push({ term, definition, group, level, articleNumbers: [...new Set(articleNumbers)] });
     }
     return { terms };
+  }
+
+  /**
+   * Tool discovery (Director-approved, 2026-10-02 six-step feasibility study): same
+   * shape and discipline as extractTerms above, reading recent relevance-checked
+   * articles for AI coding/vibe-coding tools instead of vocabulary. Only proposes:
+   * nothing is published until the caller's promotion rule
+   * (features/tools/discovery.ts) is satisfied.
+   */
+  async extractTools(input: ExtractToolsInput): Promise<ExtractToolsOutput> {
+    if (input.articles.length === 0) return { tools: [] };
+
+    const listing = input.articles
+      .map((a) => `[${a.n}] ${a.title}\n${a.summary.slice(0, 500)}`)
+      .join("\n\n");
+    const known = input.knownTools.slice(0, 400).join("; ");
+
+    const prompt = `You maintain a "Top Tools to Try" list for "Vibe-Coding Journal", a product for vibe-coders: people who build software by directing AI coding assistants. Below are recent articles. List named, concrete tools (an AI coding assistant, an IDE, a CLI, a library, a service, an agent framework) that a vibe-coder could actually install or sign up for and try -- not a company, a model name with no tool wrapped around it, a general technique, or a research paper. A tool must be named explicitly in at least one article.
+
+For each tool, decide "pricing" from what the article actually says: "free" for free/open-source tools with no required paid plan to use the core thing being described, "paid" for anything that requires a paid plan, credits, or subscription to use the core feature described. If the article genuinely does not say, make the most reasonable reading from how it is described rather than leaving it out.
+
+Do NOT list anything already in KNOWN TOOLS (compare case-insensitively; treat an obvious renaming or abbreviation as the same tool).
+
+${NO_AI_TELLS_PROMPT_RULE}
+
+KNOWN TOOLS: ${known}
+
+ARTICLES:
+${listing}
+
+Return ONLY a JSON object: { "tools": [ { "name": string (the name people use), "description": string (one plain sentence, at most 30 words, no hype, says what it does), "url": string or null (the tool's own site/repo if the article gives one, else null -- never invent one), "pricing": "free"|"paid", "articleNumbers": [integers of the articles that mention it] } ] }. Return an empty list if nothing qualifies. At most 10 tools.`;
+
+    const result = await callGeminiJSON(this.keys, prompt, EXTRACT_TOOLS_MAX_OUTPUT_TOKENS, BATCH_FETCH_TIMEOUT_MS);
+
+    const numbers = new Set(input.articles.map((a) => a.n));
+    const tools: ExtractToolsOutput["tools"] = [];
+    for (const entry of (Array.isArray(result.tools) ? result.tools : []) as Array<Record<string, unknown>>) {
+      const name = typeof entry?.name === "string" ? entry.name.trim() : "";
+      const description = typeof entry?.description === "string" ? entry.description.trim() : "";
+      const url = typeof entry?.url === "string" && entry.url.trim() ? entry.url.trim() : null;
+      const pricing = entry?.pricing;
+      const articleNumbers = (Array.isArray(entry?.articleNumbers) ? entry.articleNumbers : [])
+        .filter((v): v is number => typeof v === "number" && numbers.has(Math.round(v)))
+        .map((v) => Math.round(v));
+      if (!name || name.length > 60 || !description || articleNumbers.length === 0) continue;
+      if (pricing !== "free" && pricing !== "paid") continue;
+      tools.push({ name, description, url, pricing, articleNumbers: [...new Set(articleNumbers)] });
+    }
+    return { tools };
   }
 
   /**

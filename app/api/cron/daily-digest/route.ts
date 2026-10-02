@@ -19,6 +19,7 @@ import { aiCallsInLast24h, recordAiCalls } from "@/lib/ai/usage";
 import { stripAiTells } from "@/lib/text/no-ai-tells";
 import { classifyPendingTerms } from "@/features/dictionary/classify-pending";
 import { runDictionaryLearning } from "@/features/dictionary/run-learning";
+import { runToolLearning } from "@/features/tools/run-learning";
 import {
   getArticleByHash,
   markArticleAsDuplicate,
@@ -434,6 +435,10 @@ const BACKLOG_DAILY_AI_CALL_BUDGET = 100;
 const BACKLOG_PURPOSE = "backlog_enrichment";
 const MAX_DICTIONARY_CALLS_PER_RUN = 2;
 const MAX_DISCOVERY_CALLS_PER_RUN = 1;
+// Top Tools to Try (Director-approved, 2026-10-02 six-step feasibility study): same
+// one-call-per-run discipline as the Dictionary's own discovery call above, drawing
+// from the same shared BACKLOG_DAILY_AI_CALL_BUDGET, not an addition to it.
+const MAX_TOOL_DISCOVERY_CALLS_PER_RUN = 1;
 const DIGEST_LOCK = "digest";
 const DIGEST_LOCK_TTL_MS = 290_000;
 
@@ -468,7 +473,14 @@ async function runBacklogCycle(startTime: number) {
     maxAiCalls: Math.min(MAX_DISCOVERY_CALLS_PER_RUN, Math.max(0, leftForDictionary - dictionary.calls)),
     deadlineAt: startTime + BACKLOG_DEADLINE_MS,
   });
-  const aiCallsThisRun = enrichment.aiCalls + dictionary.calls + learning.aiCalls;
+  // Top Tools to Try learns from the same article pool, one discovery call when budget
+  // is left after everything above (features/tools/run-learning.ts).
+  const leftForTools = Math.max(0, leftForDictionary - dictionary.calls - learning.aiCalls);
+  const tools = await runToolLearning({
+    maxAiCalls: Math.min(MAX_TOOL_DISCOVERY_CALLS_PER_RUN, leftForTools),
+    deadlineAt: startTime + BACKLOG_DEADLINE_MS,
+  });
+  const aiCallsThisRun = enrichment.aiCalls + dictionary.calls + learning.aiCalls + tools.aiCalls;
   await recordAiCalls(BACKLOG_PURPOSE, aiCallsThisRun);
   return {
     aiBudget: { dailyBudget: BACKLOG_DAILY_AI_CALL_BUDGET, usedBefore: usedToday, usedThisRun: aiCallsThisRun },
@@ -480,6 +492,12 @@ async function runBacklogCycle(startTime: number) {
       errors: learning.errors.length,
     },
     dictionary: { classified: dictionary.classified, calls: dictionary.calls, pendingBefore: dictionary.pendingBefore, errors: dictionary.errors.length },
+    tools: {
+      articlesRead: tools.articlesRead,
+      candidatesSeen: tools.candidatesSeen,
+      promoted: tools.promoted,
+      errors: tools.errors.length,
+    },
     collected: { articlesAdded: collect.articlesAdded, sourcesProcessed: collect.sourcesProcessed, errors: collect.errors.length },
     duplicates: dedupe.duplicatesFound,
     enrichment: {

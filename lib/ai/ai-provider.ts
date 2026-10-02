@@ -157,6 +157,28 @@ export interface ExtractTermsOutput {
 }
 
 /**
+ * Top Tools to Try (Director-approved, 2026-10-02 six-step feasibility study): the
+ * same discovery shape as extractTerms above, reading a batch of recent articles for
+ * AI coding/vibe-coding tools instead of vocabulary. `pricing` is the model's own
+ * read of the article text ("free", "open source", "$X/month" etc. all map to the two
+ * rubrics this feeds) -- never invented when the article genuinely doesn't say.
+ */
+export interface ExtractToolsInput {
+  articles: Array<{ n: number; title: string; summary: string }>;
+  knownTools: string[];
+}
+
+export interface ExtractToolsOutput {
+  tools: Array<{
+    name: string;
+    description: string;
+    url: string | null;
+    pricing: "free" | "paid";
+    articleNumbers: number[];
+  }>;
+}
+
+/**
  * Vibe-Coding University's weekly lesson-generation job (specs/
  * vibe-coding-university/PLAN.md, confirmed 2026-09-14). Writes the
  * body for ONE already-titled stub lesson using recent high-relevance
@@ -250,6 +272,7 @@ export interface AIProvider {
   assessRelevanceBatch(input: AssessRelevanceBatchInput): Promise<AssessRelevanceBatchOutput>;
   classifyTerms(input: ClassifyTermsInput): Promise<ClassifyTermsOutput>;
   extractTerms(input: ExtractTermsInput): Promise<ExtractTermsOutput>;
+  extractTools(input: ExtractToolsInput): Promise<ExtractToolsOutput>;
   generateLesson(input: GenerateLessonInput): Promise<GenerateLessonOutput>;
   generateSupplementaryLesson(input: GenerateSupplementaryLessonInput): Promise<GenerateSupplementaryLessonOutput>;
   generatePromptBlueprint(input: GeneratePromptBlueprintInput): Promise<GeneratePromptBlueprintOutput>;
@@ -326,6 +349,11 @@ class NoOpProvider implements AIProvider {
 
   async extractTerms(): Promise<ExtractTermsOutput> {
     return { terms: [] };
+  }
+
+  // Fail-closed, same discipline as extractTerms: an empty answer means "nothing learned", never a guess.
+  async extractTools(): Promise<ExtractToolsOutput> {
+    return { tools: [] };
   }
 
   // Deliberately NOT fail-open like assessRelevance above -- an empty

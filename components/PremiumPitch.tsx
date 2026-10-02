@@ -22,7 +22,7 @@ import { PayPalCheckout } from "@/components/PayPalCheckout";
 import { PaymentAssurance } from "@/components/PaymentAssurance";
 import { BASIC_PRICE_USD, PREMIUM_PRICE_USD, UPGRADE_PRICE_USD, centsPerDay, perMonthUsd } from "@/lib/pricing";
 
-export type PremiumFeature = "university" | "dictionary" | "assistant" | "promptschool";
+export type PremiumFeature = "university" | "dictionary" | "assistant" | "promptschool" | "tools";
 
 export interface PitchAudience {
   /** True for an active Basic subscriber, who pays the difference. */
@@ -58,6 +58,13 @@ const FEATURE_COPY: Record<PremiumFeature, { eyebrow: string; headline: string; 
     peekTitle: "Terms you will look up",
     peek: ["Context engineering", "Model Context Protocol", "Human-in-the-loop", "Prompt injection"],
   },
+  tools: {
+    eyebrow: "Top Tools to Try",
+    headline: "See the free tools worth trying, not just the paid ones.",
+    lead: "Tools that keep coming up across the articles we read every day, picked only once a tool is mentioned by several independent sources. Basic already shows you the paid tools; Premium adds the free ones too.",
+    peekTitle: "What this adds",
+    peek: ["The free-tools section, updated as new tools earn their place", "Still the same paid tools you already see on Basic", "No single mention is enough: a tool needs several independent sources first"],
+  },
 };
 
 const PREMIUM_INCLUDES = [
@@ -65,6 +72,7 @@ const PREMIUM_INCLUDES = [
   "Vibe-Coding Dictionary: 2,600+ terms in plain language",
   "Vibe-Coding Assistant: prompts written for you",
   "Prompt School: learn to write prompts with hands-on practice",
+  "Top Tools to Try: the free-tools section, on top of the paid tools in Basic",
   "Everything in Basic: Daily Report, Archive and Bookmarks",
 ];
 
@@ -75,7 +83,7 @@ interface Props {
   /** Called once /api/me confirms Premium after a payment, so the page can open. */
   onUnlocked: () => void;
   /** Which /api/me boolean means "Premium is active" for polling. */
-  unlockedKey: "hasUniversityAccess" | "hasAssistantAccess" | "hasPromptSchoolAccess";
+  unlockedKey: "hasUniversityAccess" | "hasAssistantAccess" | "hasPromptSchoolAccess" | "hasFreeToolsAccess";
 }
 
 export function PremiumPitch({ feature, audience, token, onUnlocked, unlockedKey }: Props) {

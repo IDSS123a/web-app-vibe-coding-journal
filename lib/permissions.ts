@@ -121,3 +121,21 @@ export function canAccessPromptSchool(user: {
 }): boolean {
   return hasPremiumTierAccess(user);
 }
+
+// Top Tools to Try (Director-approved, 2026-10-02 six-step feasibility study): the
+// rubric is split across both tiers by pricing section, same business model the
+// Director stated when authorizing the feature -- $10/Basic strengthens around the
+// paid-tools section, $50/Premium around the free-tools section (and Ideas). "Basic"
+// here is the same bar as canReadPaidContent: any tier with currently active access,
+// or an admin.
+export function canAccessPaidTools(user: { role: string; hasActiveAccess: boolean }): boolean {
+  return canReadPaidContent(user);
+}
+
+export function canAccessFreeTools(user: {
+  role: string;
+  subscriptionTier: "basic" | "premium";
+  hasActiveAccess: boolean;
+}): boolean {
+  return hasPremiumTierAccess(user);
+}

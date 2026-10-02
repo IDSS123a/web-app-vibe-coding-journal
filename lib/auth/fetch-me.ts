@@ -35,6 +35,7 @@ export interface MeResponse {
   hasUniversityAccess: boolean;
   hasAssistantAccess: boolean;
   hasPromptSchoolAccess: boolean;
+  hasFreeToolsAccess: boolean;
   subscriptionTier: "basic" | "premium" | null;
   subscriptionStatus: "trial" | "active" | "expired" | null;
   isBlocked: boolean;
