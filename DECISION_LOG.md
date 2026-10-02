@@ -2712,4 +2712,16 @@ A third real attempt delivered successfully (landed in spam, expected for a doma
 
 ---
 
+## PDL-093 Hacker News: five targeted feeds moved off hnrss.org onto Algolia's own Search API
+
+**Date:** 2026-10-02. Director-approved, step 1 of the six-step feasibility study.
+
+**Root cause, confirmed live the same day:** the 5 targeted HN query feeds (AI coding, Claude Code, Cursor AI, GitHub Copilot, vibe coding) all route through hnrss.org, a third-party RSS proxy, which measured 2 to 16 seconds per request when re-fetched directly -- past this collector's own 5-second-per-leg timeout often enough to auto-disable all 5 (failure counts 4-10 at the time of the investigation). Confirmed separately: Algolia's own `search_by_date` endpoint answered all 5 queries, with real results, consistently under a second.
+
+**Fix.** `parseAPIFeed()` (`features/sources/actions.ts`) already existed for a generic `{ items: [...] }` contract but had never been used -- all 34 sources were `type="rss"`. It now also recognizes Algolia's native `{ hits: [...] }` shape, mapped by a new `parseAlgoliaHit()` (moved to `features/sources/domain.ts`, the project's existing convention for pure, unit-testable logic vs. `actions.ts`'s "use server" orchestration). Two real shape gaps handled explicitly, not left to surface live: a text/Ask HN hit has no `url` field (falls back to the HN discussion page via `objectID`, so every row still has a real link), and Algolia has no RSS-style description -- `story_text` (present only on text posts) is used when available, HTML-stripped, otherwise the summary is genuinely empty rather than guessed. The 5 `sources` rows were updated directly (`type: "api"`, URL pointed at the matching Algolia query, re-enabled with failure history cleared) -- no migration needed, same table, same columns.
+
+**Verified.** Typecheck and the full suite (524 tests, 5 new for `parseAlgoliaHit`'s edge cases) pass. Live confirmation of the actual collection run deferred to the next deploy's first cron cycle -- see follow-up note once checked.
+
+---
+
 *Vibe-Coding Journal — Project Decision Log — updated as decisions are made.*

@@ -8,6 +8,7 @@ change, newest first.
 
 ## 2026-10-02
 
+- **Five Hacker News feeds moved to Hacker News' own search, no more third-party middleman (PDL-093).** They kept failing because the old proxy was slow, not because anything was actually wrong; the new source answers in under a second.
 - **Every page asked twice who you are; now once (PDL-092).** The coin counter was silently re-checking your identity from scratch instead of reusing the same check the navigation bar had just made. Pages should feel noticeably faster.
 - **Reddit sources retired.** Reddit blocks requests from our server; dropped rather than worked around with a paid proxy.
 - **The book pop-up now appears every minute of reading instead of every five.**

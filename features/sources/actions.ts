@@ -9,7 +9,7 @@
 import { createHash } from "crypto";
 import Parser from "rss-parser";
 import { getEnabledSources, updateSource } from "./repository";
-import { computeSourceFailure, dropKnownUrls, SOURCE_HEALTH_CONFIG, SOURCE_RECOVERED } from "./domain";
+import { computeSourceFailure, dropKnownUrls, parseAlgoliaHit, SOURCE_HEALTH_CONFIG, SOURCE_RECOVERED, type ParsedArticle } from "./domain";
 import { SITE_URL } from "@/lib/site";
 import { supabaseAdmin } from "@/lib/db/client";
 import { stripAiTells } from "@/lib/text/no-ai-tells";
@@ -105,13 +105,6 @@ function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise
       },
     );
   });
-}
-
-interface ParsedArticle {
-  title: string;
-  url: string;
-  published_at: string;
-  summary: string;
 }
 
 /**
@@ -387,22 +380,31 @@ async function parseRSSFeed(response: Response): Promise<ParsedArticle[]> {
 }
 
 /**
- * Parse JSON API feed
- * Expects: { items: [{ title, url, summary, published_at }] }
+ * Parse JSON API feed. Two known shapes:
+ *   1. The project's own generic contract: { items: [{ title, url, summary, published_at }] }
+ *   2. The Algolia HN Search API's native shape: { hits: [{ title, url, created_at, ... }] }
+ *      (2026-10-02, replacing the hnrss.org proxy -- see parseAlgoliaHit below for why a
+ *      second shape, not a format conversion at the source URL, which doesn't exist here).
+ * Tries `items` first (the project's own contract takes precedence for any future
+ * api-type source); falls back to `hits` so Algolia's real response needs no proxy.
  */
 async function parseAPIFeed(response: Response): Promise<ParsedArticle[]> {
   const data = await response.json();
 
-  if (!Array.isArray(data.items)) {
-    throw new Error("API response missing 'items' array");
+  if (Array.isArray(data.items)) {
+    return data.items.map((item: Record<string, unknown>) => ({
+      title: (item.title as string | undefined) || "Untitled",
+      url: ((item.url as string | undefined) || (item.link as string | undefined) || ""),
+      summary: ((item.summary as string | undefined) || (item.description as string | undefined) || ""),
+      published_at: (item.published_at as string | undefined) || new Date().toISOString(),
+    }));
   }
 
-  return data.items.map((item: Record<string, unknown>) => ({
-    title: (item.title as string | undefined) || "Untitled",
-    url: ((item.url as string | undefined) || (item.link as string | undefined) || ""),
-    summary: ((item.summary as string | undefined) || (item.description as string | undefined) || ""),
-    published_at: (item.published_at as string | undefined) || new Date().toISOString(),
-  }));
+  if (Array.isArray(data.hits)) {
+    return data.hits.map(parseAlgoliaHit);
+  }
+
+  throw new Error("API response missing 'items' or 'hits' array");
 }
 
 /**

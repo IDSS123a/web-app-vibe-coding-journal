@@ -195,3 +195,39 @@ export function dropKnownUrls<T extends { url: string }>(items: readonly T[], kn
   }
   return out;
 }
+
+export interface ParsedArticle {
+  title: string;
+  url: string;
+  published_at: string;
+  summary: string;
+}
+
+/**
+ * One Algolia HN Search API hit -> ParsedArticle (2026-10-02, replaces the five hnrss.org
+ * query feeds -- features/sources/actions.ts parseAPIFeed). hnrss.org proxied these same
+ * searches through a third-party RSS converter that measured 2-16s per request live, well
+ * past this collector's own 5s leg timeout; Algolia is Hacker News' own official search API,
+ * no proxy in between, and answered every query tested in under a second.
+ *
+ * Two real shape differences from an RSS item, both handled here rather than left for the
+ * caller to discover live:
+ *   - `url` is absent for a text/Ask HN post (an Algolia `hits` row with `story_text` instead
+ *     of `url`) -- falls back to the HN discussion page itself via `objectID`, so every row
+ *     still gets a real, dereferenceable link.
+ *   - there is no RSS-style description field; `story_text` (present only on text posts) is
+ *     the closest equivalent and is used when available, with its HTML tags stripped -- a
+ *     link post (the common case) has no body text at all on HN itself, so an empty summary
+ *     here is accurate, not a parsing gap.
+ */
+export function parseAlgoliaHit(hit: Record<string, unknown>): ParsedArticle {
+  const objectID = hit.objectID as string | undefined;
+  const url = (hit.url as string | undefined) || (objectID ? `https://news.ycombinator.com/item?id=${objectID}` : "");
+  const storyText = (hit.story_text as string | undefined) ?? "";
+  return {
+    title: (hit.title as string | undefined) || "Untitled",
+    url,
+    summary: storyText.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim(),
+    published_at: (hit.created_at as string | undefined) || new Date().toISOString(),
+  };
+}
