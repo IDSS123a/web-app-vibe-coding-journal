@@ -22,7 +22,7 @@ import { PayPalCheckout } from "@/components/PayPalCheckout";
 import { PaymentAssurance } from "@/components/PaymentAssurance";
 import { BASIC_PRICE_USD, PREMIUM_PRICE_USD, UPGRADE_PRICE_USD, centsPerDay, perMonthUsd } from "@/lib/pricing";
 
-export type PremiumFeature = "university" | "dictionary" | "assistant" | "promptschool" | "tools";
+export type PremiumFeature = "university" | "dictionary" | "assistant" | "promptschool" | "tools" | "ideas";
 
 export interface PitchAudience {
   /** True for an active Basic subscriber, who pays the difference. */
@@ -65,6 +65,13 @@ const FEATURE_COPY: Record<PremiumFeature, { eyebrow: string; headline: string; 
     peekTitle: "What this adds",
     peek: ["The free-tools section, updated as new tools earn their place", "Still the same paid tools you already see on Basic", "No single mention is enough: a tool needs several independent sources first"],
   },
+  ideas: {
+    eyebrow: "Top Profitable Ideas for Vibe-Coders",
+    headline: "A new project idea, found in the trends, about once a week.",
+    lead: "Each idea comes from a genuine pattern across several recent articles, not a single story: a concrete opportunity a vibe-coder could actually start building, who would pay for it, and a realistic first step. Every idea is reviewed before it is shown to subscribers.",
+    peekTitle: "What you get",
+    peek: ["About one new idea a week, grounded in real recent trends", "Who would actually pay for it, not a vague audience", "A realistic first build step for a solo vibe-coder", "A plausible monetization angle, no invented numbers"],
+  },
 };
 
 const PREMIUM_INCLUDES = [
@@ -73,6 +80,7 @@ const PREMIUM_INCLUDES = [
   "Vibe-Coding Assistant: prompts written for you",
   "Prompt School: learn to write prompts with hands-on practice",
   "Top Tools to Try: the free-tools section, on top of the paid tools in Basic",
+  "Top Profitable Ideas for Vibe-Coders: a new project idea about once a week",
   "Everything in Basic: Daily Report, Archive and Bookmarks",
 ];
 
@@ -83,7 +91,7 @@ interface Props {
   /** Called once /api/me confirms Premium after a payment, so the page can open. */
   onUnlocked: () => void;
   /** Which /api/me boolean means "Premium is active" for polling. */
-  unlockedKey: "hasUniversityAccess" | "hasAssistantAccess" | "hasPromptSchoolAccess" | "hasFreeToolsAccess";
+  unlockedKey: "hasUniversityAccess" | "hasAssistantAccess" | "hasPromptSchoolAccess" | "hasFreeToolsAccess" | "hasIdeasAccess";
 }
 
 export function PremiumPitch({ feature, audience, token, onUnlocked, unlockedKey }: Props) {

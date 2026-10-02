@@ -8,6 +8,7 @@ change, newest first.
 
 ## 2026-10-02
 
+- **New: Top Profitable Ideas for Vibe-Coders (PDL-095).** A new page gets a fresh project idea about once a week, found in genuine trends across several recent articles, reviewed before it ever reaches subscribers. Premium only.
 - **New: Top Tools to Try (PDL-094).** A new page lists tools that keep coming up across the articles read every day, picked only once several independent sources mention one, the same discipline already used for the Dictionary. Basic sees the paid tools; Premium sees the paid tools plus the free ones.
 - **Five Hacker News feeds moved to Hacker News' own search, no more third-party middleman (PDL-093).** They kept failing because the old proxy was slow, not because anything was actually wrong; the new source answers in under a second.
 - **Every page asked twice who you are; now once (PDL-092).** The coin counter was silently re-checking your identity from scratch instead of reusing the same check the navigation bar had just made. Pages should feel noticeably faster.

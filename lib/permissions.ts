@@ -139,3 +139,16 @@ export function canAccessFreeTools(user: {
 }): boolean {
   return hasPremiumTierAccess(user);
 }
+
+// Top Profitable Ideas for Vibe-Coders (Director-approved, 2026-10-02 six-step
+// feasibility study, step 5): the same $50/year premium-tier gate as the free-tools
+// section above, University, Dictionary, the Assistant and Prompt School -- the
+// Director named this rubric alongside the free-tools section when describing what the
+// $50 tier adds.
+export function canAccessIdeas(user: {
+  role: string;
+  subscriptionTier: "basic" | "premium";
+  hasActiveAccess: boolean;
+}): boolean {
+  return hasPremiumTierAccess(user);
+}

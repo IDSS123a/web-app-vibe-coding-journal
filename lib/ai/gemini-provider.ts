@@ -68,6 +68,8 @@ import type {
   GenerateLessonOutput,
   GenerateSupplementaryLessonInput,
   GenerateSupplementaryLessonOutput,
+  GenerateIdeaInput,
+  GenerateIdeaOutput,
   GeneratePromptBlueprintInput,
   GeneratePromptBlueprintOutput,
   RunSandboxPromptInput,
@@ -108,6 +110,12 @@ const ASSESS_RELEVANCE_MAX_OUTPUT_TOKENS = 2048;
 // above went 512->2048 in one jump, not a slow climb) -- raise
 // generously once, re-verify live, don't guess-and-check in small steps.
 const LESSON_GENERATION_MAX_OUTPUT_TOKENS = 8192;
+
+// Top Profitable Ideas for Vibe-Coders (Director-approved, 2026-10-02). An idea
+// write-up is shorter than a full lesson body (no curriculum-length requirement), but
+// gets the same generous budget as every other generative call in this file rather
+// than guessing a smaller number and risking the same truncation bug.
+const IDEA_GENERATION_MAX_OUTPUT_TOKENS = 8192;
 
 // Vibe-Coding Assistant (specs/prompt-blueprint-builder/). Five
 // structured parts (explanation, the full delimited prompt, mermaid
@@ -1051,6 +1059,51 @@ Return ONLY a JSON object with exactly these fields:
       level,
       body: typeof result.body === "string" ? result.body : "",
       terms,
+    };
+  }
+
+  /**
+   * Top Profitable Ideas for Vibe-Coders (Director-approved, 2026-10-02 six-step
+   * feasibility study, step 5). Generative, same discipline as
+   * generateSupplementaryLesson above: it invents the idea itself from trends across the
+   * source articles, safe because the result always lands in pending_review
+   * (app/api/cron/ideas-generate), never publishes unreviewed.
+   */
+  async generateIdea(input: GenerateIdeaInput): Promise<GenerateIdeaOutput> {
+    const sourceText = input.sourceArticles
+      .map((a, i) => `[Source ${i + 1}] ${a.title}\n${a.summary}`)
+      .join("\n\n");
+
+    const existingTitlesText =
+      input.existingIdeaTitles.length > 0 ? input.existingIdeaTitles.map((t) => `- ${t}`).join("\n") : "(none yet)";
+
+    const prompt = `${P3_SYSTEM_RULES}
+
+You are proposing ONE profitable project idea for a "vibe-coder" -- someone who builds real software mainly by directing AI coding tools (Claude Code, Cursor, and similar), rather than writing most of the code by hand.
+
+Ideas already proposed -- do NOT repeat or closely re-pitch any of these:
+${existingTitlesText}
+
+Source material (recent, real articles -- look for a genuine, recurring trend across several of them, not just one story):
+${sourceText || "(no directly relevant recent articles this run -- do not generate an idea; source material is required)"}
+
+Based on a genuine trend you see across the source material above, propose ONE specific, realistic project idea a vibe-coder could actually start building, that could plausibly make money. Ground it in what the sources actually show -- not a generic idea the sources don't really support. Be concrete about who would pay for it and why, not vague ("businesses", "developers" with no specifics).
+
+Write the full write-up as markdown (use ## for section headings, not a top-level # title -- the title is shown separately), matching this project's existing editorial voice and the P-3 rules above. Cover, in your own structure: the opportunity and why now (grounded in the source material), who would actually pay for it, a realistic first build step a solo vibe-coder could do in a weekend, and a plausible monetization angle. No invented numbers, user counts or revenue projections -- describe the opportunity honestly, without fabricated specifics.
+
+Return ONLY a JSON object with exactly these fields:
+{
+  "title": string,   // short, specific project name or working title
+  "pitch": string,   // one sentence, the hook -- what it is and who it's for
+  "body": string      // the full markdown write-up, following all rules above
+}`;
+
+    const result = await callGeminiJSON(this.keys, prompt, IDEA_GENERATION_MAX_OUTPUT_TOKENS);
+
+    return {
+      title: typeof result.title === "string" ? result.title : "",
+      pitch: typeof result.pitch === "string" ? result.pitch : "",
+      body: typeof result.body === "string" ? result.body : "",
     };
   }
 

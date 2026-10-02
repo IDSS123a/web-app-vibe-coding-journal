@@ -1,0 +1,23 @@
+name: Ideas Generate Trigger
+
+# Top Profitable Ideas for Vibe-Coders, weekly (Director-approved, 2026-10-02 six-step
+# feasibility study, step 5). Idempotent per ISO week (features/ideas/domain.ts
+# getIsoWeekString), so a missed or repeated firing just means the idea generates a bit
+# later, not a functional problem -- same reasoning as university-generate-trigger.yml.
+
+on:
+  schedule:
+    # 07:00 UTC every Monday -- arbitrary, low-traffic timing, deliberately a day apart
+    # from University's own daily 06:00 UTC trigger so the two don't share a minute.
+    - cron: "0 7 * * 1"
+  workflow_dispatch: {}
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call ideas-generate endpoint
+        run: |
+          curl --fail-with-body -sS -X POST \
+            "${{ secrets.DIGEST_ENDPOINT_URL }}/api/cron/ideas-generate" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"

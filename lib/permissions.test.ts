@@ -5,6 +5,7 @@ import {
   canApproveReports,
   canRejectReports,
   canAccessFreeTools,
+  canAccessIdeas,
   canAccessPaidTools,
   canAccessPromptAssistant,
   canAccessPromptSchool,
@@ -102,9 +103,10 @@ describe("access levels: no payment -> nothing, Basic -> daily content, Premium 
     expect(canAccessPromptSchool(basic)).toBe(false);
     expect(canAccessPaidTools(basic)).toBe(true);
     expect(canAccessFreeTools(basic)).toBe(false);
+    expect(canAccessIdeas(basic)).toBe(false);
   });
 
-  it("Premium ($50) with active access reads everything, including both Tools sections", () => {
+  it("Premium ($50) with active access reads everything, including both Tools sections and Ideas", () => {
     const premium = { ...active, subscriptionTier: "premium" as const };
     expect(canReadPaidContent(premium)).toBe(true);
     expect(canAccessUniversity(premium)).toBe(true);
@@ -112,6 +114,7 @@ describe("access levels: no payment -> nothing, Basic -> daily content, Premium 
     expect(canAccessPromptSchool(premium)).toBe(true);
     expect(canAccessPaidTools(premium)).toBe(true);
     expect(canAccessFreeTools(premium)).toBe(true);
+    expect(canAccessIdeas(premium)).toBe(true);
   });
 
   it("Premium tier WITHOUT active access (lapsed) gets nothing at any level", () => {
@@ -122,6 +125,7 @@ describe("access levels: no payment -> nothing, Basic -> daily content, Premium 
     expect(canAccessPromptSchool(lapsed)).toBe(false);
     expect(canAccessPaidTools(lapsed)).toBe(false);
     expect(canAccessFreeTools(lapsed)).toBe(false);
+    expect(canAccessIdeas(lapsed)).toBe(false);
   });
 
   it("canAccessPaidTools: an admin is always allowed (billing-exempt, P-14)", () => {

@@ -23,7 +23,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { getVerifiedUser } from "@/lib/auth/verify-token";
-import { isBillingExempt, canAccessUniversity, canAccessPromptAssistant, canAccessPromptSchool, canAccessFreeTools } from "@/lib/permissions";
+import { isBillingExempt, canAccessUniversity, canAccessPromptAssistant, canAccessPromptSchool, canAccessFreeTools, canAccessIdeas } from "@/lib/permissions";
 import { evaluateSubscriptionAccess } from "@/features/onboarding/domain";
 import { resolvePayPalMode } from "@/lib/payments/paypal-mode";
 import { getRewardState, type RewardState } from "@/features/rewards/repository";
@@ -42,6 +42,7 @@ export async function GET(request: NextRequest) {
         hasAssistantAccess: false,
         hasPromptSchoolAccess: false,
         hasFreeToolsAccess: false,
+        hasIdeasAccess: false,
         subscriptionTier: null,
         subscriptionStatus: null,
         isBlocked: false,
@@ -101,6 +102,13 @@ export async function GET(request: NextRequest) {
       // premium-tier gate as University -- see lib/permissions.ts canAccessFreeTools.
       // The paid-tools section needs no separate flag: it's covered by hasAccess itself.
       hasFreeToolsAccess: canAccessFreeTools({
+        role: user.role,
+        subscriptionTier: user.subscriptionTier,
+        hasActiveAccess: subscriptionResult.hasAccess,
+      }),
+      // Top Profitable Ideas for Vibe-Coders (Director-approved, 2026-10-02): same
+      // premium-tier gate as University -- see lib/permissions.ts canAccessIdeas.
+      hasIdeasAccess: canAccessIdeas({
         role: user.role,
         subscriptionTier: user.subscriptionTier,
         hasActiveAccess: subscriptionResult.hasAccess,

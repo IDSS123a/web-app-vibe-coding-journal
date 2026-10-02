@@ -221,6 +221,24 @@ export interface GenerateSupplementaryLessonOutput {
 }
 
 /**
+ * Top Profitable Ideas for Vibe-Coders (Director-approved, 2026-10-02 six-step
+ * feasibility study, step 5). Generative, like generateSupplementaryLesson above --
+ * invents the idea itself from trends across several recent articles -- safe for the
+ * same reason: the result always lands in pending_review (app/api/cron/ideas-generate),
+ * never publishes unreviewed.
+ */
+export interface GenerateIdeaInput {
+  sourceArticles: Array<{ title: string; summary: string }>;
+  existingIdeaTitles: string[]; // dedup context -- avoid re-pitching an idea already proposed
+}
+
+export interface GenerateIdeaOutput {
+  title: string;
+  pitch: string; // one-sentence hook
+  body: string; // markdown: the opportunity, who it's for, how to start, a monetization angle
+}
+
+/**
  * Vibe-Coding Assistant (specs/prompt-blueprint-builder/, resolves
  * CONSTITUTION.md P-19, DECISION_LOG.md PDL-046). `projectDescription`
  * through `constraints` arrive here ALREADY wrapped in delimiter tags by
@@ -275,6 +293,7 @@ export interface AIProvider {
   extractTools(input: ExtractToolsInput): Promise<ExtractToolsOutput>;
   generateLesson(input: GenerateLessonInput): Promise<GenerateLessonOutput>;
   generateSupplementaryLesson(input: GenerateSupplementaryLessonInput): Promise<GenerateSupplementaryLessonOutput>;
+  generateIdea(input: GenerateIdeaInput): Promise<GenerateIdeaOutput>;
   generatePromptBlueprint(input: GeneratePromptBlueprintInput): Promise<GeneratePromptBlueprintOutput>;
   runSandboxPrompt(input: RunSandboxPromptInput): Promise<RunSandboxPromptOutput>;
   // Additional methods will be added as pipeline stages are implemented
@@ -369,6 +388,13 @@ class NoOpProvider implements AIProvider {
   // treats an empty title as a failed generation attempt.
   async generateSupplementaryLesson(): Promise<GenerateSupplementaryLessonOutput> {
     return { title: "", level: "intermediate", body: "", terms: [] };
+  }
+
+  // Same discipline as generateSupplementaryLesson above: empty title/body must never be
+  // mistaken for a real proposed idea. The cron route treats an empty title as a failed
+  // generation attempt.
+  async generateIdea(): Promise<GenerateIdeaOutput> {
+    return { title: "", pitch: "", body: "" };
   }
 
   // Fail-closed like generateLesson, not fail-open like assessRelevance:

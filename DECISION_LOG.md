@@ -2738,6 +2738,24 @@ A third real attempt delivered successfully (landed in spam, expected for a doma
 
 **Verified.** Typecheck and the full suite (532 tests, 7 new for `features/tools/discovery.ts`'s candidate-naming, promotion-rule and observation-merge logic, 2 new for the tier split in `lib/permissions.test.ts`) pass. Live verification (the discovery cron actually promoting a real tool, the `/tools` page rendering both sections per tier) is pending the Director applying `038_tools.sql` in her Supabase SQL Editor -- the Management API and the connected Supabase MCP tool are both confirmed unusable for this project (wrong account/401), so this migration could not be applied directly, same as every migration since that was first found.
 
+**Follow-up, same day:** the Director applied `038_tools.sql` in her Supabase SQL Editor. Confirmed live: the `tools`/`tool_candidates` tables and `articles.tools_extracted_at` column are reachable; a manually triggered production run of the hourly backlog cron read 15 articles, found 10 real tool candidates (Claude Code, GitHub Copilot, Supabase, Turso, OrioleDB and others) with zero errors, none promoted yet (correctly -- none has 3+ mentions from 2+ independent sources yet); `/tools` renders both sections live with no console errors, confirmed with a minted session for the `admin@test.local` account.
+
+---
+
+## PDL-095 Top Profitable Ideas for Vibe-Coders: a new, separate weekly generation cron
+
+**Date:** 2026-10-02. Director-approved, step 5 of the six-step feasibility study: "ista arhitektura -- zaseban cron, generise npr. 1 ideju sedmicno iz trendova u clancima zadnjih dana, ide u red za tvoje odobrenje prije objave" (same architecture: a separate cron, generates about 1 idea a week from trends in recent articles, goes into a queue for approval before publishing).
+
+**What it is.** A new `ideas` table, filled by its own weekly cron (`app/api/cron/ideas-generate`), mirroring Vibe-Coding University's "autonomous supplementary growth" architecture (PDL-042) rather than the Dictionary/Tools discovery-and-promotion cycle -- this content is GENERATIVE (the AI invents one specific, grounded project idea from a trend across several recent high-relevance articles) rather than EXTRACTIVE (pulling out something the articles already name). Every generated idea lands in `pending_review`; nothing publishes without the admin approving it at `/admin/ideas`, the same gate University's generated lessons already go through.
+
+**Deliberately its own cron, not folded into anything else** -- same reasoning University's generation cron already established: a separate, low-frequency job can't threaten the daily digest's own Gemini key budget, and a missed or repeated weekly firing just means the next idea lands a bit later, not a functional problem. Idempotent per ISO week (`idea_generation_runs.iso_week`, migration 039) -- learned directly from University's own migration 016/018 history, so this table starts out right the first time: no unique constraint on the period key (a FAILED attempt must still allow a same-week retry) and RLS enabled with zero policies from the start (service role only, never client-facing).
+
+**Tier.** Premium ($50/year) only, same gate as University/Dictionary/Assistant/Prompt School and the new Tools free-tools section -- the Director named Ideas alongside the free-tools section when describing what the $50 tier adds (`lib/permissions.ts canAccessIdeas`). Unlike Tools, this is a single full-page gate (`PremiumGuard`), not a split-by-section one, since the whole rubric is Premium-only.
+
+**New files:** `supabase/migrations/039_ideas.sql` (tables `ideas`, `idea_generation_runs`); `features/ideas/{domain,repository}.ts`; `lib/ai/ai-provider.ts` + `gemini-provider.ts` gain `generateIdea` (fail-closed, same discipline as `generateSupplementaryLesson`); `app/api/cron/ideas-generate/route.ts`; `.github/workflows/ideas-generate-trigger.yml` (Mondays 07:00 UTC, a day apart from University's own daily 06:00 UTC trigger); `app/api/admin/ideas/route.ts` + `[ideaId]/review/route.ts`; `app/admin/ideas/page.tsx` (added to the admin nav); `app/api/ideas/route.ts`; `app/ideas/page.tsx`; an `Ideas` link in `SiteNav.tsx`; `PremiumPitch.tsx` gains an `ideas` feature entry.
+
+**Verified.** Typecheck and the full suite (534 tests, 2 new for the duplicated `getIsoWeekString` helper in `features/ideas/domain.ts`) pass. Live verification (the cron actually proposing a real idea, the admin review flow, `/ideas` rendering a published idea) is pending the Director applying `039_ideas.sql` in her Supabase SQL Editor, the same hand-off `038_tools.sql` already went through -- the Management API and the connected Supabase MCP tool remain confirmed unusable for this project.
+
 ---
 
 *Vibe-Coding Journal — Project Decision Log — updated as decisions are made.*
